@@ -1,6 +1,6 @@
 #!/usr/bin/env escript
 %% -*- erlang -*-
-%%! -name mochiweb__test@127.0.0.1
+%%! -name ux__test@127.0.0.1
 main([Ebin]) ->
     code:add_path(Ebin),
     code:add_paths(filelib:wildcard("../deps/*/ebin", Ebin)),

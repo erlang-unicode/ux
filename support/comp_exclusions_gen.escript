@@ -18,7 +18,7 @@ do_gen(InFd, {OutFd} = OutFds) ->
 		{ok, []} ->
 			do_gen(InFd, OutFds);
 		{ok, Data} -> 
-            case uxstring:explode(["#"], ux.string:delete_types([cc], Data)) of
+            case uxstring:explode(["#"], uxstring:delete_types([cc], Data)) of
                 []       -> skip;
                 [[]|_]   -> skip;
                 [Char|_] ->

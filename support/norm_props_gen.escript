@@ -38,7 +38,7 @@ do_gen(InFd, OutFds) ->
 			do_gen(InFd, OutFds);
 		{ok, Data} -> Str = Data, 
             % Parse ccc
-            case uxstring:explode([";", "#"], ux.string:delete_types([cc, zs], Str)) of
+            case uxstring:explode([";", "#"], uxstring:delete_types([cc, zs], Str)) of
                 [Code, Form, Props, Comment] when ((Form=="NFC_QC") 
                                                or  (Form=="NFD_QC")
                                                or  (Form=="NFKC_QC")

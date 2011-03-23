@@ -79,4 +79,4 @@ is_comp_excl(16#1D1BD) -> true;
 is_comp_excl(16#1D1BE) -> true; 
 is_comp_excl(16#1D1BF) -> true; 
 is_comp_excl(16#1D1C0) -> true; 
-is_comp_excl(_) -> false.
+is_comp_excl(_) -> false. 

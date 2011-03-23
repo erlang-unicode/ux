@@ -1,6 +1,6 @@
 %% uxstring library 
 %%
-%% @package  uxstring
+%% @package  ux
 %% @author   Uvarov Michael <freeakk@gmail.com>
 %% @license  http://www.fsf.org/copyleft/lgpl.html LGPL
 %%

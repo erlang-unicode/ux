@@ -21,7 +21,11 @@
 -export([list_to_latin1/1]).
 -export([char_comment/1]).
 -export([htmlspecialchars/1, hsc/1]). % hsc is short name
--export([explode/2, explode/3, to_lower/1, to_upper/1]).
+
+-export([explode/2, explode/3]).
+-export([split/2, split/3]).
+
+-export([to_lower/1, to_upper/1]).
 -export([st/1, strip_tags/1]).
 -export([st/2, strip_tags/2]).
 -export([st/3, strip_tags/3]).
@@ -50,6 +54,9 @@
 -export([to_graphemes/1, reverse/1]).
 -export([length/1, len/1]).
 -export([hex_to_int/1]).
+
+-export([ducet/1]).
+-export([col_non_ignorable/2]).
 
 %% @doc Returns various "character types" which can be used 
 %%      as a default categorization in implementations.
@@ -116,6 +123,9 @@ char_types(Str)	-> lists:map({?MODULE, char_type}, Str).
 -include("string/is_compat.hrl").
 -include("string/decomp.hrl").
 -include("string/comp.hrl").
+
+% http://unicode.org/reports/tr10/
+-include("string/ducet.hrl").
 
 %freq_dict(_) -> 0.
 
@@ -279,6 +289,9 @@ delete_empty([El|List]) -> [El|delete_empty(List)].
 to_string(Str) when is_list(Str) -> Str;
 to_string(Str) when is_atom(Str) -> erlang:atom_to_list(Str);
 to_string(Str) when is_integer(Str) -> [Str].
+
+split(P1, P2)     -> delete_empty(explode(P1, P2)).
+split(P1, P2, P3) -> delete_empty(explode(P1, P2, P3)).
 
 %% @doc Splits the string by delimeters.
 -spec explode([string()], string()) -> string().
@@ -810,8 +823,76 @@ reverse_flatten(    T,     [HH|TT],  Res) ->
 reverse_flatten(    _,     [],       Res) ->
                                      Res.
 hex_to_int(Code) ->
-	{ok, [Int], []} = io_lib:fread("~16u", Code),
+    {ok, [Int], []} = io_lib:fread("~16u", Code),
     Int.
+
+
+
+
+% UNICODE COLLATION ALGORITHM
+% see Unicode Technical Standard #10
+-spec col_non_ignorable(string(), string()) -> less | greater | equal.
+
+% Levels: http://unicode.org/reports/tr10/#Multi-Level%20Comparison
+% L1 Base characters
+% L2 Accents
+% L3 Case
+% L4 Punctuation
+
+col_non_ignorable(S1, S2) -> 
+    col_compare  (S1, S2, 
+        fun ducet/1, 
+        fun col_bin_to_list/1).
+
+% TableFun = fun uxstring:ducet/1
+%% TableFun returns value from DUCET table
+%% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
+col_compare (String1, String2, TableFun, ComparatorFun) ->
+    col_compare1(to_nfd(String1), 
+                 to_nfd(String2), TableFun, ComparatorFun).
+
+col_compare1([CP1|StrTail1], [CP2|StrTail2], TableFun, ComparatorFun) ->
+    BinaryEncodedWeightList1 = apply(TableFun, [CP1]), % [<<Flag,L1,L2,...>>, ..]
+    BinaryEncodedWeightList2 = apply(TableFun, [CP2]),
+
+    case
+      col_compare_binary_encoded_lists(BinaryEncodedWeightList1, 
+                                       BinaryEncodedWeightList2,
+                                       ComparatorFun) of
+        equal  -> col_compare1(StrTail1, StrTail2, TableFun, ComparatorFun);
+        Result -> Result
+    end;
+col_compare1([   ], [   ], _, _) -> equal;
+col_compare1([_|_], [   ], _, _) -> greater;
+col_compare1([   ], [_|_], _, _) -> lower.
+
+% F = fun col_bin_to_list/1
+col_compare_binary_encoded_lists([V1|Tail1], [V2|Tail2], F) ->
+    BW1 = apply(F, [V1]), % Returns list of binaries
+    BW2 = apply(F, [V2]),
+    
+    case col_comp_weight(BW1, BW2) of
+        equal  -> col_compare_binary_encoded_lists(Tail1, Tail2, F);
+        Result -> Result
+    end;
+col_compare_binary_encoded_lists([   ], [   ], _) -> equal;
+col_compare_binary_encoded_lists([_|_], [   ], _) -> greater;
+col_compare_binary_encoded_lists([   ], [_|_], _) -> lower.
+
+% Convert binary from DUCET to list [L1, L2, L3, L4]
+col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, L4:16>>) ->
+    [L1, L2, L3];
+col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, L4:24>>) ->
+    [L1, L2, L3].
+    
+% Gets two lists of integer weights and compares it
+col_comp_weight([W1|_], [W2|_]) when W1<W2 ->
+    lower;
+col_comp_weight([W1|_], [W2|_]) when W1>W2 ->
+    greater;
+col_comp_weight([W1|Tail1], [W2|Tail2]) ->
+    col_comp_weight(Tail1, Tail2);
+col_comp_weight([], []) -> equal.
 
 %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %%
 %%
@@ -978,67 +1059,110 @@ nfc_test(InFd, Max) ->
     NFD  = fun 'uxstring':to_nfd/1,
     NFKC = fun 'uxstring':to_nfkc/1,
     NFKD = fun 'uxstring':to_nfkd/1,
+
     case file:read_line(InFd) of
-        {ok, []} -> nfc_test(InFd, Max);
+        eof -> ok;
         {ok, Data} -> 
-            case uxstring:explode("#", Data) of
-                [LineWithoutComment|_] ->  
-                    case lists:map(
-                        fun (Str) -> % Convert string from file to list of integers 
-                            lists:map(fun parse_int16/1, string:tokens(Str, " ")) 
+            try
+              [LineWithoutComment|_] = uxstring:explode("#", Data),
+              lists:map(fun (Str) -> % Convert string from file to list of integers 
+                            lists:map(fun hex_to_int/1, string:tokens(Str, " ")) 
                         end,
-                        uxstring:explode(";", LineWithoutComment)) of
-                         [_,_,_,_,_,_] = Row ->
-                           C1 = lists:nth(1, Row),
-                           C2 = lists:nth(2, Row),
-                           C3 = lists:nth(3, Row),
-                           C4 = lists:nth(4, Row),
-                           C5 = lists:nth(5, Row),
-                           % {Result from function, From, To}
-                           %NFD
-                           ?assertEqual({Max,C3, C1, C3}, {Max,NFD(C1), C1, C3}),
-                           ?assertEqual({C3, C2, C3}, {NFD(C2), C2, C3}),
-                           ?assertEqual({C3, C3, C3}, {NFD(C3), C3, C3}),
-                           ?assertEqual({C5, C4, C5}, {NFD(C4), C4, C5}),
-                           ?assertEqual({C5, C5, C5}, {NFD(C5), C5, C5}),
-                           %NFC
-                           ?assertEqual({Max, C2, C1, C2}, {Max, NFC(C1), C1, C2}),
-                           ?assertEqual({C2, C2, C2}, {NFC(C2), C2, C2}),
-                           ?assertEqual({C2, C3, C2}, {NFC(C3), C3, C2}),
-                           ?assertEqual({C4, C4, C4}, {NFC(C4), C4, C4}),
-                           ?assertEqual({C4, C5, C4}, {NFC(C5), C5, C4}),
-                           %NFKC
-                           ?assertEqual({C4, C1}, {NFKC(C1), C1}),
-                           ?assertEqual({C4, C2}, {NFKC(C2), C2}),
-                           ?assertEqual({C4, C3}, {NFKC(C3), C3}),
-                           ?assertEqual({C4, C4}, {NFKC(C4), C4}),
-                           ?assertEqual({C4, C5}, {NFKC(C5), C5}),
-                           %NFCD
-                           ?assertEqual({C5, C1}, {NFKD(C1), C1}),
-                           ?assertEqual({C5, C2}, {NFKD(C2), C2}),
-                           ?assertEqual({C5, C3}, {NFKD(C3), C3}),
-                           ?assertEqual({C5, C4}, {NFKD(C4), C4}),
-                           ?assertEqual({C5, C5}, {NFKD(C5), C5}),
-                           ok;
-                        _ -> skip
-                   end; 
-                _ -> ok
-            end,
-            nfc_test(InFd, Max - 1);
-        eof -> ok
+                        uxstring:explode(";", LineWithoutComment))
+            of 
+                Row when length(Row) == 6 ->
+                   % start body
+                   C1 = lists:nth(1, Row),
+                   C2 = lists:nth(2, Row),
+                   C3 = lists:nth(3, Row),
+                   C4 = lists:nth(4, Row),
+                   C5 = lists:nth(5, Row),
+                   % {Result from function, From, To}
+                   %NFD
+                   ?assertEqual({Max,C3, C1, C3}, {Max,NFD(C1), C1, C3}),
+                   ?assertEqual({C3, C2, C3}, {NFD(C2), C2, C3}),
+                   ?assertEqual({C3, C3, C3}, {NFD(C3), C3, C3}),
+                   ?assertEqual({C5, C4, C5}, {NFD(C4), C4, C5}),
+                   ?assertEqual({C5, C5, C5}, {NFD(C5), C5, C5}),
+                   %NFC
+                   ?assertEqual({Max, C2, C1, C2}, {Max, NFC(C1), C1, C2}),
+                   ?assertEqual({C2, C2, C2}, {NFC(C2), C2, C2}),
+                   ?assertEqual({C2, C3, C2}, {NFC(C3), C3, C2}),
+                   ?assertEqual({C4, C4, C4}, {NFC(C4), C4, C4}),
+                   ?assertEqual({C4, C5, C4}, {NFC(C5), C5, C4}),
+                   %NFKC
+                   ?assertEqual({C4, C1}, {NFKC(C1), C1}),
+                   ?assertEqual({C4, C2}, {NFKC(C2), C2}),
+                   ?assertEqual({C4, C3}, {NFKC(C3), C3}),
+                   ?assertEqual({C4, C4}, {NFKC(C4), C4}),
+                   ?assertEqual({C4, C5}, {NFKC(C5), C5}),
+                   %NFCD
+                   ?assertEqual({C5, C1}, {NFKD(C1), C1}),
+                   ?assertEqual({C5, C2}, {NFKD(C2), C2}),
+                   ?assertEqual({C5, C3}, {NFKD(C3), C3}),
+                   ?assertEqual({C5, C4}, {NFKD(C4), C4}),
+                   ?assertEqual({C5, C5}, {NFKD(C5), C5})
+                   % end body
+
+            catch error:_ -> next
+            after 
+                nfc_test(InFd, Max - 1)
+            end
     end.
 
 nfc_prof(Count) ->
-        {ok, InFd} = file:open(?NFTESTDATA, [read]),
-                io:setopts(InFd,[{encoding,utf8}]),
-                nfc_test(InFd, Count),
-                ok.
+    {ok, InFd} = file:open(?NFTESTDATA, [read]),
+    io:setopts(InFd,[{encoding,utf8}]),
+    nfc_test(InFd, Count),
+    ok.
+
 nfc_test_() ->
-                        {timeout, 600, fun() -> nfc_prof(10000000) end}.
-parse_int16(Code) -> 
-	case io_lib:fread("~16u", Code) of
-        {ok, [Int], []} -> Int;
-        _ -> 0 
+    {timeout, 600, fun() -> nfc_prof(100) end}.
+
+% Collation Test
+calloc_test(_,    _, _,      0)   -> max;
+calloc_test(InFd, F, false,  Max) ->
+    OldVal = calloc_test_read(InFd),
+    calloc_test(InFd, F, OldVal,  Max);
+calloc_test(InFd, F, OldVal, Max) ->
+    case calloc_test_read(InFd) of
+        Val when is_list(Val) -> 
+            case F(Val, OldVal) of
+                lower -> io:format(user, "Error: ~w ~w ~w ~n", [Val, lower, OldVal]),
+                         calloc_test(InFd, F, Val, Max - 1);
+                _     -> calloc_test(InFd, F, Val, Max - 1)
+            end;
+        _ -> ok
     end.
+
+%% Read line from a testdata file (see CollationTest.html)
+%% Return list of codepaints
+calloc_test_read(InFd) ->
+    case file:read_line(InFd) of
+        eof -> ok;
+        {ok, Data} -> 
+            try
+                [Value|_] = uxstring:split(["#", ";", "\n"], Data), 
+                %% Converts "0009 0021" to [16#0009, 16#0021]
+                lists:map(fun uxstring:hex_to_int/1, string:tokens(Value, " "))
+            of Res -> Res
+            catch                   
+                error:_Reason -> calloc_test_read(InFd)
+            end
+    end.
+
+calloc_prof(File, Fun, Count) ->
+    {ok, InFd} = file:open(File, [read]),
+            io:setopts(InFd,[{encoding,utf8}]),
+            calloc_test(InFd, Fun, false, Count),
+            ok.
+
+calloc_test_() ->
+    {timeout, 600, fun() -> 
+        calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
+                        ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
+                    fun col_non_ignorable/2, 
+                    10000) end}.
+
 
 -endif.

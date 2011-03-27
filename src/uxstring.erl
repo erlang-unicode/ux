@@ -948,6 +948,13 @@ col_compare1(StrTail1, StrTail2, Buf1, [CV2Raw|Buf2], W1L1, Acc1, Acc2, TableFun
             col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, Acc1, [Acc|Acc2], TableFun, ComparatorFun)
     end;
 
+% MANUAL:
+       % This guarantees that when two strings of unequal length are compared, 
+       % where the shorter string is a prefix of the longer string, the longer 
+       % string is always sorted after the shorter in the absence of special
+       % features like contractions. For example: "abc" < "abcX" where "X" can
+       % be any character(s).
+
 %% String 1 conrains more codepaints, but we cannot throw them.
 col_compare1([CP1|StrTail1], [], [],  [], _,     Acc1, Acc2, TableFun, ComparatorFun) ->
     col_compare1(StrTail1,   [], CP1, [], false, Acc1, Acc2, TableFun, ComparatorFun);

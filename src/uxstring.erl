@@ -57,6 +57,7 @@
 
 -export([ducet/1]).
 -export([col_non_ignorable/2]).
+-export([col_extract/2]).
 
 %% @doc Returns various "character types" which can be used 
 %%      as a default categorization in implementations.
@@ -849,50 +850,166 @@ col_non_ignorable(S1, S2) ->
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
 col_compare (String1, String2, TableFun, ComparatorFun) ->
     col_compare1(to_nfd(String1), 
-                 to_nfd(String2), TableFun, ComparatorFun).
+                 to_nfd(String2), 
+                 [], % Buf 1, contains ducet(Char)
+                 [], % Buf 2
+                 false, % CompValue 1
+                 [], % Accumulator for String 1 - saves values for next levels comparation
+                 [], % Accumulator for String 2
+                 TableFun, ComparatorFun).
 
-col_compare1([CP1|StrTail1], [CP2|StrTail2], TableFun, ComparatorFun) ->
-    BinaryEncodedWeightList1 = apply(TableFun, [CP1]), % [<<Flag,L1,L2,...>>, ..]
-    BinaryEncodedWeightList2 = apply(TableFun, [CP2]),
+% S2.1 Find the longest initial substring S at each point that has a match in the table.
+% S2.1.1 If there are any non-starters following S, process each non-starter C.
+% S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
+col_extract([     ], _       ) -> % No Any Char
+    {[], []};
+col_extract([CP|[]], TableFun) -> % Last Char
+    {apply(TableFun, [[CP]]), []};
+col_extract([CP | Tail], TableFun) ->
+    col_extract1(Tail, TableFun, [CP], ccc(CP), [], false).
 
-    case
-      col_compare_binary_encoded_lists(BinaryEncodedWeightList1, 
-                                       BinaryEncodedWeightList2,
-                                       ComparatorFun) of
-        equal  -> col_compare1(StrTail1, StrTail2, TableFun, ComparatorFun);
-        Result -> Result
-    end;
-col_compare1([   ], [   ], _, _) -> equal;
-col_compare1([_|_], [   ], _, _) -> greater;
-col_compare1([   ], [_|_], _, _) -> lower.
-
-% F = fun col_bin_to_list/1
-col_compare_binary_encoded_lists([V1|Tail1], [V2|Tail2], F) ->
-    BW1 = apply(F, [V1]), % Returns list of binaries
-    BW2 = apply(F, [V2]),
+% There is only one char which was compared.
+col_extract1([        ],       TableFun, CPList, _   , Skipped, false ) ->
+    {apply(TableFun, [CPList]), lists:reverse(Skipped)};
+% ... One or more chars
+col_extract1([        ],       TableFun, CPList, _   , Skipped, OldVal) ->
+    {OldVal, lists:reverse(Skipped)};
+% OldVal = apply(TableFun, [CPList])
+col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
+    Ccc2 = ccc(CP2),
+    if
+        % S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
+        (Ccc1<Ccc2) or (Ccc1 == 0) ->
+            NewCPList = CPList ++ [CP2],
+            % Search in callocation table
+            % FIXME: [108,1425,183,97] lower [108,1,903,97] 
+            case apply(TableFun, [NewCPList]) of
+                % skip char CP2
+                [<<0:72>>] -> col_extract1(Tail, TableFun, CPList,    Ccc2, [CP2|Skipped], OldVal);
+                % append char CP2
+                Bin        -> col_extract1(Tail, TableFun, NewCPList, Ccc2, Skipped, Bin)
+            end;
+        % Note: A non-starter in a string is called blocked if there is another 
+        %       non-starter of the same canonical combining class or zero between 
+        %       it and the last character of canonical combining class 0.
+        true and (OldVal =/= false) -> {OldVal, lists:reverse(Skipped) ++ Str};
+        true and (OldVal ==  false) -> {apply(TableFun, [CPList]), lists:reverse(Skipped) ++ Str}
+    end.
     
-    case col_comp_weight(BW1, BW2) of
-        equal  -> col_compare_binary_encoded_lists(Tail1, Tail2, F);
-        Result -> Result
+
+%%% Compares on L1, collects data for {L2,L3,L4} comparations.
+%% Extract chars from the strings.
+%
+%% ComparatorFun    S2.3 Process collation elements according to the variable-weight setting,
+%%                  as described in Section 3.6.2, Variable Weighting.
+col_compare1([_|_] = Str1, StrTail2, [], Buf2, CV1, Acc1, Acc2, TableFun, ComparatorFun) ->
+    {Buf1, StrTail1} = col_extract(Str1, TableFun), % [<<Flag,L1,L2,...>>, ..]
+    col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, Acc1, Acc2, TableFun, ComparatorFun);
+
+col_compare1(StrTail1, [_|_] = Str2, Buf1, [], CV1, Acc1, Acc2, TableFun, ComparatorFun) ->
+    {Buf2, StrTail2} = col_extract(Str2, TableFun), % [<<Flag,L1,L2,...>>, ..]
+    col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, Acc1, Acc2, TableFun, ComparatorFun);
+    
+%% Extracts a non-ignorable L1 from the Str1.
+col_compare1(StrTail1, StrTail2, [CV1Raw|Buf1], Buf2, false, Acc1, Acc2, TableFun, ComparatorFun) ->
+    case apply(ComparatorFun, [CV1Raw]) of
+        [0    | Acc] -> % Find other W1L1
+            col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, [Acc|Acc1], Acc2, TableFun, ComparatorFun);
+        [_    | _  ] when StrTail2 == [] -> % String 2 was ended :(
+            greater;    % Return result: S1 greater S2 on L1 
+        [W1L1 | Acc] -> % W1L1 was found. Try find W2L1.
+            col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1,  [Acc|Acc1], Acc2, TableFun, ComparatorFun)
     end;
-col_compare_binary_encoded_lists([   ], [   ], _) -> equal;
-col_compare_binary_encoded_lists([_|_], [   ], _) -> greater;
-col_compare_binary_encoded_lists([   ], [_|_], _) -> lower.
+
+%% Extracts a non-ignorable L1 from the Str2.
+%% Compares L1 values.
+col_compare1(StrTail1, StrTail2, Buf1, [CV2Raw|Buf2], W1L1, Acc1, Acc2, TableFun, ComparatorFun) ->
+    case apply(ComparatorFun, [CV2Raw]) of
+        [0    | Acc] -> % Find other W2L1
+            col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1,  Acc1, [Acc|Acc2], TableFun, ComparatorFun);
+        [_    | _  ] when W1L1 == true -> 
+            lower;   % Sting 1 was ended; string 2 still has a non-ignorable char => string2 greater.
+        [W2L1 | _  ] when W1L1 >  W2L1 ->
+            greater; % Return result: S1 greater S2 on L1
+        [W2L1 | _  ] when W1L1 <  W2L1 ->
+            lower;   % Return result: S1 lower S2 on L1
+        [W2L1 | Acc] when W1L1 == W2L1 ->
+            col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, Acc1, [Acc|Acc2], TableFun, ComparatorFun)
+    end;
+
+%% String 2 conrains more codepaints, but we cannot throw them.
+col_compare1([], [CP2|StrTail2], [], [],  _,    Acc1, Acc2, TableFun, ComparatorFun) ->
+    col_compare1([],  StrTail2,  [], CP2, true, Acc1, Acc2, TableFun, ComparatorFun);
+
+%% String 1 conrains more codepaints, but we cannot throw them.
+col_compare1([CP1|StrTail1], [], [],  [], _,     Acc1, Acc2, TableFun, ComparatorFun) ->
+    col_compare1(StrTail1,   [], CP1, [], false, Acc1, Acc2, TableFun, ComparatorFun);
+
+%::error:function_clause
+%  in function uxstring:col_compare1/9
+%  called as col_compare1([],[],[<<1,2,123,0,32,0,2,0,33>>],[],513,[[32,2]],[[124,2],[346,2]],#Fun,#Fun)
+col_compare1([], [], _,            [], W1L1, _,    _,    _,        _            ) when W1L1 >  0 ->
+    greater;
+col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1, Acc2, TableFun, ComparatorFun) when W1L1 == 0 ->
+    [W1L1New | Acc] = apply(ComparatorFun, [W1Raw]),
+    col_compare1([], [], Buf1, [], W1L1New, [Acc|Acc1], Acc2, TableFun, ComparatorFun);
+
+%% L1 was ended :(
+%% Now, Funs are not neeaded.
+%% Acc1 and Acc2 are reversed.
+col_compare1([], [], [], [], false, Acc1, Acc2, _, _) ->
+    col_compare2(lists:reverse(Acc1), 
+                 lists:reverse(Acc2),
+                 false, % W1L{2,3,4} 
+                 [], % Other accumulator. Contains L3 and L4.
+                 []  % Other acc...
+                ).
+
+%%% L2 comparation.
+%% Try extract W1LX, but 0 was found => try next weigth in InAcc.
+col_compare2([ [] | _], _, _, _, _) ->
+    equal;
+col_compare2([ [0   |OutAcc] | InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
+    col_compare2(InAccTail1, InAcc2, false, [OutAcc|OutAcc1], OutAcc2);
+%% W1LX was found. => Try found W2LX.
+col_compare2([ [W1LX|OutAcc] | InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
+    col_compare2(InAccTail1, InAcc2, W1LX, [OutAcc|OutAcc1], OutAcc2);
+
+%% Try extract W2LX.
+col_compare2(InAcc1, [ [0   |OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) ->
+    col_compare2(InAcc1, InAccTail2, W1LX, OutAcc1, [OutAcc|OutAcc2]);
+    
+col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) when W1LX <  W2LX ->
+    lower;
+col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) when W1LX >  W2LX ->
+    greater;
+col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) when W1LX == W2LX ->
+    col_compare2(InAcc1, InAccTail2, false, OutAcc1, [OutAcc|OutAcc2]);
+
+% Try extract from Str1, which is empty.
+col_compare2([], [W2LX|_  ], false, _, _) when W2LX>0 ->
+    lower;
+col_compare2([], [W2LX|Acc], false, Acc1, Acc2) when W2LX == 0 ->
+    col_compare2([], Acc, false, Acc1, [Acc|Acc2]);
+
+% Str2 was ended.
+col_compare2(_, [], W1LX, _, _) when W1LX =/= false ->
+    greater;
+
+% Try compare on next composition level. 
+col_compare2([], [], W1LX, [_|_] = OutAcc1, [_|_] = OutAcc2) when W1LX == false ->
+    col_compare2(lists:reverse(OutAcc1), lists:reverse(OutAcc2), false, [], []);
+
+% End compares
+col_compare2([], [], W1LX, [], []) when W1LX == false ->
+    equal. % on all levels
+
 
 % Convert binary from DUCET to list [L1, L2, L3, L4]
 col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, L4:16>>) ->
     [L1, L2, L3];
 col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, L4:24>>) ->
     [L1, L2, L3].
-    
-% Gets two lists of integer weights and compares it
-col_comp_weight([W1|_], [W2|_]) when W1<W2 ->
-    lower;
-col_comp_weight([W1|_], [W2|_]) when W1>W2 ->
-    greater;
-col_comp_weight([W1|Tail1], [W2|Tail2]) ->
-    col_comp_weight(Tail1, Tail2);
-col_comp_weight([], []) -> equal.
 
 %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %%
 %%
@@ -1162,7 +1279,7 @@ calloc_test_() ->
         calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
                         ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
-                    10000) end}.
+                    10000000) end}.
 
 
 -endif.

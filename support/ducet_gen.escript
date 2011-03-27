@@ -16,7 +16,7 @@ main([Ebin, InDir, OutDir]) ->
 
 	do_gen(InFd, {OutFd}),
 
-    io:format(OutFd, "ducet(_) -> false. ~n", []),
+    io:format(OutFd, "ducet(_) -> [<<0:72>>]. ~n", []),
     ok.
 
 do_gen(InFd, {OutFd} = OutFds) ->
@@ -30,12 +30,11 @@ do_gen(InFd, {OutFd} = OutFds) ->
                 [Row|_] ->
                     case uxstring:explode($;, Row) of
                         [Char, Element] ->
-                            DucetEl = parseEl(uxstring:delete_types([zs], Element)),
-                            io:format(OutFd, "ducet(16#~s) -> ~w; ~n", 
-                                [uxstring:delete_types([zs], Char), 
-                                % Reverse
-                                DucetEl
-                                ]);
+                            OutEl = parseEl(uxstring:delete_types([zs], Element)),
+                            InEl  = lists:map(fun uxstring:hex_to_int/1, string:tokens(Char, " ")),
+
+                            io:format(OutFd, "ducet(~w) -> ~w; ~n", 
+                                [uxstring:to_nfd(InEl), OutEl]);
                         _ -> skip
                     end
             end,

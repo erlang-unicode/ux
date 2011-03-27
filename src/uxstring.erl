@@ -876,13 +876,26 @@ col_extract1([        ],       TableFun, CPList, _   , Skipped, OldVal) ->
     {OldVal, lists:reverse(Skipped)};
 % OldVal = apply(TableFun, [CPList])
 col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
-    Ccc2 = ccc(CP2),
+    Ccc2  = ccc(CP2),
+%   W2CP2 = apply(TableFun, [[CP2]]),
     if
+%       W2CP2 == [<<0:72>>] -> 
+            % Noncharacter code points are also no longer required to be mapped to [.0000.0000.0000.], 
+            % but are given implicit weights instead.
+%           col_extract1(Tail, TableFun, CPList, Ccc1, Skipped, OldVal);
+
         % S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
-        (Ccc1<Ccc2) or (Ccc1 == 0) ->
+        %    _0_ _0_       = false
+        %    _0_ 220 _230_ = true
+        %    _0_ 220       = true
+        %    _0_ 220 _220_ = false
+        (Ccc1<Ccc2) or ((Ccc1 == 0) and (Ccc2 =/= 0)) ->
             NewCPList = CPList ++ [CP2],
             % Search in callocation table
-            % FIXME: [108,1425,183,97] lower [108,1,903,97] 
+            % FIXED 1: [108,1425,183,97] lower [108,1,903,97] 
+            %     NFD: [108,1425,183,97] lower [108,1,183,97] (map 1 to 0.0.0.0 and ccc(1) = 0)
+            % FIXED 2: [97,803,774,820] lower [7840,820] 
+            %     NFD: [97,820,803,774] lower [65,820,803]
             case apply(TableFun, [NewCPList]) of
                 % skip char CP2
                 [<<0:72>>] -> col_extract1(Tail, TableFun, CPList,    Ccc2, [CP2|Skipped], OldVal);
@@ -915,8 +928,6 @@ col_compare1(StrTail1, StrTail2, [CV1Raw|Buf1], Buf2, false, Acc1, Acc2, TableFu
     case apply(ComparatorFun, [CV1Raw]) of
         [0    | Acc] -> % Find other W1L1
             col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, [Acc|Acc1], Acc2, TableFun, ComparatorFun);
-        [_    | _  ] when StrTail2 == [] -> % String 2 was ended :(
-            greater;    % Return result: S1 greater S2 on L1 
         [W1L1 | Acc] -> % W1L1 was found. Try find W2L1.
             col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1,  [Acc|Acc1], Acc2, TableFun, ComparatorFun)
     end;
@@ -937,18 +948,19 @@ col_compare1(StrTail1, StrTail2, Buf1, [CV2Raw|Buf2], W1L1, Acc1, Acc2, TableFun
             col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, Acc1, [Acc|Acc2], TableFun, ComparatorFun)
     end;
 
-%% String 2 conrains more codepaints, but we cannot throw them.
-col_compare1([], [CP2|StrTail2], [], [],  _,    Acc1, Acc2, TableFun, ComparatorFun) ->
-    col_compare1([],  StrTail2,  [], CP2, true, Acc1, Acc2, TableFun, ComparatorFun);
-
 %% String 1 conrains more codepaints, but we cannot throw them.
 col_compare1([CP1|StrTail1], [], [],  [], _,     Acc1, Acc2, TableFun, ComparatorFun) ->
     col_compare1(StrTail1,   [], CP1, [], false, Acc1, Acc2, TableFun, ComparatorFun);
 
+%% String 2 conrains more codepaints, but we cannot throw them.
+col_compare1([], [CP2|StrTail2], [], [],  _,    Acc1, Acc2, TableFun, ComparatorFun) ->
+    col_compare1([],  StrTail2,  [], CP2, true, Acc1, Acc2, TableFun, ComparatorFun);
+
 %::error:function_clause
 %  in function uxstring:col_compare1/9
 %  called as col_compare1([],[],[<<1,2,123,0,32,0,2,0,33>>],[],513,[[32,2]],[[124,2],[346,2]],#Fun,#Fun)
-col_compare1([], [], _,            [], W1L1, _,    _,    _,        _            ) when W1L1 >  0 ->
+%  Fixed: (false > 0) = true        (o_O)
+col_compare1([], [], _,            [], W1L1, _,    _, _, _) when (W1L1 > 0) and (W1L1 =/= false) ->
     greater;
 col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1, Acc2, TableFun, ComparatorFun) when W1L1 == 0 ->
     [W1L1New | Acc] = apply(ComparatorFun, [W1Raw]),
@@ -997,11 +1009,11 @@ col_compare2(_, [], W1LX, _, _) when W1LX =/= false ->
     greater;
 
 % Try compare on next composition level. 
-col_compare2([], [], W1LX, [_|_] = OutAcc1, [_|_] = OutAcc2) when W1LX == false ->
+col_compare2([], [], false, [_|_] = OutAcc1, [_|_] = OutAcc2) ->
     col_compare2(lists:reverse(OutAcc1), lists:reverse(OutAcc2), false, [], []);
 
 % End compares
-col_compare2([], [], W1LX, [], []) when W1LX == false ->
+col_compare2([], [], false, [], []) ->
     equal. % on all levels
 
 

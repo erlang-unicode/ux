@@ -558,13 +558,12 @@ to_nfc(Str)  -> case is_nfc(Str) of
     yes -> Str;
     _   -> get_composition(to_nfd(Str))
 end.
-to_nfkc([])  -> [];
-to_nfkc(Str) -> get_composition(get_recursive_decomposition(false, Str)).
-to_nfd([])   -> [];
-to_nfd(Str)  -> get_recursive_decomposition(true,  Str).
-to_nfkd([])  -> [];
-to_nfkd(Str) -> get_recursive_decomposition(false, Str).
-
+to_nfkc([])     -> [];
+to_nfkc(Str)    -> get_composition(normalize(get_recursive_decomposition(false, Str))).
+to_nfd([])      -> [];
+to_nfd(Str)     -> normalize(get_recursive_decomposition(true,  Str)).
+to_nfkd([])     -> [];
+to_nfkd(Str)    -> normalize(get_recursive_decomposition(false, Str)).
 
 is_acsii(Char) when (Char>=0) and (Char=<16#7F) 
     -> true;
@@ -595,8 +594,7 @@ char_to_list(Char, Buf, Res) ->
 %            canonical decomposition, otherwise selects
 %            the recursive compatibility and canonical decomposition.
 get_recursive_decomposition(Canonical, Str) -> 
-    normalize(
-            get_recursive_decomposition(Canonical, Str, [])).
+            get_recursive_decomposition(Canonical, Str, []).
 
 get_recursive_decomposition(Canonical, [Char|Tail], Result) ->
     IsHangul = is_hangul_precomposed(Char),
@@ -889,18 +887,33 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
         %    _0_ 220 _230_ = true
         %    _0_ 220       = true
         %    _0_ 220 _220_ = false
-        (Ccc1<Ccc2) or ((Ccc1 == 0) and (Ccc2 =/= 0)) ->
+        (Ccc1<Ccc2) or ((Ccc1 == 0) and (Ccc2 == 0)) ->
             NewCPList = CPList ++ [CP2],
             % Search in callocation table
             % FIXED 1: [108,1425,183,97] lower [108,1,903,97] 
             %     NFD: [108,1425,183,97] lower [108,1,183,97] (map 1 to 0.0.0.0 and ccc(1) = 0)
-            % FIXED 2: [97,803,774,820] lower [7840,820] 
-            %     NFD: [97,820,803,774] lower [65,820,803]
-            case apply(TableFun, [NewCPList]) of
-                % skip char CP2
-                [<<0:72>>] -> col_extract1(Tail, TableFun, CPList,    Ccc2, [CP2|Skipped], OldVal);
-                % append char CP2
-                Bin        -> col_extract1(Tail, TableFun, NewCPList, Ccc2, Skipped, Bin)
+            % FIXME 2: [97,803,774,820] lower [7840,820] 
+            %     NFD: [97,820,803,774] lower [65,820,803] (Avoid a skipping of non-collated cyllables)
+            % FIXED 3: [320,33] lower [108,903,33] 
+            %        : [320,33] lower [108,183,33] - (Ccc1 == Ccc2 == 0)
+            % FIXED 4: [1072,1425,774,97] lower [1072,774,97] (skip non-colletad cyllables)
+            % FIXED 5: [3399,1425,3390,97], [3399,1,3390,97]  see: Cannot add 2 symbol with ccc=0
+            % FIXME 6: [4019,3953,3968,33] lower [3961,33] 
+
+%S2.1 Find the longest initial substring S at each point that has a match in the table.
+%S2.1.1 If there are any non-starters following S, process each non-starter C.
+%S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
+%S2.1.3 If there is a match, replace S by S + C, and remove C.
+            Bin = apply(TableFun, [NewCPList]),
+            if
+                % Cannot add 2 symbols with ccc=0.
+                ((Bin == [<<0:72>>]) and (Ccc2 == 0)) -> % _0_ && _0_. Next symbol is blocked. 
+                    {apply(TableFun, [CPList]), lists:reverse(Skipped) ++ Str};
+                % Skip char CP2.
+                ((Bin == [<<0:72>>]) and (Ccc2  > 0)) -> 
+                    col_extract1(Tail, TableFun, CPList,    Ccc2, [CP2|Skipped], OldVal);
+                % Append char CP2.
+                true         -> col_extract1(Tail, TableFun, NewCPList, Ccc2, Skipped, Bin)
             end;
         % Note: A non-starter in a string is called blocked if there is another 
         %       non-starter of the same canonical combining class or zero between 
@@ -917,10 +930,12 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
 %%                  as described in Section 3.6.2, Variable Weighting.
 col_compare1([_|_] = Str1, StrTail2, [], Buf2, CV1, Acc1, Acc2, TableFun, ComparatorFun) ->
     {Buf1, StrTail1} = col_extract(Str1, TableFun), % [<<Flag,L1,L2,...>>, ..]
+    io:format("B1: ~w ~n", [Buf1]),
     col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, Acc1, Acc2, TableFun, ComparatorFun);
 
 col_compare1(StrTail1, [_|_] = Str2, Buf1, [], CV1, Acc1, Acc2, TableFun, ComparatorFun) ->
     {Buf2, StrTail2} = col_extract(Str2, TableFun), % [<<Flag,L1,L2,...>>, ..]
+    io:format("B2: ~w ~n", [Buf2]),
     col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, Acc1, Acc2, TableFun, ComparatorFun);
     
 %% Extracts a non-ignorable L1 from the Str1.

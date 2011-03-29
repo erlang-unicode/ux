@@ -907,19 +907,26 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
             % FIXED 1: [108,1425,183,97] lower [108,1,903,97] 
             %     NFD: [108,1425,183,97] lower [108,1,183,97] 
             % comment: map 1 to 0.0.0.0 and ccc(1) = 0
+
             % FIXME 2: [97,803,774,820] lower [7840,820] 
             %     NFD: [97,820,803,774] lower [65,820,803] 
             % comment: Avoid a skipping of non-collated cyllables
+
             % FIXED 3: [320,33] lower [108,903,33] 
             %     NFD: [320,33] lower [108,183,33]  
             % comment: Ccc1 == Ccc2 == 0
+
             % FIXED 4: [1072,1425,774,97] lower [1072,774,97] 
             % comment: skip non-colletad cyllables
+
             % FIXED 5: [3399,1425,3390,97], [3399,1,3390,97]  
             %     see: Cannot add 2 symbol with ccc=0
+
             % FIXED 6: [4019,3953,3968,33] lower [3961,33]    
             %     see: more 
+
             % FIXED 7: [4019,3953,33] lower [3961,33] 
+
             % FIXME 8: [111,772,808,820] lower [490,820]
             %     NFD: [111,820,808,772] lower [79,820,808] 
 

@@ -830,6 +830,11 @@ hex_to_int(Code) ->
 
 % UNICODE COLLATION ALGORITHM
 % see Unicode Technical Standard #10
+
+% For hangul:
+% http://www.open-std.org/Jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm
+% http://www.unicode.org/reports/tr10/#Hangul_Collation
+% http://en.wikipedia.org/wiki/KSX1001
 -spec col_non_ignorable(string(), string()) -> less | greater | equal.
 
 % Levels: http://unicode.org/reports/tr10/#Multi-Level%20Comparison
@@ -840,10 +845,10 @@ hex_to_int(Code) ->
 
 col_non_ignorable(S1, S2) -> 
     col_compare  (S1, S2, 
-        fun ducet/1, 
+        fun ducet_r/1, 
         fun col_bin_to_list/1).
+ducet(A) -> ducet_r(lists:reverse(A)).
 
-% TableFun = fun uxstring:ducet/1
 %% TableFun returns value from DUCET table
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
 col_compare (String1, String2, TableFun, ComparatorFun) ->
@@ -852,13 +857,18 @@ col_compare (String1, String2, TableFun, ComparatorFun) ->
                  [], % Buf 1, contains ducet(Char)
                  [], % Buf 2
                  false, % CompValue 1
-                 [], % Accumulator for String 1 - saves values for next levels comparation
+                 [], % Accumulator for String 1 
+                     % saves values for next levels comparation
                  [], % Accumulator for String 2
-                 TableFun, ComparatorFun).
+                 TableFun, % fun uxstring:ducet/1, in chars are REVERSED.
+                 ComparatorFun).
 
-% S2.1 Find the longest initial substring S at each point that has a match in the table.
+% MANUAL:
+% S2.1   Find the longest initial substring S at each point 
+%        that has a match in the table.
 % S2.1.1 If there are any non-starters following S, process each non-starter C.
 % S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
+% S2.1.3 If there is a match, replace S by S + C, and remove C.
 col_extract([     ], _       ) -> % No Any Char
     {[], []};
 col_extract([CP|[]], TableFun) -> % Last Char
@@ -880,128 +890,169 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
     Ccc2  = ccc(CP2),
 %   W2CP2 = apply(TableFun, [[CP2]]),
     if
+% MAN: Noncharacter code points are also no longer required to be mapped 
+%      to [.0000.0000.0000.], but are given implicit weights instead.
 %       W2CP2 == [<<0:72>>] -> 
-            % Noncharacter code points are also no longer required to be mapped to [.0000.0000.0000.], 
-            % but are given implicit weights instead.
 %           col_extract1(Tail, TableFun, CPList, Ccc1, Skipped, OldVal);
 
-        % S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
+        % S2.1.2 If C is not blocked from S, 
+        %        find if S + C has a match in the table.
         %    _0_ _0_       = false
         %    _0_ 220 _230_ = true
         %    _0_ 220       = true
         %    _0_ 220 _220_ = false
         (Ccc1<Ccc2) or ((Ccc1 == 0) and (Ccc2 == 0)) ->
-            NewCPList = CPList ++ [CP2],
+            NewCPList = [CP2|CPList],
             % Search in callocation table
             % FIXED 1: [108,1425,183,97] lower [108,1,903,97] 
-            %     NFD: [108,1425,183,97] lower [108,1,183,97] (map 1 to 0.0.0.0 and ccc(1) = 0)
+            %     NFD: [108,1425,183,97] lower [108,1,183,97] 
+            % comment: map 1 to 0.0.0.0 and ccc(1) = 0
             % FIXME 2: [97,803,774,820] lower [7840,820] 
-            %     NFD: [97,820,803,774] lower [65,820,803] (Avoid a skipping of non-collated cyllables)
+            %     NFD: [97,820,803,774] lower [65,820,803] 
+            % comment: Avoid a skipping of non-collated cyllables
             % FIXED 3: [320,33] lower [108,903,33] 
-            %        : [320,33] lower [108,183,33] - (Ccc1 == Ccc2 == 0)
-            % FIXED 4: [1072,1425,774,97] lower [1072,774,97] (skip non-colletad cyllables)
-            % FIXED 5: [3399,1425,3390,97], [3399,1,3390,97]  see: Cannot add 2 symbol with ccc=0
-            % FIXED 6: [4019,3953,3968,33] lower [3961,33]    see: more 
-            % FIXME 7: [4019,3953,33] lower [3961,33] 
+            %     NFD: [320,33] lower [108,183,33]  
+            % comment: Ccc1 == Ccc2 == 0
+            % FIXED 4: [1072,1425,774,97] lower [1072,774,97] 
+            % comment: skip non-colletad cyllables
+            % FIXED 5: [3399,1425,3390,97], [3399,1,3390,97]  
+            %     see: Cannot add 2 symbol with ccc=0
+            % FIXED 6: [4019,3953,3968,33] lower [3961,33]    
+            %     see: more 
+            % FIXED 7: [4019,3953,33] lower [3961,33] 
+            % FIXME 8: [111,772,808,820] lower [490,820]
+            %     NFD: [111,820,808,772] lower [79,820,808] 
 
-%S2.1 Find the longest initial substring S at each point that has a match in the table.
-%S2.1.1 If there are any non-starters following S, process each non-starter C.
-%S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
-%S2.1.3 If there is a match, replace S by S + C, and remove C.
             Bin = apply(TableFun, [NewCPList]),
             if
                % Bin == 0, but CPList+NextChar may be not null
-                (Bin == more) ->
-                    case col_extract1(Tail, TableFun, NewCPList, Ccc2, Skipped, more) of
+                Bin == more ->
+                    case col_extract1(Tail, TableFun, NewCPList, 
+                                      Ccc2, Skipped, more) of
                         more_error -> % Cannot add any next char.
-                    col_extract1(Tail, TableFun, CPList,    Ccc2, [CP2|Skipped], OldVal);
+                            col_extract1(Tail, TableFun, CPList, Ccc2, 
+                                         [CP2|Skipped], OldVal);
                         MoreRes    -> MoreRes
-                     end;
-                ((Bin == [<<0:72>>]) and (OldVal == more)) -> 
+                    end;
+
+                (Bin == [<<0:72>>]) and (OldVal == more) -> 
                     more_error;
 
+
                 % Cannot add 2 symbols with ccc=0.
-                ((Bin == [<<0:72>>]) and (Ccc2 == 0)) -> % _0_ && _0_. Next symbol is blocked. 
-                    {apply(TableFun, [CPList]), lists:reverse(Skipped) ++ Str};
+                % _0_ && _0_. Next symbol is blocked. 
+                (Bin == [<<0:72>>]) and (Ccc2 == 0) ->
+                    {apply(TableFun, [CPList]), 
+                     col_append(Skipped, Str)};
                 % Skip char CP2.
-                ((Bin == [<<0:72>>]) and (Ccc2  > 0)) -> 
-                    col_extract1(Tail, TableFun, CPList,    Ccc2, [CP2|Skipped], OldVal);
+                (Bin == [<<0:72>>]) and (Ccc2  > 0) -> 
+                    col_extract1(Tail, TableFun, CPList, 
+                                 Ccc2, [CP2|Skipped], OldVal);
                 % Append char CP2.
-                true         -> col_extract1(Tail, TableFun, NewCPList, Ccc2, Skipped, Bin)
+                true -> col_extract1(Tail, TableFun, NewCPList, 
+                                     Ccc2, Skipped, Bin)
             end;
-        true and (OldVal ==  more)  -> more_error;
-        % Note: A non-starter in a string is called blocked if there is another 
-        %       non-starter of the same canonical combining class or zero between 
-        %       it and the last character of canonical combining class 0.
-        true and (OldVal ==  false) -> {apply(TableFun, [CPList]), lists:reverse(Skipped) ++ Str};
-        true and (OldVal =/= false) -> {OldVal, lists:reverse(Skipped) ++ Str}
+        OldVal ==  more  -> more_error;
+% Note: A non-starter in a string is called blocked if there is another 
+%       non-starter of the same canonical combining class or zero between 
+%       it and the last character of canonical combining class 0.
+        OldVal ==  false -> {apply(TableFun, [CPList]), 
+                             col_append(Skipped, Str)};
+        OldVal =/= false -> {OldVal,                    
+                             col_append(Skipped, Str)}
     end.
     
+% lists:reverse(Head) ++ Tail
+col_append([H|T], Str) ->
+    col_append(T, [H|Str]);
+col_append([   ], Str) -> Str.
 
 %%% Compares on L1, collects data for {L2,L3,L4} comparations.
 %% Extract chars from the strings.
 %
-%% ComparatorFun    S2.3 Process collation elements according to the variable-weight setting,
-%%                  as described in Section 3.6.2, Variable Weighting.
-col_compare1([_|_] = Str1, StrTail2, [], Buf2, CV1, Acc1, Acc2, TableFun, ComparatorFun) ->
-    {Buf1, StrTail1} = col_extract(Str1, TableFun), % [<<Flag,L1,L2,...>>, ..]
-    io:format("B1: ~w ~n", [Buf1]),
-    col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, Acc1, Acc2, TableFun, ComparatorFun);
+%% ComparatorFun    S2.3 Process collation elements according to the 
+%%                  variable-weight setting, as described in Section 
+%%                  3.6.2, Variable Weighting.
+col_compare1([_|_] = Str1, StrTail2, [], Buf2, CV1, Acc1, 
+             Acc2, TableFun, ComparatorFun) ->
+    {Buf1,     % [<<Flag,L1,L2,...>>, ..]
+     StrTail1} = col_extract(Str1, TableFun), 
+%   io:format("B1: ~w ~n", [Buf1]),
+    col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, Acc1,
+                 Acc2, TableFun, ComparatorFun);
 
-col_compare1(StrTail1, [_|_] = Str2, Buf1, [], CV1, Acc1, Acc2, TableFun, ComparatorFun) ->
-    {Buf2, StrTail2} = col_extract(Str2, TableFun), % [<<Flag,L1,L2,...>>, ..]
-    io:format("B2: ~w ~n", [Buf2]),
-    col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, Acc1, Acc2, TableFun, ComparatorFun);
+col_compare1(StrTail1, [_|_] = Str2, Buf1, [], CV1, Acc1, 
+             Acc2, TableFun, ComparatorFun) ->
+    {Buf2,     % [<<Flag,L1,L2,...>>, ..]
+     StrTail2} = col_extract(Str2, TableFun), 
+%   io:format("B2: ~w ~n", [Buf2]),
+    col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, 
+                 Acc1, Acc2, TableFun, ComparatorFun);
     
 %% Extracts a non-ignorable L1 from the Str1.
-col_compare1(StrTail1, StrTail2, [CV1Raw|Buf1], Buf2, false, Acc1, Acc2, TableFun, ComparatorFun) ->
+col_compare1(StrTail1, StrTail2, [CV1Raw|Buf1], Buf2, false, 
+             Acc1, Acc2, TableFun, ComparatorFun) ->
     case apply(ComparatorFun, [CV1Raw]) of
         [0    | Acc] -> % Find other W1L1
-            col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, [Acc|Acc1], Acc2, TableFun, ComparatorFun);
+            col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, [Acc|Acc1], 
+                         Acc2, TableFun, ComparatorFun);
         [W1L1 | Acc] -> % W1L1 was found. Try find W2L1.
-            col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1,  [Acc|Acc1], Acc2, TableFun, ComparatorFun)
+            col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1,  [Acc|Acc1],
+                         Acc2, TableFun, ComparatorFun)
     end;
 
 %% Extracts a non-ignorable L1 from the Str2.
 %% Compares L1 values.
-col_compare1(StrTail1, StrTail2, Buf1, [CV2Raw|Buf2], W1L1, Acc1, Acc2, TableFun, ComparatorFun) ->
+col_compare1(StrTail1, StrTail2, Buf1, [CV2Raw|Buf2], W1L1, Acc1, 
+             Acc2, TableFun, ComparatorFun) ->
     case apply(ComparatorFun, [CV2Raw]) of
         [0    | Acc] -> % Find other W2L1
-            col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1,  Acc1, [Acc|Acc2], TableFun, ComparatorFun);
+            col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, 
+                         Acc1, [Acc|Acc2], TableFun, ComparatorFun);
         [_    | _  ] when W1L1 == true -> 
-            lower;   % Sting 1 was ended; string 2 still has a non-ignorable char => string2 greater.
+            lower;   % Sting 1 was ended; 
+                     % string 2 still has a non-ignorable char 
+                     % => string2 greater.
         [W2L1 | _  ] when W1L1 >  W2L1 ->
             greater; % Return result: S1 greater S2 on L1
         [W2L1 | _  ] when W1L1 <  W2L1 ->
             lower;   % Return result: S1 lower S2 on L1
         [W2L1 | Acc] when W1L1 == W2L1 ->
-            col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, Acc1, [Acc|Acc2], TableFun, ComparatorFun)
+            col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, Acc1, 
+                         [Acc|Acc2], TableFun, ComparatorFun)
     end;
 
 % MANUAL:
-       % This guarantees that when two strings of unequal length are compared, 
-       % where the shorter string is a prefix of the longer string, the longer 
-       % string is always sorted after the shorter in the absence of special
-       % features like contractions. For example: "abc" < "abcX" where "X" can
-       % be any character(s).
+% This guarantees that when two strings of unequal length are compared, 
+% where the shorter string is a prefix of the longer string, the longer 
+% string is always sorted after the shorter in the absence of special
+% features like contractions. For example: "abc" < "abcX" where "X" can
+% be any character(s).
 
 %% String 1 conrains more codepaints, but we cannot throw them.
-col_compare1([CP1|StrTail1], [], [],  [], _,     Acc1, Acc2, TableFun, ComparatorFun) ->
-    col_compare1(StrTail1,   [], CP1, [], false, Acc1, Acc2, TableFun, ComparatorFun);
+col_compare1([CP1|StrTail1], [], [],  [], _,     Acc1, Acc2, 
+             TableFun, ComparatorFun) ->
+    col_compare1(StrTail1,   [], CP1, [], false, Acc1, Acc2, 
+                 TableFun, ComparatorFun);
 
 %% String 2 conrains more codepaints, but we cannot throw them.
-col_compare1([], [CP2|StrTail2], [], [],  _,    Acc1, Acc2, TableFun, ComparatorFun) ->
-    col_compare1([],  StrTail2,  [], CP2, true, Acc1, Acc2, TableFun, ComparatorFun);
+col_compare1([], [CP2|StrTail2], [], [],  _,    Acc1,
+             Acc2, TableFun, ComparatorFun) ->
+    col_compare1([],  StrTail2,  [], CP2, true, Acc1,
+                 Acc2, TableFun, ComparatorFun);
 
 %::error:function_clause
 %  in function uxstring:col_compare1/9
-%  called as col_compare1([],[],[<<1,2,123,0,32,0,2,0,33>>],[],513,[[32,2]],[[124,2],[346,2]],#Fun,#Fun)
+%  called as col_compare1([],[],[<<1,2,123,0,32,0,2,0,33>>],[],513...)
 %  Fixed: (false > 0) = true        (o_O)
-col_compare1([], [], _,            [], W1L1, _,    _, _, _) when (W1L1 > 0) and (W1L1 =/= false) ->
+col_compare1([], [], _,[], W1L1, _, _, _, _) 
+    when (W1L1 > 0) and (W1L1 =/= false) ->
     greater;
-col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1, Acc2, TableFun, ComparatorFun) when W1L1 == 0 ->
+col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1, 
+             Acc2, TableFun, ComparatorFun) when W1L1 == 0 ->
     [W1L1New | Acc] = apply(ComparatorFun, [W1Raw]),
-    col_compare1([], [], Buf1, [], W1L1New, [Acc|Acc1], Acc2, TableFun, ComparatorFun);
+    col_compare1([], [], Buf1, [], W1L1New, [Acc|Acc1], 
+                 Acc2, TableFun, ComparatorFun);
 
 %% L1 was ended :(
 %% Now, Funs are not neeaded.
@@ -1028,11 +1079,12 @@ col_compare2([ [W1LX|OutAcc] | InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
 col_compare2(InAcc1, [ [0   |OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) ->
     col_compare2(InAcc1, InAccTail2, W1LX, OutAcc1, [OutAcc|OutAcc2]);
     
-col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) when W1LX <  W2LX ->
-    lower;
-col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) when W1LX >  W2LX ->
-    greater;
-col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) when W1LX == W2LX ->
+col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) 
+    when W1LX <  W2LX -> lower;
+col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) 
+    when W1LX >  W2LX -> greater;
+col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) 
+    when W1LX == W2LX ->
     col_compare2(InAcc1, InAccTail2, false, OutAcc1, [OutAcc|OutAcc2]);
 
 % Try extract from Str1, which is empty.

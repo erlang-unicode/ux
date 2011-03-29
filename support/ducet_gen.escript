@@ -21,21 +21,21 @@ main([Ebin, InDir, OutDir]) ->
 	Chars = do_gen(InFd, {OutFd}, []),
     do_more({OutFd}, Chars, Chars),
 
-    io:format(OutFd, "ducet(_) -> [<<0:72>>]. ~n", []),
+    io:format(OutFd, "ducet_r(_) -> [<<0:72>>]. ~n", []),
     ok.
 
 do_more({OutFd} = OutFds, [], Res) -> Res;
-do_more({OutFd} = OutFds, [Char | Chars], AddedOld) -> 
+do_more({OutFd} = OutFds, [Char | Chars], AddedOld) ->
     AddedNew = do_more1(Char, OutFd, AddedOld),
     do_more(OutFds, Chars, AddedNew).
 
 do_more1([], _, Res) -> Res;
-do_more1([_|_] = CodePaints, Fd, Added) -> 
+do_more1([_|_] = CodePaints, Fd, Added) ->
     {Head, _} = last(CodePaints),
     case lists:member(Head, Added) of % Was added before?
-        false -> io:format(Fd, "ducet(~w) -> more; ~n", [Head]),
-                 do_more1(Head, Fd, [Head|Added]);
-        true  -> do_more1(Head, Fd, Added)
+           false -> io:format(Fd, "ducet_r(~w) -> more; ~n", [lists:reverse(Head)]),
+                    do_more1(Head, Fd, [Head|Added]);
+           true  -> do_more1(Head, Fd, Added)
     end.
                 
 % Example:
@@ -63,8 +63,8 @@ do_gen(InFd, {OutFd} = OutFds, Chars) ->
                             InEl  = uxstring:to_nfd(lists:map(fun uxstring:hex_to_int/1, string:tokens(Char, " "))),
 
                             case lists:member(InEl, Chars) of
-                                false -> io:format(OutFd, "ducet(~w) -> ~w; ~n", 
-                                             [InEl, OutEl]),
+                                false -> io:format(OutFd, "ducet_r(~w) -> ~w; ~n", 
+                                             [lists:reverse(InEl), OutEl]),
                                          do_gen(InFd, OutFds, [InEl|Chars]);
                                 true  -> do_gen(InFd, OutFds, Chars)
                             end;

@@ -869,8 +869,11 @@ col_extract([CP | Tail], TableFun) ->
 % There is only one char which was compared.
 col_extract1([        ],       TableFun, CPList, _   , Skipped, false ) ->
     {apply(TableFun, [CPList]), lists:reverse(Skipped)};
+% see BUG 7
+col_extract1([        ],       _,        _,      _   ,        _, more ) ->
+    more_error;
 % ... One or more chars
-col_extract1([        ],       TableFun, CPList, _   , Skipped, OldVal) ->
+col_extract1([        ],       _,        _,      _   , Skipped, OldVal) ->
     {OldVal, lists:reverse(Skipped)};
 % OldVal = apply(TableFun, [CPList])
 col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
@@ -899,7 +902,7 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
             % FIXED 4: [1072,1425,774,97] lower [1072,774,97] (skip non-colletad cyllables)
             % FIXED 5: [3399,1425,3390,97], [3399,1,3390,97]  see: Cannot add 2 symbol with ccc=0
             % FIXED 6: [4019,3953,3968,33] lower [3961,33]    see: more 
-            % FIXME 7: [4019,3953,3968,33] lower [3961,33] 
+            % FIXME 7: [4019,3953,33] lower [3961,33] 
 
 %S2.1 Find the longest initial substring S at each point that has a match in the table.
 %S2.1.1 If there are any non-starters following S, process each non-starter C.
@@ -908,12 +911,15 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
             Bin = apply(TableFun, [NewCPList]),
             if
                % Bin == 0, but CPList+NextChar may be not null
-                more ->
+                (Bin == more) ->
                     case col_extract1(Tail, TableFun, NewCPList, Ccc2, Skipped, more) of
-                        false   -> % Cannot add any next char.
+                        more_error -> % Cannot add any next char.
                     col_extract1(Tail, TableFun, CPList,    Ccc2, [CP2|Skipped], OldVal);
-                        MoreRes -> MoreRes
+                        MoreRes    -> MoreRes
                      end;
+                ((Bin == [<<0:72>>]) and (OldVal == more)) -> 
+                    more_error;
+
                 % Cannot add 2 symbols with ccc=0.
                 ((Bin == [<<0:72>>]) and (Ccc2 == 0)) -> % _0_ && _0_. Next symbol is blocked. 
                     {apply(TableFun, [CPList]), lists:reverse(Skipped) ++ Str};
@@ -923,10 +929,10 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
                 % Append char CP2.
                 true         -> col_extract1(Tail, TableFun, NewCPList, Ccc2, Skipped, Bin)
             end;
+        true and (OldVal ==  more)  -> more_error;
         % Note: A non-starter in a string is called blocked if there is another 
         %       non-starter of the same canonical combining class or zero between 
         %       it and the last character of canonical combining class 0.
-        true and (OldVal ==  more)  -> false;
         true and (OldVal ==  false) -> {apply(TableFun, [CPList]), lists:reverse(Skipped) ++ Str};
         true and (OldVal =/= false) -> {OldVal, lists:reverse(Skipped) ++ Str}
     end.

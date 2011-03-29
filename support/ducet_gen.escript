@@ -11,35 +11,67 @@ main([Ebin, InDir, OutDir]) ->
     [<<0:8, 1:16, 2:16, 3:16, 4:16>>, <<1:8, 5:16, 6:16, 7:16, 8:16>>]
      = parseEl("[.0001.0002.0003.0004][*0005.0006.0007.0008]"),
 
+    {[1,2,3], 4} = last([1,2,3,4]),
+    {[     ], 4} = last([4]),
+
+    % Open fds
 	{ok, InFd}  = file:open(InDir  ++ "allkeys.txt", [read]),
 	{ok, OutFd} = file:open(OutDir ++ "ducet.hrl",   [write]),
 
-	do_gen(InFd, {OutFd}),
+	Chars = do_gen(InFd, {OutFd}, []),
+    do_more({OutFd}, Chars, Chars),
 
     io:format(OutFd, "ducet(_) -> [<<0:72>>]. ~n", []),
     ok.
 
-do_gen(InFd, {OutFd} = OutFds) ->
+do_more({OutFd} = OutFds, [], Res) -> Res;
+do_more({OutFd} = OutFds, [Char | Chars], AddedOld) -> 
+    AddedNew = do_more1(Char, OutFd, AddedOld),
+    do_more(OutFds, Chars, AddedNew).
+
+do_more1([], _, Res) -> Res;
+do_more1([_|_] = CodePaints, Fd, Added) -> 
+    {Head, _} = last(CodePaints),
+    case lists:member(Head, Added) of % Was added before?
+        false -> io:format(Fd, "ducet(~w) -> more; ~n", [Head]),
+                 do_more1(Head, Fd, [Head|Added]);
+        true  -> do_more1(Head, Fd, Added)
+    end.
+                
+% Example:
+% [1,2,3,4] => {[1,2,3], 4}
+% [4]       => {[], 4}
+last(Els) ->
+    last1(Els, []).
+last1([Head|[_|_] = Tail], Els) ->
+    last1(Tail, [Head|Els]);
+last1([LastEl], Els) ->
+    {lists:reverse(Els), LastEl}.
+
+do_gen(InFd, {OutFd} = OutFds, Chars) ->
 	case file:read_line(InFd) of
 		{ok, []} ->
-			do_gen(InFd, OutFds);
+			do_gen(InFd, OutFds, Chars);
 		{ok, Data} -> 
             case uxstring:explode(["#"], uxstring:delete_types([cc], Data)) of
-                []       -> skip;
-                [[]|_]   -> skip;
+                []       -> do_gen(InFd, OutFds, Chars);
+                [[]|_]   -> do_gen(InFd, OutFds, Chars);
                 [Row|_] ->
                     case uxstring:explode($;, Row) of
                         [Char, Element] ->
                             OutEl = parseEl(uxstring:delete_types([zs], Element)),
-                            InEl  = lists:map(fun uxstring:hex_to_int/1, string:tokens(Char, " ")),
+                            InEl  = uxstring:to_nfd(lists:map(fun uxstring:hex_to_int/1, string:tokens(Char, " "))),
 
-                            io:format(OutFd, "ducet(~w) -> ~w; ~n", 
-                                [uxstring:to_nfd(InEl), OutEl]);
-                        _ -> skip
+                            case lists:member(InEl, Chars) of
+                                false -> io:format(OutFd, "ducet(~w) -> ~w; ~n", 
+                                             [InEl, OutEl]),
+                                         do_gen(InFd, OutFds, [InEl|Chars]);
+                                true  -> do_gen(InFd, OutFds, Chars)
+                            end;
+                        _ -> do_gen(InFd, OutFds, Chars)
                     end
-            end,
-            do_gen(InFd, OutFds);
-		eof -> ok
+            end;
+		eof -> Chars 
 	end.
 	
 %% Parses "[.0000.0000.0000.0000]" to [<<0/8,0/32,0/32,0/32,0/32>>]

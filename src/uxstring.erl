@@ -898,7 +898,8 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
             %        : [320,33] lower [108,183,33] - (Ccc1 == Ccc2 == 0)
             % FIXED 4: [1072,1425,774,97] lower [1072,774,97] (skip non-colletad cyllables)
             % FIXED 5: [3399,1425,3390,97], [3399,1,3390,97]  see: Cannot add 2 symbol with ccc=0
-            % FIXME 6: [4019,3953,3968,33] lower [3961,33] 
+            % FIXED 6: [4019,3953,3968,33] lower [3961,33]    see: more 
+            % FIXME 7: [4019,3953,3968,33] lower [3961,33] 
 
 %S2.1 Find the longest initial substring S at each point that has a match in the table.
 %S2.1.1 If there are any non-starters following S, process each non-starter C.
@@ -906,6 +907,13 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
 %S2.1.3 If there is a match, replace S by S + C, and remove C.
             Bin = apply(TableFun, [NewCPList]),
             if
+               % Bin == 0, but CPList+NextChar may be not null
+                more ->
+                    case col_extract1(Tail, TableFun, NewCPList, Ccc2, Skipped, more) of
+                        false   -> % Cannot add any next char.
+                    col_extract1(Tail, TableFun, CPList,    Ccc2, [CP2|Skipped], OldVal);
+                        MoreRes -> MoreRes
+                     end;
                 % Cannot add 2 symbols with ccc=0.
                 ((Bin == [<<0:72>>]) and (Ccc2 == 0)) -> % _0_ && _0_. Next symbol is blocked. 
                     {apply(TableFun, [CPList]), lists:reverse(Skipped) ++ Str};
@@ -918,8 +926,9 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
         % Note: A non-starter in a string is called blocked if there is another 
         %       non-starter of the same canonical combining class or zero between 
         %       it and the last character of canonical combining class 0.
-        true and (OldVal =/= false) -> {OldVal, lists:reverse(Skipped) ++ Str};
-        true and (OldVal ==  false) -> {apply(TableFun, [CPList]), lists:reverse(Skipped) ++ Str}
+        true and (OldVal ==  more)  -> false;
+        true and (OldVal ==  false) -> {apply(TableFun, [CPList]), lists:reverse(Skipped) ++ Str};
+        true and (OldVal =/= false) -> {OldVal, lists:reverse(Skipped) ++ Str}
     end.
     
 

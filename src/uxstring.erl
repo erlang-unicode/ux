@@ -88,6 +88,17 @@ end).
 -define(HANGUL_SCOUNT, 11172).
 
 
+-define(HANGUL_SLAST,  ?HANGUL_SBASE + ?HANGUL_SCOUNT).
+-define(HANGUL_LLAST,  ?HANGUL_LBASE + ?HANGUL_LCOUNT).
+-define(HANGUL_VLAST,  ?HANGUL_VBASE + ?HANGUL_VCOUNT).
+-define(HANGUL_TLAST,  ?HANGUL_TBASE + ?HANGUL_TCOUNT).
+
+% TERMINATOR < T <  V < L
+-define(COL_HANGUL_TERMINATOR, 900000).
+-define(COL_HANGUL_TWEIGHT, 1 + ?COL_HANGUL_TERMINATOR).
+-define(COL_HANGUL_VWEIGHT, 1 + ?COL_HANGUL_TWEIGHT + ?HANGUL_TCOUNT).
+-define(COL_HANGUL_LWEIGHT, 1 + ?COL_HANGUL_VWEIGHT + ?HANGUL_VCOUNT).
+-define(COL_HANGUL_LAST_WEIGHT, ?COL_HANGUL_LWEIGHT + ?HANGUL_LCOUNT).
 
 -include("string/char_to_upper.hrl").
 %char_to_upper(C) -> C.
@@ -869,8 +880,39 @@ col_compare (String1, String2, TableFun, ComparatorFun) ->
 % S2.1.1 If there are any non-starters following S, process each non-starter C.
 % S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
 % S2.1.3 If there is a match, replace S by S + C, and remove C.
+-spec col_extract(string(), fun()) -> {[[integer(), ...], ...], Tail :: string()}.
 col_extract([     ], _       ) -> % No Any Char
     {[], []};
+
+% 7.1.5 Hangul Collation
+% Interleaving Method
+% MANUAL:
+% Generate a modified weight table:
+% 1. Assign a weight to each precomposed Hangul syllable character, 
+%    with a 1-weight gap between each one. 
+%    (See Section 6.2, Large Weight Values)
+% 2. Give each jamo a 1-byte internal weight. 
+%    Also add an internal terminator 1-byte weight (W). 
+%    These are assigned so that al W < T <  V < L.
+%    These weights are separate from the default weights, and are just used 
+%    internally.
+% When any string of jamo and/or Hangul syllables is encountered, 
+% break it into syllables according to the rules of Section 3.12, 
+% Conjoining Jamo Behavior of [Unicode]. 
+% Process each syllable separately:
+% If a syllable is canonically equivalent to one of the precomposed Hangul 
+% syllables, then just assign the weight as above
+% If not, then find the greatest syllable that it is greater than; 
+% call that the base syllable. Generate a weight sequence corresponding to
+% the following gap weight, followed by all the jamo weight bytes, 
+% followed by the terminator byte.
+%
+col_extract([CP|_] = Str, _)  when (CP>=?HANGUL_LBASE) 
+                               and (CP=<?HANGUL_LLAST) -> % CP is Hangul L
+    col_hangul(Str, [[?COL_HANGUL_TERMINATOR, 0, 0, 0]]);
+
+
+
 col_extract([CP|[]], TableFun) -> % Last Char
     {apply(TableFun, [[CP]]), []};
 col_extract([CP | Tail], TableFun) ->
@@ -970,9 +1012,27 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
     end.
     
 % lists:reverse(Head) ++ Tail
+-spec col_append(InStr :: string(), OutStr :: string()) -> string().
 col_append([H|T], Str) ->
     col_append(T, [H|Str]);
 col_append([   ], Str) -> Str.
+
+-spec col_hangul(Str :: string(), Res :: [[integer(), ...], ...]) -> {[], []}. 
+col_hangul([], Res) -> { lists:reverse(Res), [] }; % { Result, StringTail }
+col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_LBASE) 
+                            and (Ch=<?HANGUL_LLAST) -> % CP is Hangul L
+    L = Ch - ?HANGUL_LBASE,
+    col_hangul(Tail, [[?COL_HANGUL_LWEIGHT + L, 0, 0, 0] | Res]);
+col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_VBASE) 
+                            and (Ch=<?HANGUL_VLAST) -> % CP is Hangul V
+    V = Ch - ?HANGUL_VBASE,
+    col_hangul(Tail, [[?COL_HANGUL_VWEIGHT + V, 0, 0, 0] | Res]);
+col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_TBASE) 
+                            and (Ch=<?HANGUL_TLAST) -> % CP is Hangul V
+    T = Ch - ?HANGUL_TBASE,
+    col_hangul(Tail, [[?COL_HANGUL_TWEIGHT + T, 0, 0, 0] | Res]);
+col_hangul([_|_] = Str, Res) ->
+    {Str, lists:reverse(Res)}.
 
 %%% Compares on L1, collects data for {L2,L3,L4} comparations.
 %% Extract chars from the strings.
@@ -980,20 +1040,33 @@ col_append([   ], Str) -> Str.
 %% ComparatorFun    S2.3 Process collation elements according to the 
 %%                  variable-weight setting, as described in Section 
 %%                  3.6.2, Variable Weighting.
-col_compare1([_|_] = Str1, StrTail2, [], Buf2, CV1, Acc1, 
+-spec col_compare(Str1 :: string(), Str1 :: string(), Buf1 :: [binary(), ...], Buf2, 
+      char(), Acc1 :: [[L2 :: integer(), L3 :: integer(), L4 :: integer()], ...], Acc2, 
+      fun(), fun())  ->  lower | greater | equal.
+
+% col_compare1 ALGORITHM.
+% 1. Extract weights from Str1 to Buf1.
+% 2. Extract weights from Str2 to Buf2.
+% 3. Extract L1 weight from Buf1 to W1L1.
+% 4. Exctaxt L1 weight from Buf1 and compare with W1L1.
+% 5a. If W1L1 > W2L1 then Str1 greater Str2.
+% 5b. If W1L1 < W2L1 then Str1 lower   Str2.
+% 5c. If W1L1 = W2L1 and strings have non-compared characters then go to a step 1.
+% 6. Run col_compare2.
+col_compare1([_|_] = Str1, StrTail2, [], Buf2, W1L1, Acc1, 
              Acc2, TableFun, ComparatorFun) ->
     {Buf1,     % [<<Flag,L1,L2,...>>, ..]
      StrTail1} = col_extract(Str1, TableFun), 
 %   io:format("B1: ~w ~n", [Buf1]),
-    col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, Acc1,
+    col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, Acc1,
                  Acc2, TableFun, ComparatorFun);
 
-col_compare1(StrTail1, [_|_] = Str2, Buf1, [], CV1, Acc1, 
+col_compare1(StrTail1, [_|_] = Str2, Buf1, [], W1L1, Acc1, 
              Acc2, TableFun, ComparatorFun) ->
     {Buf2,     % [<<Flag,L1,L2,...>>, ..]
      StrTail2} = col_extract(Str2, TableFun), 
 %   io:format("B2: ~w ~n", [Buf2]),
-    col_compare1(StrTail1, StrTail2, Buf1, Buf2, CV1, 
+    col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, 
                  Acc1, Acc2, TableFun, ComparatorFun);
     
 %% Extracts a non-ignorable L1 from the Str1.
@@ -1008,7 +1081,7 @@ col_compare1(StrTail1, StrTail2, [CV1Raw|Buf1], Buf2, false,
                          Acc2, TableFun, ComparatorFun)
     end;
 
-%% Extracts a non-ignorable L1 from the Str2.
+%% Extracts a non-ignorable L1 from a Str2.
 %% Compares L1 values.
 col_compare1(StrTail1, StrTail2, Buf1, [CV2Raw|Buf2], W1L1, Acc1, 
              Acc2, TableFun, ComparatorFun) ->

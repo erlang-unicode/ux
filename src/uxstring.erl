@@ -541,8 +541,15 @@ freq(Str) -> freq_1(Str, dict:new()).
 freq_1([Char|Str], Dict) -> freq_1(Str, dict:update_counter(Char, 1, Dict));
 freq_1([], Dict)         -> Dict.
 
+%    %  %    %  %%%%%%
+%    %  %%   %  %
+%    %  % %  %  %%%%%
+%    %  %  % %  %
+%    %  %   %%  %
+ %%%%   %    %  %
 
-%% NORMALIZATION
+%% UNICODE NORMALIZATION FORMS
+%% Unicode Standard Annex #15
 %% http://unicode.org/reports/tr15/
 is_nf([Head|Tail], LastCC, Result, CheckFun) -> 
     case ccc(Head) of
@@ -837,6 +844,13 @@ hex_to_int(Code) ->
     Int.
 
 
+%     %  %%%%%     %
+%     % %     %   % %
+%     % %        %   %
+%     % %       %     %
+%     % %       %%%%%%%
+%     % %     % %     %
+ %%%%%   %%%%%  %     %
 
 
 % UNICODE COLLATION ALGORITHM
@@ -909,8 +923,11 @@ col_extract([     ], _       ) -> % No Any Char
 %
 col_extract([CP|_] = Str, _)  when (CP>=?HANGUL_LBASE) 
                                and (CP=<?HANGUL_LLAST) -> % CP is Hangul L
-    col_hangul(Str, [[?COL_HANGUL_TERMINATOR, 0, 0, 0]]);
+    col_hangul(Str, [?COL_HANGUL_TERMINATOR]);
 
+col_extract([CP|_] = Str, _)  when (CP>=?HANGUL_LBASE) 
+                               and (CP=<?HANGUL_LLAST) -> % CP is Hangul L
+    col_hangul(Str, [?COL_HANGUL_TERMINATOR]);
 
 
 col_extract([CP|[]], TableFun) -> % Last Char
@@ -1022,17 +1039,66 @@ col_hangul([], Res) -> { lists:reverse(Res), [] }; % { Result, StringTail }
 col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_LBASE) 
                             and (Ch=<?HANGUL_LLAST) -> % CP is Hangul L
     L = Ch - ?HANGUL_LBASE,
-    col_hangul(Tail, [[?COL_HANGUL_LWEIGHT + L, 0, 0, 0] | Res]);
+    col_hangul(Tail, [?COL_HANGUL_LWEIGHT + L | Res]);
 col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_VBASE) 
                             and (Ch=<?HANGUL_VLAST) -> % CP is Hangul V
     V = Ch - ?HANGUL_VBASE,
-    col_hangul(Tail, [[?COL_HANGUL_VWEIGHT + V, 0, 0, 0] | Res]);
+    col_hangul(Tail, [?COL_HANGUL_VWEIGHT + V | Res]);
 col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_TBASE) 
                             and (Ch=<?HANGUL_TLAST) -> % CP is Hangul V
     T = Ch - ?HANGUL_TBASE,
-    col_hangul(Tail, [[?COL_HANGUL_TWEIGHT + T, 0, 0, 0] | Res]);
+    col_hangul(Tail, [?COL_HANGUL_TWEIGHT + T | Res]);
 col_hangul([_|_] = Str, Res) ->
-    {Str, lists:reverse(Res)}.
+    {Str, Res}. % reversed
+
+
+% 7.1.3 Implicit Weights 
+% The result of this process consists of collation elements that are sorted in
+% code point order, that do not collide with any explicit values in the table,
+% and that can be placed anywhere (for example, at BASE) with respect to the 
+% explicit collation element mappings. By default, implicit mappings are given
+% higher weights than all explicit collation elements.
+col_implicit_weight(CP, BASE) ->
+    AAAA = BASE + (CP >> 15),
+    BBBB = (CP & 16#7FFF) | 16#8000,
+    [BBBB, <<AAAA:16, 16#0020:16, 0002:16, 0:16>>]. % reversed
+
+% Table 18. Values for Base
+% -----------------------------------------------------------------------------
+% Range 1: Unified_Ideograph=True AND
+% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
+% Base  1: FB40
+% Range 2: Unified_Ideograph=True AND NOT
+% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
+% Base  2: FB80
+% Base  3: FBC0 Any other code point
+% Range 3: Ideographic AND NOT Unified_Ideograph
+% -----------------------------------------------------------------------------
+
+% CJK_Unified_Ideograph and CJK_Compatibility_Ideographs from 
+% http://www.unicode.org/Public/UNIDATA/Blocks.txt
+-define(CHAR_IS_CJK_UNIFIED_IDEOGRAPH(Ch), (
+    (Ch >= 16#4E00) and (Ch =< 16#9FFF) % CJK Unified Ideographs
+)).
+-define(CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(Ch), (
+    (Ch >= 16#F900) and (Ch =< 16#FAFF) % CJK Compatibility Ideographs
+)).
+
+% Unified_Ideograph from http://unicode.org/Public/UNIDATA/PropList.txt
+-define(CHAR_IS_UNIFIED_IDEOGRAPH(Ch), (
+    ((Ch >= 16#3400)  and (Ch =< 16#4DB5)) % Lo [6582] CJK UNIFIED IDEOGRAPH-3400..CJK UNIFIED IDEOGRAPH-4DB5
+ or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB)) % Lo [20940] CJK UNIFIED IDEOGRAPH-4E00..CJK UNIFIED IDEOGRAPH-9FCB
+ or ((Ch >= 16#FA0E)  and (Ch =< 16#FA0F)) % Lo   [2] CJK COMPATIBILITY IDEOGRAPH-FA0E..CJK COMPATIBILITY IDEOGRAPH-FA0F
+ or ((Ch >= 16#FA11))                      % Lo       CJK COMPATIBILITY IDEOGRAPH-FA11
+ or ((Ch >= 16#FA13)  and (Ch =< 16#FA14)) % Lo   [2] CJK COMPATIBILITY IDEOGRAPH-FA13..CJK COMPATIBILITY IDEOGRAPH-FA14
+ or ((Ch >= 16#FA1F)                     ) % Unified_Ideograph # Lo       CJK COMPATIBILITY IDEOGRAPH-FA1F
+ or ((Ch >= 16#FA21)                     ) % Lo       CJK COMPATIBILITY IDEOGRAPH-FA21
+ or ((Ch >= 16#FA23)  and (Ch =< 16#FA24)) % Lo   [2] CJK COMPATIBILITY IDEOGRAPH-FA23..CJK COMPATIBILITY IDEOGRAPH-FA24
+ or ((Ch >= 16#FA27)  and (Ch =< 16#FA29)) % Lo   [3] CJK COMPATIBILITY IDEOGRAPH-FA27..CJK COMPATIBILITY IDEOGRAPH-FA29 
+ or ((Ch >= 16#20000) and (Ch =< 16#2A6D6))% Lo [42711] CJK UNIFIED IDEOGRAPH-20000..CJK UNIFIED IDEOGRAPH-2A6D6
+ or ((Ch >= 16#2A700) and (Ch =< 16#2B734))% Lo [4149] CJK UNIFIED IDEOGRAPH-2A700..CJK UNIFIED IDEOGRAPH-2B734
+ or ((Ch >= 16#2B740) and (Ch =< 16#2B81D))% Lo [222] CJK UNIFIED IDEOGRAPH-2B740..CJK UNIFIED IDEOGRAPH-2B81D 
+)).
 
 %%% Compares on L1, collects data for {L2,L3,L4} comparations.
 %% Extract chars from the strings.
@@ -1040,8 +1106,10 @@ col_hangul([_|_] = Str, Res) ->
 %% ComparatorFun    S2.3 Process collation elements according to the 
 %%                  variable-weight setting, as described in Section 
 %%                  3.6.2, Variable Weighting.
--spec col_compare(Str1 :: string(), Str1 :: string(), Buf1 :: [binary(), ...], Buf2, 
-      char(), Acc1 :: [[L2 :: integer(), L3 :: integer(), L4 :: integer()], ...], Acc2, 
+-spec col_compare1(Str1 :: string(), Str1 :: string(), 
+        Buf1 :: [binary(), ...], Buf2 :: [binary()], char(), 
+        Acc1 :: [[integer(), ...], ...], 
+        Acc2 :: [[integer()]], % Acc = [[L2,L3,L4], ...] 
       fun(), fun())  ->  lower | greater | equal.
 
 % col_compare1 ALGORITHM.
@@ -1159,9 +1227,9 @@ col_compare2([ [W1LX|OutAcc] | InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
 col_compare2(InAcc1, [ [0   |OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) ->
     col_compare2(InAcc1, InAccTail2, W1LX, OutAcc1, [OutAcc|OutAcc2]);
     
-col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) 
+col_compare2(_     , [ [W2LX|OutAcc] | _], W1LX, _, _) 
     when W1LX <  W2LX -> lower;
-col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) 
+col_compare2(_     , [ [W2LX|OutAcc] | _], W1LX, _, _) 
     when W1LX >  W2LX -> greater;
 col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) 
     when W1LX == W2LX ->
@@ -1190,12 +1258,20 @@ col_compare2([], [], false, [], []) ->
 col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, L4:16>>) ->
     [L1, L2, L3];
 col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, L4:24>>) ->
-    [L1, L2, L3].
+    [L1, L2, L3];
+% For hangul
+col_bin_to_list(L1) when is_integer(L1) ->
+    [L1, 0,  0].
 
-%% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %% %%
-%%
-%% Tests
-%%
+
+  %%%%%  %%%%%%   %%%%    %%%%%   %%%%
+    %    %       %          %    %
+    %    %%%%%    %%%%      %     %%%%
+    %    %            %     %         %
+    %    %       %    %     %    %    %
+    %    %%%%%%   %%%%      %     %%%%
+
+
 -include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
 

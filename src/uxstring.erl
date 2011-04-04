@@ -58,6 +58,7 @@
 -export([ducet/1]).
 -export([col_non_ignorable/2]).
 -export([col_extract/2]).
+-export([col_hangul/2]).
 
 %% @doc Returns various "character types" which can be used 
 %%      as a default categorization in implementations.
@@ -99,6 +100,32 @@ end).
 -define(COL_HANGUL_VWEIGHT, 1 + ?COL_HANGUL_TWEIGHT + ?HANGUL_TCOUNT).
 -define(COL_HANGUL_LWEIGHT, 1 + ?COL_HANGUL_VWEIGHT + ?HANGUL_VCOUNT).
 -define(COL_HANGUL_LAST_WEIGHT, ?COL_HANGUL_LWEIGHT + ?HANGUL_LCOUNT).
+
+
+% CJK_Unified_Ideograph and CJK_Compatibility_Ideographs from 
+% http://www.unicode.org/Public/UNIDATA/Blocks.txt
+-define(CHAR_IS_CJK_UNIFIED_IDEOGRAPH(Ch), (
+    (Ch >= 16#4E00) and (Ch =< 16#9FFF) % CJK Unified Ideographs
+)).
+-define(CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(Ch), (
+    (Ch >= 16#F900) and (Ch =< 16#FAFF) % CJK Compatibility Ideographs
+)).
+
+% Unified_Ideograph from http://unicode.org/Public/UNIDATA/PropList.txt
+-define(CHAR_IS_UNIFIED_IDEOGRAPH(Ch), (
+    ((Ch >= 16#3400)  and (Ch =< 16#4DB5)) % [6582] CJK UNIFIED IDEOGRAPH-3400..4DB5
+ or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB)) % [20940] CJK UNIFIED IDEOGRAPH-4E00..9FCB
+ or ((Ch >= 16#FA0E)  and (Ch =< 16#FA0F)) % [2] CJK COMPATIBILITY IDEOGRAPH-FA0E..FA0F
+ or ((Ch == 16#FA11))                      % CJK COMPATIBILITY IDEOGRAPH-FA11
+ or ((Ch >= 16#FA13)  and (Ch =< 16#FA14)) % [2] CJK COMPATIBILITY IDEOGRAPH-FA13..FA14
+ or ((Ch == 16#FA1F)                     ) % CJK COMPATIBILITY IDEOGRAPH-FA1F
+ or ((Ch == 16#FA21)                     ) % CJK COMPATIBILITY IDEOGRAPH-FA21
+ or ((Ch >= 16#FA23)  and (Ch =< 16#FA24)) % [2] CJK COMPATIBILITY IDEOGRAPH-FA23..FA24
+ or ((Ch >= 16#FA27)  and (Ch =< 16#FA29)) % [3] CJK COMPATIBILITY IDEOGRAPH-FA27..FA29 
+ or ((Ch >= 16#20000) and (Ch =< 16#2A6D6))% [42711] CJK UNIFIED IDEOGRAPH-20000..2A6D6
+ or ((Ch >= 16#2A700) and (Ch =< 16#2B734))% [4149] CJK UNIFIED IDEOGRAPH-2A700..2B734
+ or ((Ch >= 16#2B740) and (Ch =< 16#2B81D))% [222] CJK UNIFIED IDEOGRAPH-2B740..2B81D 
+)).
 
 -include("string/char_to_upper.hrl").
 %char_to_upper(C) -> C.
@@ -925,10 +952,28 @@ col_extract([CP|_] = Str, _)  when (CP>=?HANGUL_LBASE)
                                and (CP=<?HANGUL_LLAST) -> % CP is Hangul L
     col_hangul(Str, [?COL_HANGUL_TERMINATOR]);
 
-col_extract([CP|_] = Str, _)  when (CP>=?HANGUL_LBASE) 
-                               and (CP=<?HANGUL_LLAST) -> % CP is Hangul L
-    col_hangul(Str, [?COL_HANGUL_TERMINATOR]);
-
+% Table 18. Values for Base
+% -----------------------------------------------------------------------------
+% Range 1: Unified_Ideograph=True AND
+% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
+% Base  1: FB40
+% Range 2: Unified_Ideograph=True AND NOT
+% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
+% Base  2: FB80
+% Base  3: FBC0 Any other code point
+% Range 3: Ideographic AND NOT Unified_Ideograph
+% -----------------------------------------------------------------------------
+ col_extract([CP|Tail], _)  
+     when ?CHAR_IS_UNIFIED_IDEOGRAPH(CP) 
+      and (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(CP) 
+        or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(CP)) ->
+         {col_implicit_weight(CP, 16#FB40), Tail};
+    
+ col_extract([CP|Tail], _)  
+     when ?CHAR_IS_UNIFIED_IDEOGRAPH(CP) 
+      and (not (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(CP) 
+             or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(CP))) ->
+         {col_implicit_weight(CP, 16#FB80), Tail};
 
 col_extract([CP|[]], TableFun) -> % Last Char
     {apply(TableFun, [[CP]]), []};
@@ -1059,46 +1104,11 @@ col_hangul([_|_] = Str, Res) ->
 % explicit collation element mappings. By default, implicit mappings are given
 % higher weights than all explicit collation elements.
 col_implicit_weight(CP, BASE) ->
-    AAAA = BASE + (CP >> 15),
-    BBBB = (CP & 16#7FFF) | 16#8000,
-    [BBBB, <<AAAA:16, 16#0020:16, 0002:16, 0:16>>]. % reversed
+    AAAA = BASE + (CP bsr 15),
+    BBBB = (CP band 16#7FFF) bor 16#8000,
+    [BBBB, <<0:8, AAAA:16, 16#0020:16, 0002:16, 0:16>>]. % reversed
 
-% Table 18. Values for Base
-% -----------------------------------------------------------------------------
-% Range 1: Unified_Ideograph=True AND
-% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
-% Base  1: FB40
-% Range 2: Unified_Ideograph=True AND NOT
-% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
-% Base  2: FB80
-% Base  3: FBC0 Any other code point
-% Range 3: Ideographic AND NOT Unified_Ideograph
-% -----------------------------------------------------------------------------
 
-% CJK_Unified_Ideograph and CJK_Compatibility_Ideographs from 
-% http://www.unicode.org/Public/UNIDATA/Blocks.txt
--define(CHAR_IS_CJK_UNIFIED_IDEOGRAPH(Ch), (
-    (Ch >= 16#4E00) and (Ch =< 16#9FFF) % CJK Unified Ideographs
-)).
--define(CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(Ch), (
-    (Ch >= 16#F900) and (Ch =< 16#FAFF) % CJK Compatibility Ideographs
-)).
-
-% Unified_Ideograph from http://unicode.org/Public/UNIDATA/PropList.txt
--define(CHAR_IS_UNIFIED_IDEOGRAPH(Ch), (
-    ((Ch >= 16#3400)  and (Ch =< 16#4DB5)) % Lo [6582] CJK UNIFIED IDEOGRAPH-3400..CJK UNIFIED IDEOGRAPH-4DB5
- or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB)) % Lo [20940] CJK UNIFIED IDEOGRAPH-4E00..CJK UNIFIED IDEOGRAPH-9FCB
- or ((Ch >= 16#FA0E)  and (Ch =< 16#FA0F)) % Lo   [2] CJK COMPATIBILITY IDEOGRAPH-FA0E..CJK COMPATIBILITY IDEOGRAPH-FA0F
- or ((Ch >= 16#FA11))                      % Lo       CJK COMPATIBILITY IDEOGRAPH-FA11
- or ((Ch >= 16#FA13)  and (Ch =< 16#FA14)) % Lo   [2] CJK COMPATIBILITY IDEOGRAPH-FA13..CJK COMPATIBILITY IDEOGRAPH-FA14
- or ((Ch >= 16#FA1F)                     ) % Unified_Ideograph # Lo       CJK COMPATIBILITY IDEOGRAPH-FA1F
- or ((Ch >= 16#FA21)                     ) % Lo       CJK COMPATIBILITY IDEOGRAPH-FA21
- or ((Ch >= 16#FA23)  and (Ch =< 16#FA24)) % Lo   [2] CJK COMPATIBILITY IDEOGRAPH-FA23..CJK COMPATIBILITY IDEOGRAPH-FA24
- or ((Ch >= 16#FA27)  and (Ch =< 16#FA29)) % Lo   [3] CJK COMPATIBILITY IDEOGRAPH-FA27..CJK COMPATIBILITY IDEOGRAPH-FA29 
- or ((Ch >= 16#20000) and (Ch =< 16#2A6D6))% Lo [42711] CJK UNIFIED IDEOGRAPH-20000..CJK UNIFIED IDEOGRAPH-2A6D6
- or ((Ch >= 16#2A700) and (Ch =< 16#2B734))% Lo [4149] CJK UNIFIED IDEOGRAPH-2A700..CJK UNIFIED IDEOGRAPH-2B734
- or ((Ch >= 16#2B740) and (Ch =< 16#2B81D))% Lo [222] CJK UNIFIED IDEOGRAPH-2B740..CJK UNIFIED IDEOGRAPH-2B81D 
-)).
 
 %%% Compares on L1, collects data for {L2,L3,L4} comparations.
 %% Extract chars from the strings.
@@ -1193,9 +1203,12 @@ col_compare1([], [CP2|StrTail2], [], [],  _,    Acc1,
 %  in function uxstring:col_compare1/9
 %  called as col_compare1([],[],[<<1,2,123,0,32,0,2,0,33>>],[],513...)
 %  Fixed: (false > 0) = true        (o_O)
-col_compare1([], [], _,[], W1L1, _, _, _, _) 
+col_compare1([], [], _, [], W1L1, _, _, _, _) 
     when (W1L1 > 0) and (W1L1 =/= false) ->
     greater;
+%col_compare1([_], [], [_], [], W1L1, _, _, _, _) 
+%    when (W1L1 > 0) and (W1L1 =/= false) ->
+%    greater;
 col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1, 
              Acc2, TableFun, ComparatorFun) when W1L1 == 0 ->
     [W1L1New | Acc] = apply(ComparatorFun, [W1Raw]),

@@ -60,6 +60,10 @@
 -export([col_extract/2]).
 -export([col_hangul/2]).
 
+-export([char_is_cjk_compatibility_ideograph/1,
+         char_is_cjk_unified_ideograph/1,
+         char_is_unified_ideograph/1]).
+
 %% @doc Returns various "character types" which can be used 
 %%      as a default categorization in implementations.
 %%      Types:
@@ -1106,7 +1110,7 @@ col_hangul([_|_] = Str, Res) ->
 col_implicit_weight(CP, BASE) ->
     AAAA = BASE + (CP bsr 15),
     BBBB = (CP band 16#7FFF) bor 16#8000,
-    [BBBB, <<0:8, AAAA:16, 16#0020:16, 0002:16, 0:16>>]. % reversed
+    [<<0:8, AAAA:16, 16#0020:16, 0002:16, 0:16>>, BBBB]. % reversed
 
 
 
@@ -1150,7 +1154,7 @@ col_compare1(StrTail1, [_|_] = Str2, Buf1, [], W1L1, Acc1,
 %% Extracts a non-ignorable L1 from the Str1.
 col_compare1(StrTail1, StrTail2, [CV1Raw|Buf1], Buf2, false, 
              Acc1, Acc2, TableFun, ComparatorFun) ->
-    case apply(ComparatorFun, [CV1Raw]) of
+    case apply(ComparatorFun, [CV1Raw]) of % This function can reverse argument or set 0.
         [0    | Acc] -> % Find other W1L1
             col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, [Acc|Acc1], 
                          Acc2, TableFun, ComparatorFun);
@@ -1219,17 +1223,24 @@ col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1,
 %% Now, Funs are not neeaded.
 %% Acc1 and Acc2 are reversed.
 col_compare1([], [], [], [], false, Acc1, Acc2, _, _) ->
+    io:format(user, "~w ~w ~n", [Acc1, Acc2]),
     col_compare2(lists:reverse(Acc1), 
                  lists:reverse(Acc2),
                  false, % W1L{2,3,4} 
                  [], % Other accumulator. Contains L3 and L4.
                  []  % Other acc...
                 ).
+% FIXME: Error: [55199,65] lower [55199,97]
 
 %%% L2 comparation.
 %% Try extract W1LX, but 0 was found => try next weigth in InAcc.
-col_compare2([ [] | _], _, _, _, _) ->
-    equal;
+
+% skip if higher levels are not defined.
+col_compare2([ [] | InAcc1], InAcc2, W1LX, OutAcc1, OutAcc2) ->
+    col_compare2(InAcc1, InAcc2, W1LX, OutAcc1, OutAcc2);
+col_compare2(InAcc1, [ [] | InAcc2], W1LX, OutAcc1, OutAcc2) ->
+    col_compare2(InAcc1, InAcc2, W1LX, OutAcc1, OutAcc2);
+
 col_compare2([ [0   |OutAcc] | InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
     col_compare2(InAccTail1, InAcc2, false, [OutAcc|OutAcc1], OutAcc2);
 %% W1LX was found. => Try found W2LX.
@@ -1276,6 +1287,18 @@ col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, L4:24>>) ->
 col_bin_to_list(L1) when is_integer(L1) ->
     [L1, 0,  0].
 
+
+char_is_cjk_compatibility_ideograph(Ch) when
+    ?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(Ch) -> true;
+char_is_cjk_compatibility_ideograph(_) -> false.
+
+char_is_cjk_unified_ideograph(Ch) when
+    ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(Ch) -> true;
+char_is_cjk_unified_ideograph(_) -> false.
+
+char_is_unified_ideograph(Ch) when
+    ?CHAR_IS_UNIFIED_IDEOGRAPH(Ch) -> true;
+char_is_unified_ideograph(_) -> false.
 
   %%%%%  %%%%%%   %%%%    %%%%%   %%%%
     %    %       %          %    %

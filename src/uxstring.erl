@@ -30,7 +30,9 @@
 -export([st/2, strip_tags/2]).
 -export([st/3, strip_tags/3]).
 -export([to_string/1]).
--export([delete_types/2, delete_types/3, filter_types/2, filter_types/3, explode_types/2, split_types/2]).
+-export([delete_types/2, delete_types/3, 
+         filter_types/2, filter_types/3, 
+         explode_types/2, split_types/2]).
 -export([first_types/3, last_types/3]).
 
 % for tests
@@ -40,7 +42,8 @@
 % for utf-8
 -export([char_to_lower/1, char_to_upper/1]).
 -export([is_lower/1, is_upper/1]).
--export([is_letter/1, is_number/1, is_decimal/1, is_separator/1, is_pm/1, is_punctuation_mark/1]).
+-export([is_letter/1, is_number/1, is_decimal/1, is_separator/1, 
+         is_pm/1, is_punctuation_mark/1]).
 
 -export([freq/1, freq_dict/1]).
 -export([ccc/1]).
@@ -117,20 +120,43 @@ end).
 
 % Unified_Ideograph from http://unicode.org/Public/UNIDATA/PropList.txt
 -define(CHAR_IS_UNIFIED_IDEOGRAPH(Ch), (
-    ((Ch >= 16#3400)  and (Ch =< 16#4DB5)) % [6582] CJK UNIFIED IDEOGRAPH-3400..4DB5
- or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB)) % [20940] CJK UNIFIED IDEOGRAPH-4E00..9FCB
- or ((Ch >= 16#FA0E)  and (Ch =< 16#FA0F)) % [2] CJK COMPATIBILITY IDEOGRAPH-FA0E..FA0F
- or ((Ch == 16#FA11))                      % CJK COMPATIBILITY IDEOGRAPH-FA11
- or ((Ch >= 16#FA13)  and (Ch =< 16#FA14)) % [2] CJK COMPATIBILITY IDEOGRAPH-FA13..FA14
+% [6582] CJK UNIFIED IDEOGRAPH-3400..4DB5
+    ((Ch >= 16#3400)  and (Ch =< 16#4DB5)) 
+
+% [20940] CJK UNIFIED IDEOGRAPH-4E00..9FCB
+%or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB)) 
+% FIXME: Error: [55296,33] lower [40908,98]
+% CJK Unified Ideographs
+ or ((Ch >= 16#4E00)  and (Ch =< 16#9FFF)) 
+
+% [2] CJK COMPATIBILITY IDEOGRAPH-FA0E..FA0F
+ or ((Ch >= 16#FA0E)  and (Ch =< 16#FA0F)) 
+
+ or ((Ch == 16#FA11)                     ) % CJK COMPATIBILITY IDEOGRAPH-FA11
+
+% [2] CJK COMPATIBILITY IDEOGRAPH-FA13..FA14
+ or ((Ch >= 16#FA13)  and (Ch =< 16#FA14)) 
+
  or ((Ch == 16#FA1F)                     ) % CJK COMPATIBILITY IDEOGRAPH-FA1F
  or ((Ch == 16#FA21)                     ) % CJK COMPATIBILITY IDEOGRAPH-FA21
- or ((Ch >= 16#FA23)  and (Ch =< 16#FA24)) % [2] CJK COMPATIBILITY IDEOGRAPH-FA23..FA24
- or ((Ch >= 16#FA27)  and (Ch =< 16#FA29)) % [3] CJK COMPATIBILITY IDEOGRAPH-FA27..FA29 
- or ((Ch >= 16#20000) and (Ch =< 16#2A6D6))% [42711] CJK UNIFIED IDEOGRAPH-20000..2A6D6
- or ((Ch >= 16#2A700) and (Ch =< 16#2B734))% [4149] CJK UNIFIED IDEOGRAPH-2A700..2B734
- or ((Ch >= 16#2B740) and (Ch =< 16#2B81D))% [222] CJK UNIFIED IDEOGRAPH-2B740..2B81D 
+
+% [2] CJK COMPATIBILITY IDEOGRAPH-FA23..FA24
+ or ((Ch >= 16#FA23)  and (Ch =< 16#FA24)) 
+
+% [3] CJK COMPATIBILITY IDEOGRAPH-FA27..FA29 
+ or ((Ch >= 16#FA27)  and (Ch =< 16#FA29)) 
+
+% [42711] CJK UNIFIED IDEOGRAPH-20000..2A6D6
+ or ((Ch >= 16#20000) and (Ch =< 16#2A6D6))
+
+% [4149] CJK UNIFIED IDEOGRAPH-2A700..2B734
+ or ((Ch >= 16#2A700) and (Ch =< 16#2B734))
+
+% [222] CJK UNIFIED IDEOGRAPH-2B740..2B81D 
+ or ((Ch >= 16#2B740) and (Ch =< 16#2B81D))
 )).
 
+% FIXME: Error: [1114111,33] lower [1114110,98]
 -include("string/char_to_upper.hrl").
 %char_to_upper(C) -> C.
 -include("string/char_to_lower.hrl").
@@ -493,13 +519,13 @@ st(Str, Allowed, Alt) ->
 %%      If we found <, then Cnt++
 %%      If we found >, then Cnt--
 %% @end
-st_cycle([$< | Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt + 1, Alt);
-st_cycle([$> | Tail], Buf, 1,   Alt) -> st_cycle(Tail, Alt ++ Buf, 0,       Alt);
-st_cycle([$> | Tail], Buf, 0,   Alt) -> st_cycle(Tail,        Buf, 0,       Alt);
-st_cycle([$> | Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt - 1, Alt);
-st_cycle([H  | Tail], Buf, 0,   Alt) -> st_cycle(Tail, [H | Buf] , 0,       Alt);
-st_cycle([_  | Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt,     Alt);
-st_cycle([         ], Buf, _,   _  ) -> lists:reverse(Buf).
+st_cycle([$<| Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt + 1, Alt);
+st_cycle([$>| Tail], Buf, 1,   Alt) -> st_cycle(Tail, Alt ++ Buf, 0,       Alt);
+st_cycle([$>| Tail], Buf, 0,   Alt) -> st_cycle(Tail,        Buf, 0,       Alt);
+st_cycle([$>| Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt - 1, Alt);
+st_cycle([H | Tail], Buf, 0,   Alt) -> st_cycle(Tail, [H | Buf] , 0,       Alt);
+st_cycle([_ | Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt,     Alt);
+st_cycle([        ], Buf, _,   _  ) -> lists:reverse(Buf).
 
 %% @doc Is used by st_cycle_with_allowed
 st_get_tag    ([$> | T],       Buf , Tag, _, 1) ->
@@ -547,7 +573,8 @@ tags_to_list(Str) -> tags_to_list(Str, [], []).
 
 tags_to_list([$< | Str], Res, Buf) -> tags_to_list(Str, Res, Buf);
 tags_to_list([$/ | Str], Res, Buf) -> tags_to_list(Str, Res, Buf);
-tags_to_list([$> | Str], Res, Buf) -> tags_to_list(Str, [lists:reverse(Buf)|Res], []);
+tags_to_list([$> | Str], Res, Buf) -> tags_to_list(Str, 
+                                        [lists:reverse(Buf)|Res], []);
 tags_to_list([Ch | Str], Res, Buf) -> tags_to_list(Str, Res, [Ch|Buf]);
 tags_to_list([        ], Res, _  ) -> Res. 
 
@@ -608,11 +635,12 @@ to_nfc(Str)  -> case is_nfc(Str) of
     _   -> get_composition(to_nfd(Str))
 end.
 to_nfkc([])     -> [];
-to_nfkc(Str)    -> get_composition(normalize(get_recursive_decomposition(false, Str))).
+to_nfkc(Str)    -> get_composition(
+                    normalize(get_recursive_decomposition(false, Str))).
 to_nfd([])      -> [];
-to_nfd(Str)     -> normalize(get_recursive_decomposition(true,  Str)).
+to_nfd(Str)     ->  normalize(get_recursive_decomposition(true,  Str)).
 to_nfkd([])     -> [];
-to_nfkd(Str)    -> normalize(get_recursive_decomposition(false, Str)).
+to_nfkd(Str)    ->  normalize(get_recursive_decomposition(false, Str)).
 
 is_acsii(Char) when (Char>=0) and (Char=<16#7F) 
     -> true;
@@ -660,10 +688,12 @@ get_recursive_decomposition(Canonical, [Char|Tail], Result) ->
       -> case decomp(Char) of
             []  -> get_recursive_decomposition(Canonical, Tail,
                                                 [Char|Result]);
-            Dec -> case Canonical and is_compat(Char) of % not is_compat = singleton
-                    true    -> get_recursive_decomposition(Canonical,
+            Dec -> case Canonical 
+                    and is_compat(Char) % not is_compat = singleton
+                    of 
+                    true  -> get_recursive_decomposition(Canonical,
                             Tail,  [Char|Result]);
-                        false   -> get_recursive_decomposition(Canonical,
+                    false -> get_recursive_decomposition(Canonical,
                             Tail,  get_recursive_decomposition(Canonical,
                             Dec, Result))
                    end
@@ -734,18 +764,19 @@ get_composition([], Char, _, Mods, Result) ->
     Mods ++ [Char|Result].
 
 % http://unicode.org/reports/tr15/#Hangul
-is_hangul(Char) when ((Char>=16#1100) and (Char=<16#11FF)) % Hangul Jamo
-                  or ((Char>=16#A960) and (Char=<16#A97C)) % Hangul Jamo Extended-A
-                  or ((Char>=16#D7B0) and (Char=<16#D7C6)) % Hangul Jamo Extended-B
-                  or ((Char>=16#D7CB) and (Char=<16#D7FB)) % Hangul Jamo Extended-B
-                  or ((Char>=16#3131) and (Char=<16#318E)) % Hangul Compatibility Jamo 
-                  or  (Char==17#302E) or  (Char==16#302F)  % Tone marks (used in Middle Korean) 
-                  or ((Char>=16#AC00) and (Char=<16#D7A3)) % 11,172 precomposed Hangul syllables
-                  or ((Char>=16#3200) and (Char=<16#321E)) % For parenthesised 
-                  or ((Char>=16#3260) and (Char=<16#327E)) % and circled 
-                  or ((Char>=16#FFDC) and (Char=<16#FFA0)) % For halfwidth 
-                  -> true;
-is_hangul(_)      -> false.
+is_hangul(Char) when
+     ((Char>=16#1100) and (Char=<16#11FF)) % Hangul Jamo
+  or ((Char>=16#A960) and (Char=<16#A97C)) % Hangul Jamo Extended-A
+  or ((Char>=16#D7B0) and (Char=<16#D7C6)) % Hangul Jamo Extended-B
+  or ((Char>=16#D7CB) and (Char=<16#D7FB)) % Hangul Jamo Extended-B
+  or ((Char>=16#3131) and (Char=<16#318E)) % Hangul Compatibility Jamo 
+  or  (Char==17#302E) or  (Char==16#302F)  % Tone marks (used in Middle Korean) 
+  or ((Char>=16#AC00) and (Char=<16#D7A3)) % 11,172 precomposed Hangul syllables
+  or ((Char>=16#3200) and (Char=<16#321E)) % For parenthesised 
+  or ((Char>=16#3260) and (Char=<16#327E)) % and circled 
+  or ((Char>=16#FFDC) and (Char=<16#FFA0)) % For halfwidth 
+             -> true;
+is_hangul(_) -> false.
 
 is_hangul_precomposed(Char) 
     when ((Char>=16#AC00) and (Char=<16#D7A3)) 
@@ -797,20 +828,25 @@ hangul_composition([LChar|Tail], VChar, Result) ->
                  
                     % 2. check to see if two current characters are LV and T
                     case Result of % Try get last appended char
-                       [] -> hangul_composition(Tail, [LVChar]);             % is first, LV
+                       [] -> hangul_composition(Tail, [LVChar]);             
+                                    % is first, LV
                        [TChar|Result2] ->
                            TIndex = TChar - ?HANGUL_TBASE,
                            if
                              (0 < TIndex) and (TIndex < ?HANGUL_TCOUNT) ->
                                 LVTChar = LVChar + TIndex,
-                                hangul_composition(Tail, [LVTChar|Result2]); % is LV&T
+                                hangul_composition(Tail, [LVTChar|Result2]); 
+                                    % is LV&T
                              true ->
-                               hangul_composition(Tail, [LVChar|Result])     % is LV
+                               hangul_composition(Tail, [LVChar|Result])
+                                    % is LV
                            end
                     end;
-          true -> hangul_composition(Tail, LChar, [VChar|Result])            % skip
+          true -> hangul_composition(Tail, LChar, [VChar|Result]) 
+                                    % skip
         end;
-      true -> hangul_composition(Tail, LChar, [VChar|Result])                % skip
+      true -> hangul_composition(Tail, LChar, [VChar|Result]) 
+                                    % skip
      end;
 hangul_composition([], Char, Result) ->
     [Char|Result].
@@ -925,7 +961,8 @@ col_compare (String1, String2, TableFun, ComparatorFun) ->
 % S2.1.1 If there are any non-starters following S, process each non-starter C.
 % S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
 % S2.1.3 If there is a match, replace S by S + C, and remove C.
--spec col_extract(string(), fun()) -> {[[integer(), ...], ...], Tail :: string()}.
+-spec col_extract(string(), fun()) 
+    -> {[[integer(), ...], ...], Tail :: string()}.
 col_extract([     ], _       ) -> % No Any Char
     {[], []};
 
@@ -979,16 +1016,30 @@ col_extract([CP|_] = Str, _)  when (CP>=?HANGUL_LBASE)
              or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(CP))) ->
          {col_implicit_weight(CP, 16#FB80), Tail};
 
+% If TableFun = only_derived then don't use ducet, 
+% try only ideographs and hangul characters.
+% This function runs when ducet() return 'other'. 
+col_extract([CP|Tail], { only_derived, TableFun }) ->
+    case apply(TableFun, [[CP]]) of
+        [_|_] = Value -> % from ducet 
+         {Value, Tail};
+        _             -> % other, more 
+         {col_implicit_weight(CP, 16#FBC0), Tail}
+    end;
+
+% Try extract from ducet.
 col_extract([CP|[]], TableFun) -> % Last Char
     {apply(TableFun, [[CP]]), []};
 col_extract([CP | Tail], TableFun) ->
     col_extract1(Tail, TableFun, [CP], ccc(CP), [], false).
 
+
 % There is only one char which was compared.
-col_extract1([        ],       TableFun, CPList, _   , Skipped, false ) ->
-    {apply(TableFun, [CPList]), lists:reverse(Skipped)};
+% TableFun(CPlist) is always return right weight.
+col_extract1([        ],       TableFun, [Ch],   _   , Skipped, false ) ->
+    col_extract([Ch | Skipped], { only_derived, TableFun }); 
 % see BUG 7
-col_extract1([        ],       _,        _,      _   ,        _, more ) ->
+col_extract1([        ],       _,        _,      _   ,       _, more  ) ->
     more_error;
 % ... One or more chars
 col_extract1([        ],       _,        _,      _   , Skipped, OldVal) ->
@@ -1038,9 +1089,11 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
             % FIXME 8: [111,772,808,820] lower [490,820]
             %     NFD: [111,820,808,772] lower [79,820,808] 
 
+            % Try extract weight from ducat. There is one place, where we can 
+            % extract. We only get old value from ducat in other places.
             Bin = apply(TableFun, [NewCPList]),
             if
-               % Bin == 0, but CPList+NextChar may be not null
+                % Bin == 0, but CPList+NextChar may be not null
                 Bin == more ->
                     case col_extract1(Tail, TableFun, NewCPList, 
                                       Ccc2, Skipped, more) of
@@ -1050,19 +1103,25 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
                         MoreRes    -> MoreRes
                     end;
 
-                (Bin == [<<0:72>>]) and (OldVal == more) -> 
+                (Bin == other) and (OldVal == more) -> 
                     more_error;
-
 
                 % Cannot add 2 symbols with ccc=0.
                 % _0_ && _0_. Next symbol is blocked. 
-                (Bin == [<<0:72>>]) and (Ccc2 == 0) ->
-                    {apply(TableFun, [CPList]), 
-                     col_append(Skipped, Str)};
+                (Bin == other) and (Ccc2 == 0) and (OldVal == false) ->
+              col_extract(col_append(CPList, 
+                             col_append(Skipped, Str)), 
+                          {only_derived, TableFun}); 
+
+                % _0_ && _0_. Next symbol is blocked. 
+                (Bin == other) and (Ccc2 == 0) and (OldVal =/= false) ->
+                        {OldVal, col_append(Skipped, Str)};
+
                 % Skip char CP2.
-                (Bin == [<<0:72>>]) and (Ccc2  > 0) -> 
+                (Bin == other) and (Ccc2  > 0) -> 
                     col_extract1(Tail, TableFun, CPList, 
                                  Ccc2, [CP2|Skipped], OldVal);
+
                 % Append char CP2.
                 true -> col_extract1(Tail, TableFun, NewCPList, 
                                      Ccc2, Skipped, Bin)
@@ -1071,8 +1130,11 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
 % Note: A non-starter in a string is called blocked if there is another 
 %       non-starter of the same canonical combining class or zero between 
 %       it and the last character of canonical combining class 0.
-        OldVal ==  false -> {apply(TableFun, [CPList]), 
-                             col_append(Skipped, Str)};
+        OldVal ==  false -> % and (CPList == [_]) 
+              % http://unicode.org/reports/tr10/#Unassigned_And_Other
+              col_extract(col_append(CPList, 
+                             col_append(Skipped, Str)), 
+                          {only_derived, TableFun}); 
         OldVal =/= false -> {OldVal,                    
                              col_append(Skipped, Str)}
     end.
@@ -1098,7 +1160,7 @@ col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_TBASE)
     T = Ch - ?HANGUL_TBASE,
     col_hangul(Tail, [?COL_HANGUL_TWEIGHT + T | Res]);
 col_hangul([_|_] = Str, Res) ->
-    {Str, Res}. % reversed
+    {Res, Str}. % reversed
 
 
 % 7.1.3 Implicit Weights 
@@ -1113,6 +1175,8 @@ col_implicit_weight(CP, BASE) ->
     [<<0:8, AAAA:16, 16#0020:16, 0002:16, 0:16>>, BBBB]. % reversed
 
 
+% FIXME: Error: [12622,63] lower [4370,63]
+ 
 
 %%% Compares on L1, collects data for {L2,L3,L4} comparations.
 %% Extract chars from the strings.
@@ -1139,7 +1203,7 @@ col_compare1([_|_] = Str1, StrTail2, [], Buf2, W1L1, Acc1,
              Acc2, TableFun, ComparatorFun) ->
     {Buf1,     % [<<Flag,L1,L2,...>>, ..]
      StrTail1} = col_extract(Str1, TableFun), 
-%   io:format("B1: ~w ~n", [Buf1]),
+    io:format("B1: ~w ~n", [Buf1]),
     col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, Acc1,
                  Acc2, TableFun, ComparatorFun);
 
@@ -1147,7 +1211,7 @@ col_compare1(StrTail1, [_|_] = Str2, Buf1, [], W1L1, Acc1,
              Acc2, TableFun, ComparatorFun) ->
     {Buf2,     % [<<Flag,L1,L2,...>>, ..]
      StrTail2} = col_extract(Str2, TableFun), 
-%   io:format("B2: ~w ~n", [Buf2]),
+    io:format("B2: ~w ~n", [Buf2]),
     col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, 
                  Acc1, Acc2, TableFun, ComparatorFun);
     
@@ -1207,7 +1271,9 @@ col_compare1([], [CP2|StrTail2], [], [],  _,    Acc1,
 %  in function uxstring:col_compare1/9
 %  called as col_compare1([],[],[<<1,2,123,0,32,0,2,0,33>>],[],513...)
 %  Fixed: (false > 0) = true        (o_O)
-col_compare1([], [], _, [], W1L1, _, _, _, _) 
+%    called as col_compare1([769],[],[33544],[],64448,
+%       [[32,2],[0,0],[32,2]],[[71,2],[0,0],[32,2]],...
+col_compare1(_, [], _, [], W1L1, _, _, _, _) 
     when (W1L1 > 0) and (W1L1 =/= false) ->
     greater;
 %col_compare1([_], [], [_], [], W1L1, _, _, _, _) 
@@ -1223,14 +1289,15 @@ col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1,
 %% Now, Funs are not neeaded.
 %% Acc1 and Acc2 are reversed.
 col_compare1([], [], [], [], false, Acc1, Acc2, _, _) ->
-    io:format(user, "~w ~w ~n", [Acc1, Acc2]),
+%   io:format(user, "~w ~w ~n", [Acc1, Acc2]),
     col_compare2(lists:reverse(Acc1), 
                  lists:reverse(Acc2),
                  false, % W1L{2,3,4} 
                  [], % Other accumulator. Contains L3 and L4.
                  []  % Other acc...
                 ).
-% FIXME: Error: [55199,65] lower [55199,97]
+% FIXED: Error: [55199,65] lower [55199,97] Error in col_hangul
+
 
 %%% L2 comparation.
 %% Try extract W1LX, but 0 was found => try next weigth in InAcc.
@@ -1475,7 +1542,8 @@ nfc_test(InFd, Max) ->
         {ok, Data} -> 
             try
               [LineWithoutComment|_] = uxstring:explode("#", Data),
-              lists:map(fun (Str) -> % Convert string from file to list of integers 
+              % Convert string from file to list of integers 
+              lists:map(fun (Str) -> 
                             lists:map(fun hex_to_int/1, string:tokens(Str, " ")) 
                         end,
                         uxstring:explode(";", LineWithoutComment))
@@ -1538,7 +1606,8 @@ calloc_test(InFd, F, OldVal, Max) ->
     case calloc_test_read(InFd) of
         Val when is_list(Val) -> 
             case F(Val, OldVal) of
-                lower -> io:format(user, "Error: ~w ~w ~w ~n", [Val, lower, OldVal]),
+                lower -> io:format(user, "Error: ~w ~w ~w ~n", 
+                                         [Val, lower, OldVal]),
                          calloc_test(InFd, F, Val, Max - 1);
                 _     -> calloc_test(InFd, F, Val, Max - 1)
             end;

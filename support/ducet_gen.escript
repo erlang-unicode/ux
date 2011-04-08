@@ -21,7 +21,7 @@ main([Ebin, InDir, OutDir]) ->
 	Chars = do_gen(InFd, {OutFd}, []),
     do_more({OutFd}, Chars, Chars),
 
-    io:format(OutFd, "ducet_r(_) -> [<<0:72>>]. ~n", []),
+    io:format(OutFd, "ducet_r(_) -> other. ~n", []),
     ok.
 
 do_more({OutFd} = OutFds, [], Res) -> Res;

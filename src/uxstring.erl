@@ -60,12 +60,15 @@
 
 -export([ducet/1]).
 -export([col_non_ignorable/2]).
+-export([col_sort_array/1]).
 -export([col_extract/2]).
 -export([col_hangul/2]).
 
 -export([char_is_cjk_compatibility_ideograph/1,
          char_is_cjk_unified_ideograph/1,
          char_is_unified_ideograph/1]).
+
+-export([str_info/1]).
 
 %% @doc Returns various "character types" which can be used 
 %%      as a default categorization in implementations.
@@ -102,7 +105,7 @@ end).
 -define(HANGUL_TLAST,  ?HANGUL_TBASE + ?HANGUL_TCOUNT).
 
 % TERMINATOR < T <  V < L
--define(COL_HANGUL_TERMINATOR, 900000).
+-define(COL_HANGUL_TERMINATOR, 16#1840).
 -define(COL_HANGUL_TWEIGHT, 1 + ?COL_HANGUL_TERMINATOR).
 -define(COL_HANGUL_VWEIGHT, 1 + ?COL_HANGUL_TWEIGHT + ?HANGUL_TCOUNT).
 -define(COL_HANGUL_LWEIGHT, 1 + ?COL_HANGUL_VWEIGHT + ?HANGUL_VCOUNT).
@@ -941,6 +944,10 @@ col_non_ignorable(S1, S2) ->
         fun col_bin_to_list/1).
 ducet(A) -> ducet_r(lists:reverse(A)).
 
+col_sort_array(Str) -> 
+    col_sort_array(Str, fun ducet_r/1).
+
+
 %% TableFun returns value from DUCET table
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
 col_compare (String1, String2, TableFun, ComparatorFun) ->
@@ -1318,9 +1325,9 @@ col_compare2([ [W1LX|OutAcc] | InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
 col_compare2(InAcc1, [ [0   |OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) ->
     col_compare2(InAcc1, InAccTail2, W1LX, OutAcc1, [OutAcc|OutAcc2]);
     
-col_compare2(_     , [ [W2LX|OutAcc] | _], W1LX, _, _) 
+col_compare2(_     , [ [W2LX|_     ] | _], W1LX, _, _) 
     when W1LX <  W2LX -> lower;
-col_compare2(_     , [ [W2LX|OutAcc] | _], W1LX, _, _) 
+col_compare2(_     , [ [W2LX|_     ] | _], W1LX, _, _) 
     when W1LX >  W2LX -> greater;
 col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) 
     when W1LX == W2LX ->
@@ -1344,16 +1351,30 @@ col_compare2([], [], false, [_|_] = OutAcc1, [_|_] = OutAcc2) ->
 col_compare2([], [], false, [], []) ->
     equal. % on all levels
 
+% http://unicode.org/reports/tr10/#Step_2
+% Produce Sort Array
+col_sort_array(Str, TableFun) ->
+    col_sort_array1(to_nfd(Str), TableFun, [], []).
+
+col_sort_array1([   ]      , _       , [   ], Res) ->
+    lists:reverse(Res);
+col_sort_array1(        Str, TableFun, [H|T], Res) ->
+    col_sort_array1(Str, TableFun, T, [H|Res]);
+col_sort_array1([_|_] = Str, TableFun, [   ], Res) ->
+    {Buf, StrTail} = col_extract(Str, TableFun), 
+    col_sort_array1(StrTail, TableFun, Buf, Res).
+
 
 % Convert binary from DUCET to list [L1, L2, L3, L4]
-col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, L4:16>>) ->
+col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, _:16>>) ->
     [L1, L2, L3];
-col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, L4:24>>) ->
+col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, _:24>>) ->
     [L1, L2, L3];
 % For hangul
 col_bin_to_list(L1) when is_integer(L1) ->
     [L1, 0,  0].
 
+% Collation end
 
 char_is_cjk_compatibility_ideograph(Ch) when
     ?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(Ch) -> true;
@@ -1366,6 +1387,48 @@ char_is_cjk_unified_ideograph(_) -> false.
 char_is_unified_ideograph(Ch) when
     ?CHAR_IS_UNIFIED_IDEOGRAPH(Ch) -> true;
 char_is_unified_ideograph(_) -> false.
+
+
+  %%%   %     % %%%%%%% %%%%%%%
+   %    %%    % %       %     %
+   %    % %   % %       %     %
+   %    %  %  % %%%%%   %     %
+   %    %   % % %       %     %
+   %    %    %% %       %     %
+  %%%   %     % %       %%%%%%%
+str_info(Rec = #unistr_info {}) ->
+    str_info1([
+        fun str_info_comment/1,
+        fun str_info_nfd/1,
+        fun str_info_nfc/1,
+        fun str_info_ducet_simple/1,
+        fun str_info_col_sort_array/1
+    ], Rec);
+str_info([_|_] = Str) -> 
+    str_info(#unistr_info{ str = Str });
+str_info(Ch) when is_integer(Ch) -> 
+    str_info(#unistr_info{ str = [Ch] }).
+
+str_info1([F|Tail], Rec) ->
+    NewRec = apply(F, [Rec]),
+    str_info1(Tail, NewRec);
+str_info1([      ], Rec) ->
+    Rec.
+
+str_info_comment(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ comment = lists:map(fun char_comment/1, Str)}.
+
+str_info_ducet_simple(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ ducet = lists:map(fun ducet/1, [[Ch] || Ch <- Str])}.
+
+str_info_nfd(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ nfd = to_nfd(Str)}.
+
+str_info_nfc(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ nfc = to_nfc(Str) }.
+
+str_info_col_sort_array(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ col_sort_array = col_sort_array(Str)}.
 
   %%%%%  %%%%%%   %%%%    %%%%%   %%%%
     %    %       %          %    %

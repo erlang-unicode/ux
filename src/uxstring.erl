@@ -12,7 +12,8 @@
 %%  did not receive this file, see http://www.fsf.org/copyleft/lgpl.html
 %% %CopyrightEnd%
 
-
+% FIXME:Error: [12594,33] lower [4353,33]
+ 
 -module(uxstring).
 -author('Uvarov Michael <freeakk@gmail.com>').
 
@@ -105,7 +106,7 @@ end).
 -define(HANGUL_TLAST,  ?HANGUL_TBASE + ?HANGUL_TCOUNT).
 
 % TERMINATOR < T <  V < L
--define(COL_HANGUL_TERMINATOR, 16#1840).
+-define(COL_HANGUL_TERMINATOR, 16#ABFF).
 -define(COL_HANGUL_TWEIGHT, 1 + ?COL_HANGUL_TERMINATOR).
 -define(COL_HANGUL_VWEIGHT, 1 + ?COL_HANGUL_TWEIGHT + ?HANGUL_TCOUNT).
 -define(COL_HANGUL_LWEIGHT, 1 + ?COL_HANGUL_VWEIGHT + ?HANGUL_VCOUNT).
@@ -940,7 +941,7 @@ hex_to_int(Code) ->
 
 col_non_ignorable(S1, S2) -> 
     col_compare  (S1, S2, 
-        fun ducet_r/1, 
+        fun ducet_r/1, % ducet_r(reversed_in) -> non_reversed_key;
         fun col_bin_to_list/1).
 ducet(A) -> ducet_r(lists:reverse(A)).
 
@@ -998,7 +999,7 @@ col_extract([     ], _       ) -> % No Any Char
 %
 col_extract([CP|_] = Str, _)  when (CP>=?HANGUL_LBASE) 
                                and (CP=<?HANGUL_LLAST) -> % CP is Hangul L
-    col_hangul(Str, [?COL_HANGUL_TERMINATOR]);
+    col_hangul(Str);
 
 % Table 18. Values for Base
 % -----------------------------------------------------------------------------
@@ -1152,6 +1153,9 @@ col_append([H|T], Str) ->
     col_append(T, [H|Str]);
 col_append([   ], Str) -> Str.
 
+col_hangul(Str) ->
+    col_hangul(Str, [?COL_HANGUL_TERMINATOR]).
+
 -spec col_hangul(Str :: string(), Res :: [[integer(), ...], ...]) -> {[], []}. 
 col_hangul([], Res) -> { lists:reverse(Res), [] }; % { Result, StringTail }
 col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_LBASE) 
@@ -1167,7 +1171,7 @@ col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_TBASE)
     T = Ch - ?HANGUL_TBASE,
     col_hangul(Tail, [?COL_HANGUL_TWEIGHT + T | Res]);
 col_hangul([_|_] = Str, Res) ->
-    {Res, Str}. % reversed
+    {lists:reverse(Res), Str}. % reversed
 
 
 % 7.1.3 Implicit Weights 

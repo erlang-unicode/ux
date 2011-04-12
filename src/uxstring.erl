@@ -63,7 +63,6 @@
 -export([col_non_ignorable/2]).
 -export([col_sort_array/1]).
 -export([col_extract/2]).
--export([col_hangul/2]).
 
 -export([char_is_cjk_compatibility_ideograph/1,
          char_is_cjk_unified_ideograph/1,
@@ -90,15 +89,19 @@ end).
 
 %% Defines Hangul constants
 -define(HANGUL_SBASE,  16#AC00).
--define(HANGUL_LBASE,  16#1100).
--define(HANGUL_VBASE,  16#1161).
--define(HANGUL_TBASE,  16#11A7).
+-define(HANGUL_LBASE,  16#1100). % 4352 - 4371
+-define(HANGUL_VBASE,  16#1161). % 4449 - 4470
+-define(HANGUL_TBASE,  16#11A7). % 4519 - 4547
 -define(HANGUL_LCOUNT, 19).
 -define(HANGUL_VCOUNT, 21).
 -define(HANGUL_TCOUNT, 28).
 -define(HANGUL_NCOUNT, 588).
 -define(HANGUL_SCOUNT, 11172).
 
+% [65469,65]  <<0,48,66,0,32,0,18,255,189>>   12354
+% < [4369,97]   
+% < [12593,33]  <<0,48,49,0,32,0,4,49,49>>    12337
+% < [12637,98]  <<0,48,189,0,32,0,4,49,93>>   12477
 
 -define(HANGUL_SLAST,  ?HANGUL_SBASE + ?HANGUL_SCOUNT).
 -define(HANGUL_LLAST,  ?HANGUL_LBASE + ?HANGUL_LCOUNT).
@@ -106,11 +109,35 @@ end).
 -define(HANGUL_TLAST,  ?HANGUL_TBASE + ?HANGUL_TCOUNT).
 
 % TERMINATOR < T <  V < L
--define(COL_HANGUL_TERMINATOR, 16#ABFF).
+-define(COL_HANGUL_TERMINATOR, 12269). % 12337 - 68
 -define(COL_HANGUL_TWEIGHT, 1 + ?COL_HANGUL_TERMINATOR).
--define(COL_HANGUL_VWEIGHT, 1 + ?COL_HANGUL_TWEIGHT + ?HANGUL_TCOUNT).
--define(COL_HANGUL_LWEIGHT, 1 + ?COL_HANGUL_VWEIGHT + ?HANGUL_VCOUNT).
+-define(COL_HANGUL_VWEIGHT,     ?COL_HANGUL_TWEIGHT + ?HANGUL_TCOUNT).
+-define(COL_HANGUL_LWEIGHT,     ?COL_HANGUL_VWEIGHT + ?HANGUL_VCOUNT).
 -define(COL_HANGUL_LAST_WEIGHT, ?COL_HANGUL_LWEIGHT + ?HANGUL_LCOUNT).
+
+-define(CHAR_IS_HANGUL_L(Ch), (
+ (Ch>=?HANGUL_LBASE) and (Ch=<?HANGUL_LLAST) 
+)).
+
+-define(CHAR_IS_HANGUL_V(Ch), (
+ (Ch>=?HANGUL_VBASE) and (Ch=<?HANGUL_VLAST) 
+)).
+
+-define(CHAR_IS_HANGUL_T(Ch), (
+ (Ch>=?HANGUL_TBASE) and (Ch=<?HANGUL_TLAST) 
+)).
+
+-define(COL_HANGUL_WEIGHT_L(Ch), (
+ Ch - ?HANGUL_LBASE + ?COL_HANGUL_LWEIGHT
+)).
+
+-define(COL_HANGUL_WEIGHT_V(Ch), (
+ Ch - ?HANGUL_VBASE + ?COL_HANGUL_VWEIGHT
+)).
+
+-define(COL_HANGUL_WEIGHT_T(Ch), (
+ Ch - ?HANGUL_TBASE + ?COL_HANGUL_TWEIGHT
+)).
 
 
 % CJK_Unified_Ideograph and CJK_Compatibility_Ideographs from 
@@ -997,9 +1024,53 @@ col_extract([     ], _       ) -> % No Any Char
 % the following gap weight, followed by all the jamo weight bytes, 
 % followed by the terminator byte.
 %
-col_extract([CP|_] = Str, _)  when (CP>=?HANGUL_LBASE) 
-                               and (CP=<?HANGUL_LLAST) -> % CP is Hangul L
-    col_hangul(Str);
+col_extract([L1|Tail] = Str, _) when ?CHAR_IS_HANGUL_L(L1) ->
+    case Tail of
+        [V1,T1|Tail2] 
+            when ?CHAR_IS_HANGUL_V(V1)
+            and  ?CHAR_IS_HANGUL_T(T1)
+        -> {[
+            ?COL_HANGUL_WEIGHT_L(L1),
+            ?COL_HANGUL_WEIGHT_V(V1),
+            ?COL_HANGUL_WEIGHT_T(T1),
+            ?COL_HANGUL_TERMINATOR
+            ], Tail2};
+        [V1,V2|Tail2]
+            when ?CHAR_IS_HANGUL_V(V1)
+            and  ?CHAR_IS_HANGUL_V(V2)
+        -> {[
+            ?COL_HANGUL_WEIGHT_L(L1),
+            ?COL_HANGUL_WEIGHT_V(V1),
+            ?COL_HANGUL_WEIGHT_V(V2),
+            ?COL_HANGUL_TERMINATOR
+            ], Tail2};
+        [L2,V1|Tail2] 
+            when ?CHAR_IS_HANGUL_L(L2)
+            and  ?CHAR_IS_HANGUL_V(V1)
+        -> {[
+            ?COL_HANGUL_WEIGHT_L(L1),
+            ?COL_HANGUL_WEIGHT_L(L2),
+            ?COL_HANGUL_WEIGHT_V(V1),
+            ?COL_HANGUL_TERMINATOR
+            ], Tail2};
+        [V1|Tail2] 
+            when ?CHAR_IS_HANGUL_V(V1)
+        -> {[
+            ?COL_HANGUL_WEIGHT_L(L1),
+            ?COL_HANGUL_WEIGHT_V(V1),
+            ?COL_HANGUL_TERMINATOR
+            ], Tail2};
+        _ -> {[
+            ?COL_HANGUL_WEIGHT_L(L1)
+            ], Tail}
+    end;
+col_extract([V1|Tail] = Str, _) when ?CHAR_IS_HANGUL_V(V1) -> {[
+            ?COL_HANGUL_WEIGHT_V(V1)
+            ], Tail};
+col_extract([T1|Tail] = Str, _) when ?CHAR_IS_HANGUL_T(T1) -> {[
+            ?COL_HANGUL_WEIGHT_T(T1)
+            ], Tail};
+    
 
 % Table 18. Values for Base
 % -----------------------------------------------------------------------------
@@ -1153,25 +1224,6 @@ col_append([H|T], Str) ->
     col_append(T, [H|Str]);
 col_append([   ], Str) -> Str.
 
-col_hangul([Ch|Tail])      when (Ch>=?HANGUL_LBASE) 
-                            and (Ch=<?HANGUL_LLAST) -> % CP is Hangul L
-    L = Ch - ?HANGUL_LBASE,
-    col_hangul(Tail, [?COL_HANGUL_LWEIGHT + L]);
-col_hangul(Str) ->
-    col_hangul(Str, []).
-
--spec col_hangul(Str :: string(), Res :: [[integer(), ...], ...]) -> {[], []}. 
-col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_VBASE) 
-                            and (Ch=<?HANGUL_VLAST) -> % CP is Hangul V
-    V = Ch - ?HANGUL_VBASE,
-    col_hangul(Tail, [?COL_HANGUL_VWEIGHT + V | Res]);
-col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_TBASE) 
-                            and (Ch=<?HANGUL_TLAST) -> % CP is Hangul T
-    T = Ch - ?HANGUL_TBASE,
-    col_hangul(Tail, [?COL_HANGUL_TWEIGHT + T | Res]);
-col_hangul(Str, Res) ->
-    {lists:reverse([?COL_HANGUL_TERMINATOR|Res]), Str}. % reversed
-
 
 % 7.1.3 Implicit Weights 
 % The result of this process consists of collation elements that are sorted in
@@ -1213,7 +1265,7 @@ col_compare1([_|_] = Str1, StrTail2, [], Buf2, W1L1, Acc1,
              Acc2, TableFun, ComparatorFun) ->
     {Buf1,     % [<<Flag,L1,L2,...>>, ..]
      StrTail1} = col_extract(Str1, TableFun), 
-    io:format("B1: ~w ~n", [Buf1]),
+%   io:format("B1: ~w ~n", [Buf1]),
     col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, Acc1,
                  Acc2, TableFun, ComparatorFun);
 
@@ -1221,7 +1273,7 @@ col_compare1(StrTail1, [_|_] = Str2, Buf1, [], W1L1, Acc1,
              Acc2, TableFun, ComparatorFun) ->
     {Buf2,     % [<<Flag,L1,L2,...>>, ..]
      StrTail2} = col_extract(Str2, TableFun), 
-    io:format("B2: ~w ~n", [Buf2]),
+%   io:format("B2: ~w ~n", [Buf2]),
     col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, 
                  Acc1, Acc2, TableFun, ComparatorFun);
     

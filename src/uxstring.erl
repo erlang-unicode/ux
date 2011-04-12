@@ -1153,25 +1153,24 @@ col_append([H|T], Str) ->
     col_append(T, [H|Str]);
 col_append([   ], Str) -> Str.
 
-col_hangul(Str) ->
-    col_hangul(Str, [?COL_HANGUL_TERMINATOR]).
-
--spec col_hangul(Str :: string(), Res :: [[integer(), ...], ...]) -> {[], []}. 
-col_hangul([], Res) -> { lists:reverse(Res), [] }; % { Result, StringTail }
-col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_LBASE) 
+col_hangul([Ch|Tail])      when (Ch>=?HANGUL_LBASE) 
                             and (Ch=<?HANGUL_LLAST) -> % CP is Hangul L
     L = Ch - ?HANGUL_LBASE,
-    col_hangul(Tail, [?COL_HANGUL_LWEIGHT + L | Res]);
+    col_hangul(Tail, [?COL_HANGUL_LWEIGHT + L]);
+col_hangul(Str) ->
+    col_hangul(Str, []).
+
+-spec col_hangul(Str :: string(), Res :: [[integer(), ...], ...]) -> {[], []}. 
 col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_VBASE) 
                             and (Ch=<?HANGUL_VLAST) -> % CP is Hangul V
     V = Ch - ?HANGUL_VBASE,
     col_hangul(Tail, [?COL_HANGUL_VWEIGHT + V | Res]);
 col_hangul([Ch|Tail], Res) when (Ch>=?HANGUL_TBASE) 
-                            and (Ch=<?HANGUL_TLAST) -> % CP is Hangul V
+                            and (Ch=<?HANGUL_TLAST) -> % CP is Hangul T
     T = Ch - ?HANGUL_TBASE,
     col_hangul(Tail, [?COL_HANGUL_TWEIGHT + T | Res]);
-col_hangul([_|_] = Str, Res) ->
-    {lists:reverse(Res), Str}. % reversed
+col_hangul(Str, Res) ->
+    {lists:reverse([?COL_HANGUL_TERMINATOR|Res]), Str}. % reversed
 
 
 % 7.1.3 Implicit Weights 

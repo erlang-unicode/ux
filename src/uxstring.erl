@@ -12,6 +12,27 @@
 %%  did not receive this file, see http://www.fsf.org/copyleft/lgpl.html
 %% %CopyrightEnd%
 
+% Additional information
+% ======================
+
+% Collation
+% ---------
+% 1. Hangul Collation Requirements 
+% http://www.open-std.org/jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm
+% PS: There is the main source of information.
+
+% 2. Terminator weight for Hangul
+% http://code.activestate.com/lists/perl-unicode/2163/
+
+% 3. Theory vs. practice for Korean text collation
+% http://blogs.msdn.com/b/michkap/archive/2005/02/25/380266.aspx
+% PS: there is no any practice. They do not the UCA :/
+
+% 4. http://en.wikipedia.org/wiki/Unicode_collation_algorithm
+
+
+
+
 % FIXME:Error: [12594,33] lower [4353,33]
  
 -module(uxstring).

@@ -30,7 +30,8 @@
 
 % 4. http://en.wikipedia.org/wiki/Unicode_collation_algorithm
 
-
+% 6. Unicode implementer's guide part 3: Conjoining jamo behavior
+% http://useless-factor.blogspot.com/2007/08/unicode-implementers-guide-part-3.html
 
 
 % FIXME:Error: [12594,33] lower [4353,33]
@@ -1744,9 +1745,6 @@ nfc_prof(Count) ->
     nfc_test(InFd, Count),
     ok.
 
-nfc_test_() ->
-    {timeout, 600, fun() -> nfc_prof(100) end}.
-
 % Collation Test
 calloc_test(_,    _, _,      0)   -> max;
 calloc_test(InFd, F, false,  Max) ->
@@ -1786,12 +1784,15 @@ calloc_prof(File, Fun, Count) ->
             calloc_test(InFd, Fun, false, Count),
             ok.
 
+nfc_test_() ->
+    {timeout, 600, fun() -> nfc_prof(10000000) end}.
+
 calloc_test_() ->
     {timeout, 600, fun() -> 
         calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
                         ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
-                    10000000) end}.
+                    1) end}.
 
 
 -endif.

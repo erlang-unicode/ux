@@ -33,6 +33,17 @@
 % 6. Unicode implementer's guide part 3: Conjoining jamo behavior
 % http://useless-factor.blogspot.com/2007/08/unicode-implementers-guide-part-3.html
 
+% 7. Unicode implementer's guide part 5: Collation
+% http://useless-factor.blogspot.com/2007/10/unicode-implementers-guide-part-5.html
+
+% 8. Unicode collation works now
+% http://useless-factor.blogspot.com/2008/05/unicode-collation-works-now.html
+% PS: I found it so late. :(
+% FIXME: Combining character contractions. Apparently, two combining marks can 
+%        form a contraction. A straight reading of the UCA wouldn't predict 
+%        this, but not all of the UCA tests pass unless you check for 
+%        non-adjacent combining marks being in a contraction together, without 
+%        a noncombining mark to start it off.
 
 % FIXME:Error: [12594,33] lower [4353,33]
  
@@ -865,6 +876,7 @@ get_composition([VChar |Tail], LChar, 0, [], Result)
                      ?COMP_CHAR_CLASS(Char), [], [LVChar|Result]);
         [] -> [LVChar|Result]
     end;
+
 get_composition([Char | Tail], LChar, 0, [], Result) 
     when ?CHAR_IS_HANGUL_L(LChar) ->
          get_composition(Tail, Char, 
@@ -1130,7 +1142,11 @@ col_extract([CP|Tail], { only_derived, TableFun }) ->
 col_extract([CP|[]], TableFun) -> % Last Char
     {apply(TableFun, [[CP]]), []};
 col_extract([CP | Tail], TableFun) ->
-    col_extract1(Tail, TableFun, [CP], ccc(CP), [], false).
+    col_extract1(Tail, TableFun, [CP], 
+    false, % Max ccc among ccces of skipped chars beetween the starter char 
+           % and the processed char. If there are no skipped chars, then 
+           % Ccc1=false.
+    [], false).
 
 
 % There is only one char which was compared.
@@ -1157,9 +1173,15 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
         %        find if S + C has a match in the table.
         %    _0_ _0_       = false
         %    _0_ 220 _230_ = true
-        %    _0_ 220       = true
+        %    _0_ _220_     = true
+        %    _0_ 220 _220_ = false 
         %    _0_ 220 _220_ = false
-        (Ccc1<Ccc2) or ((Ccc1 == 0) and (Ccc2 == 0)) ->
+
+        
+        (Ccc1 =/= 0) and  % Ccc1 == 0     => Last skipped char was blocked.
+        ((Ccc1 == false)  % Ccc1 == false => There is no skipped chars.
+        or (Ccc1 < Ccc2)) % Ccc1 == Ccc2  => Last skipped char was blocked.
+            -> % Last skipped char was non-blocked.
             NewCPList = [CP2|CPList],
             % Search in callocation table
             % FIXED 1: [108,1425,183,97] lower [108,1,903,97] 
@@ -1195,33 +1217,21 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
                 % Bin == 0, but CPList+NextChar may be not null
                 Bin == more ->
                     case col_extract1(Tail, TableFun, NewCPList, 
-                                      Ccc2, Skipped, more) of
+                                      Ccc1, Skipped, more) of
                         more_error -> % Cannot add any next char.
                             col_extract1(Tail, TableFun, CPList, Ccc2, 
-                                         [CP2|Skipped], OldVal);
+                                         [CP2|Skipped], OldVal); % skip CP2
                         MoreRes    -> MoreRes
                     end;
 
                 (Bin == other) and (OldVal == more) -> 
                     more_error;
 
-                % Cannot add 2 symbols with ccc=0.
-                % _0_ && _0_. Next symbol is blocked. 
-                (Bin == other) and (Ccc2 == 0) and (OldVal == false) ->
-              col_extract(col_append(CPList, 
-                             col_append(Skipped, Str)), 
-                          {only_derived, TableFun}); 
+                (Bin == other) ->
+                    col_extract1(Tail, TableFun, CPList, Ccc2, 
+                                 [CP2|Skipped], OldVal); % skip CP2
 
-                % _0_ && _0_. Next symbol is blocked. 
-                (Bin == other) and (Ccc2 == 0) and (OldVal =/= false) ->
-                        {OldVal, col_append(Skipped, Str)};
-
-                % Skip char CP2.
-                (Bin == other) and (Ccc2  > 0) -> 
-                    col_extract1(Tail, TableFun, CPList, 
-                                 Ccc2, [CP2|Skipped], OldVal);
-
-                % Append char CP2.
+                % Append char CP2. Try find more characters.
                 true -> col_extract1(Tail, TableFun, NewCPList, 
                                      Ccc2, Skipped, Bin)
             end;
@@ -1477,6 +1487,7 @@ str_info(Rec = #unistr_info {}) ->
         fun str_info_nfd/1,
         fun str_info_nfc/1,
         fun str_info_ducet_simple/1,
+        fun str_info_ccc/1,
         fun str_info_col_sort_array/1,
         fun str_info_char_block/1
     ], Rec);
@@ -1496,6 +1507,9 @@ str_info_comment(Obj = #unistr_info{ str=Str }) ->
 
 str_info_ducet_simple(Obj = #unistr_info{ str=Str }) ->
     Obj#unistr_info{ ducet = lists:map(fun ducet/1, [[Ch] || Ch <- Str])}.
+
+str_info_ccc(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ ccc = lists:map(fun ccc/1, [Ch || Ch <- Str])}.
 
 str_info_nfd(Obj = #unistr_info{ str=Str }) ->
     Obj#unistr_info{ nfd = to_nfd(Str)}.
@@ -1776,14 +1790,14 @@ calloc_prof(File, Fun, Count) ->
             ok.
 
 nfc_test_() ->
-    {timeout, 600, fun() -> nfc_prof(10000000) end}.
+    {timeout, 600, fun() -> nfc_prof(1) end}.
 
 calloc_test_() ->
     {timeout, 600, fun() -> 
         calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
                         ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
-                    1) end}.
+                    100000000) end}.
 
 
 -endif.

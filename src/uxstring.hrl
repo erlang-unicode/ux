@@ -17,6 +17,7 @@
         nfd,            % Normal Form D
         nfc,            % Normal Form C
         ducet,          % Weight's from ducet for each symbol
+        ccc,            % Canonical Combining Classes 
         col_sort_array, % Collation sort array
         blocks          % Blocks from Unicode Character Database
         }).

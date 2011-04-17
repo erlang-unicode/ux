@@ -95,6 +95,7 @@
 -export([ducet/1]).
 -export([col_non_ignorable/2]).
 -export([col_sort_array/1]).
+-export([col_sort_array/2]).
 -export([col_extract/2]).
 
 -export([char_is_cjk_compatibility_ideograph/1,
@@ -1141,74 +1142,36 @@ col_extract([CP|Tail], { only_derived, TableFun }) ->
 % Try extract from ducet.
 col_extract([CP|[]], TableFun) -> % Last Char
     {apply(TableFun, [[CP]]), []};
-col_extract([CP | Tail], TableFun) ->
-    col_extract1(Tail, TableFun, [CP], 
+col_extract([CP | Tail] = Str, TableFun) ->
+    Res = col_extract1(Tail, TableFun, [CP], 
     false, % Max ccc among ccces of skipped chars beetween the starter char 
            % and the processed char. If there are no skipped chars, then 
            % Ccc1=false.
-    [], false).
+    [], false),
+    io:format("In: ~w Out: ~w ~n", [Str, Res]),
+    Res.
 
 
 % There is only one char which was compared.
 % TableFun(CPlist) is always return right weight.
 col_extract1([        ],       TableFun, [Ch],   _   , Skipped, false ) ->
-    col_extract([Ch | Skipped], { only_derived, TableFun }); 
+    col_extract([Ch | lists:reverse(Skipped)], { only_derived, TableFun }); 
 % see BUG 7
 col_extract1([        ],       _,        _,      _   ,       _, more  ) ->
     more_error;
 % ... One or more chars
 col_extract1([        ],       _,        _,      _   , Skipped, OldVal) ->
-    {OldVal, lists:reverse(Skipped)};
+    {OldVal, Skipped};
 % OldVal = apply(TableFun, [CPList])
 col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
     Ccc2  = ccc(CP2),
 %   W2CP2 = apply(TableFun, [[CP2]]),
     if
-% MAN: Noncharacter code points are also no longer required to be mapped 
-%      to [.0000.0000.0000.], but are given implicit weights instead.
-%       W2CP2 == [<<0:72>>] -> 
-%           col_extract1(Tail, TableFun, CPList, Ccc1, Skipped, OldVal);
-
-        % S2.1.2 If C is not blocked from S, 
-        %        find if S + C has a match in the table.
-        %    _0_ _0_       = false
-        %    _0_ 220 _230_ = true
-        %    _0_ _220_     = true
-        %    _0_ 220 _220_ = false 
-        %    _0_ 220 _220_ = false
-
-        
         (Ccc1 =/= 0) and  % Ccc1 == 0     => Last skipped char was blocked.
         ((Ccc1 == false)  % Ccc1 == false => There is no skipped chars.
         or (Ccc1 < Ccc2)) % Ccc1 == Ccc2  => Last skipped char was blocked.
             -> % Last skipped char was non-blocked.
             NewCPList = [CP2|CPList],
-            % Search in callocation table
-            % FIXED 1: [108,1425,183,97] lower [108,1,903,97] 
-            %     NFD: [108,1425,183,97] lower [108,1,183,97] 
-            % comment: map 1 to 0.0.0.0 and ccc(1) = 0
-
-            % FIXME 2: [97,803,774,820] lower [7840,820] 
-            %     NFD: [97,820,803,774] lower [65,820,803] 
-            % comment: Avoid a skipping of non-collated cyllables
-
-            % FIXED 3: [320,33] lower [108,903,33] 
-            %     NFD: [320,33] lower [108,183,33]  
-            % comment: Ccc1 == Ccc2 == 0
-
-            % FIXED 4: [1072,1425,774,97] lower [1072,774,97] 
-            % comment: skip non-colletad cyllables
-
-            % FIXED 5: [3399,1425,3390,97], [3399,1,3390,97]  
-            %     see: Cannot add 2 symbol with ccc=0
-
-            % FIXED 6: [4019,3953,3968,33] lower [3961,33]    
-            %     see: more 
-
-            % FIXED 7: [4019,3953,33] lower [3961,33] 
-
-            % FIXME 8: [111,772,808,820] lower [490,820]
-            %     NFD: [111,820,808,772] lower [79,820,808] 
 
             % Try extract weight from ducat. There is one place, where we can 
             % extract. We only get old value from ducat in other places.
@@ -1232,9 +1195,16 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
                                  [CP2|Skipped], OldVal); % skip CP2
 
                 % Append char CP2. Try find more characters.
+                Ccc1 == false -> col_extract1(Tail, TableFun, NewCPList, 
+                                     false, Skipped, Bin);
                 true -> col_extract1(Tail, TableFun, NewCPList, 
                                      Ccc2, Skipped, Bin)
             end;
+
+        (Ccc1 == Ccc2) and (Ccc1 =/= 0) ->
+            col_extract1(Tail, TableFun, CPList, Ccc2, 
+                         [CP2|Skipped], OldVal); % skip CP2
+
         OldVal ==  more  -> more_error;
 % Note: A non-starter in a string is called blocked if there is another 
 %       non-starter of the same canonical combining class or zero between 
@@ -1250,9 +1220,11 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
     
 % lists:reverse(Head) ++ Tail
 -spec col_append(InStr :: string(), OutStr :: string()) -> string().
-col_append([H|T], Str) ->
-    col_append(T, [H|Str]);
-col_append([   ], Str) -> Str.
+col_append(InStr, OutStr) ->
+    col_append1(InStr, OutStr).
+col_append1([H|T], Str) ->
+    col_append1(T, [H|Str]);
+col_append1([   ], Str) -> Str.
 
 
 % 7.1.3 Implicit Weights 
@@ -1447,7 +1419,7 @@ col_sort_array1(        Str, TableFun, [H|T], Res) ->
     col_sort_array1(Str, TableFun, T, [H|Res]);
 col_sort_array1([_|_] = Str, TableFun, [   ], Res) ->
     {Buf, StrTail} = col_extract(Str, TableFun), 
-    col_sort_array1(StrTail, TableFun, Buf, Res).
+    col_sort_array1(StrTail, TableFun, Buf, [test|Res]).
 
 
 % Convert binary from DUCET to list [L1, L2, L3, L4]
@@ -1797,7 +1769,13 @@ calloc_test_() ->
         calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
                         ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
-                    100000000) end}.
+                    1000000) end}.
+
+col_append_test_() ->
+	F = fun col_append/2,
+	[?_assertEqual(F("ABC", "DEF"), "CBADEF")
+	,?_assertEqual(F("123", F("ABC", "DEF")), "321CBADEF")
+	].
 
 
 -endif.

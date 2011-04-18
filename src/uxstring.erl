@@ -103,6 +103,7 @@
          char_is_unified_ideograph/1]).
 
 -export([str_info/1]).
+-export([decomp/1]).
 -export([char_block/1]).
 
 %% @doc Returns various "character types" which can be used 
@@ -1161,7 +1162,7 @@ col_extract1([        ],       _,        _,      _   ,       _, more  ) ->
     more_error;
 % ... One or more chars
 col_extract1([        ],       _,        _,      _   , Skipped, OldVal) ->
-    {OldVal, Skipped};
+    { OldVal, lists:reverse(Skipped) }; % Return result
 % OldVal = apply(TableFun, [CPList])
 col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
     Ccc2  = ccc(CP2),
@@ -1221,6 +1222,7 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
 % lists:reverse(Head) ++ Tail
 -spec col_append(InStr :: string(), OutStr :: string()) -> string().
 col_append(InStr, OutStr) ->
+    io:format("App: ~w ~w ~n", [InStr, OutStr]),
     col_append1(InStr, OutStr).
 col_append1([H|T], Str) ->
     col_append1(T, [H|Str]);
@@ -1727,14 +1729,21 @@ calloc_test(_,    _, _,      0)   -> max;
 calloc_test(InFd, F, false,  Max) ->
     OldVal = calloc_test_read(InFd),
     calloc_test(InFd, F, OldVal,  Max);
-calloc_test(InFd, F, OldVal, Max) ->
+calloc_test(InFd, F, {OldFullStr, OldVal}, Max) ->
     case calloc_test_read(InFd) of
-        Val when is_list(Val) -> 
-            case F(Val, OldVal) of
+        {FullStr, Val} = Result when is_list(Val) -> 
+            case F(Val, OldVal) of % collation compare
+                % error
                 lower -> io:format(user, "Error: ~w ~w ~w ~n", 
                                          [Val, lower, OldVal]),
-                         calloc_test(InFd, F, Val, Max - 1);
-                _     -> calloc_test(InFd, F, Val, Max - 1)
+
+                         io:format(user,
+                            " Data1: ~s Data2: ~s",
+                            [OldFullStr, FullStr]),
+                        
+                         calloc_test(InFd, F, Result, Max - 1);
+                % OK. Try next
+                _     -> calloc_test(InFd, F, Result, Max - 1)
             end;
         _ -> ok
     end.
@@ -1742,16 +1751,18 @@ calloc_test(InFd, F, OldVal, Max) ->
 %% Read line from a testdata file (see CollationTest.html)
 %% Return list of codepaints
 calloc_test_read(InFd) ->
-    case file:read_line(InFd) of
+    case io:get_line(InFd, "") of
         eof -> ok;
-        {ok, Data} -> 
-            try
+        Data -> 
+            try % parse Data
                 [Value|_] = uxstring:split(["#", ";", "\n"], Data), 
                 %% Converts "0009 0021" to [16#0009, 16#0021]
-                lists:map(fun uxstring:hex_to_int/1, string:tokens(Value, " "))
-            of Res -> Res
+                lists:map(fun uxstring:hex_to_int/1, 
+                          string:tokens(Value, " "))
+            of Res -> {Data, Res} % {FullStr, Codepaints}
             catch                   
-                error:_Reason -> calloc_test_read(InFd)
+                error:_Reason -> 
+                    calloc_test_read(InFd)
             end
     end.
 

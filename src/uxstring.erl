@@ -12,6 +12,8 @@
 %%  did not receive this file, see http://www.fsf.org/copyleft/lgpl.html
 %% %CopyrightEnd%
 
+
+
 % Additional information
 % ======================
 
@@ -1738,7 +1740,7 @@ calloc_test(InFd, F, {OldFullStr, OldVal}, Max) ->
                                          [Val, lower, OldVal]),
 
                          io:format(user,
-                            " Data1: ~s Data2: ~s",
+                            " Data1: ~ts Data2: ~ts",
                             [OldFullStr, FullStr]),
                         
                          calloc_test(InFd, F, Result, Max - 1);
@@ -1748,8 +1750,9 @@ calloc_test(InFd, F, {OldFullStr, OldVal}, Max) ->
         _ -> ok
     end.
 
-%% Read line from a testdata file (see CollationTest.html)
-%% Return list of codepaints
+%% Read line from a testdata file InFd (see CollationTest.html).
+%% Return list of codepaints.
+%% Used by calloc_test/4.
 calloc_test_read(InFd) ->
     case io:get_line(InFd, "") of
         eof -> ok;
@@ -1778,7 +1781,7 @@ nfc_test_() ->
 calloc_test_() ->
     {timeout, 600, fun() -> 
         calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
-                        ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
+                        ++ "CollationTest_NON_IGNORABLE.txt", 
                     fun col_non_ignorable/2, 
                     1000000) end}.
 

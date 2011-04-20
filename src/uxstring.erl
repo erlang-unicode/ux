@@ -1150,9 +1150,12 @@ col_extract([CP | Tail] = Str, TableFun) ->
            % and the processed char. If there are no skipped chars, then 
            % Ccc1=false.
     [], false),
-    io:format("In: ~w Out: ~w ~n", [Str, Res]),
+%   io:format("In: ~w Out: ~w ~n", [Str, Res]),
     Res.
 
+% Note: A non-starter in a string is called blocked if there is another 
+%       non-starter of the same canonical combining class or zero between 
+%       it and the last character of canonical combining class 0.
 
 % There is only one char which was compared.
 % TableFun(CPlist) is always return right weight.
@@ -1164,7 +1167,8 @@ col_extract1([        ],       _,        _,      _   ,       _, more  ) ->
 % ... One or more chars
 col_extract1([        ],       _,        _,      _   , Skipped, OldVal) ->
     { OldVal, lists:reverse(Skipped) }; % Return result
-% OldVal = apply(TableFun, [CPList])
+
+% TIP: OldVal = apply(TableFun, [CPList])
 col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
     Ccc2  = ccc(CP2),
 %   W2CP2 = apply(TableFun, [[CP2]]),
@@ -1178,9 +1182,10 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
             % Try extract weight from ducat. There is one place, where we can 
             % extract. We only get old value from ducat in other places.
             Bin = apply(TableFun, [NewCPList]),
-            if
-                % Bin == 0, but CPList+NextChar may be not null
-                Bin == more ->
+	    case Bin of
+                % Bin(CPList) == other, but Bin(CPList+NextChar) may be 
+		% have a specified collation weight.
+                more ->
                     case col_extract1(Tail, TableFun, NewCPList, 
                                       Ccc1, Skipped, more) of
                         more_error -> % Cannot add any next char.
@@ -1189,41 +1194,49 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
                         MoreRes    -> MoreRes
                     end;
 
-                (Bin == other) and (OldVal == more) -> 
+		% Cannot extract collation element.
+                other when (more == OldVal)  ->
                     more_error;
 
-                (Bin == other) ->
+                other when (more =/= OldVal) ->
                     col_extract1(Tail, TableFun, CPList, Ccc2, 
                                  [CP2|Skipped], OldVal); % skip CP2
 
                 % Append char CP2. Try find more characters.
-                Ccc1 == false -> col_extract1(Tail, TableFun, NewCPList, 
+		% Ccc1 == false, because this is a first step of algorithm.
+		% (don't save canonical class of previous character (ccc1))
+                [_|_] when (false == Ccc1) -> 
+			col_extract1(Tail, TableFun, NewCPList, 
                                      false, Skipped, Bin);
-                true -> col_extract1(Tail, TableFun, NewCPList, 
+		
+                % Append char CP2. Try find more characters.
+		% Ccc1 =/= false, because this is a second step of algorithm.
+                [_|_] when (false =/= Ccc1) -> 
+			col_extract1(Tail, TableFun, NewCPList, 
                                      Ccc2, Skipped, Bin)
-            end;
+            end; % if
 
-        (Ccc1 == Ccc2) and (Ccc1 =/= 0) ->
+	% Last skipped char was blocked.
+        (Ccc1 == Ccc2) and (0 =/= Ccc1) ->
             col_extract1(Tail, TableFun, CPList, Ccc2, 
                          [CP2|Skipped], OldVal); % skip CP2
 
         OldVal ==  more  -> more_error;
-% Note: A non-starter in a string is called blocked if there is another 
-%       non-starter of the same canonical combining class or zero between 
-%       it and the last character of canonical combining class 0.
         OldVal ==  false -> % and (CPList == [_]) 
               % http://unicode.org/reports/tr10/#Unassigned_And_Other
               col_extract(col_append(CPList, 
                              col_append(Skipped, Str)), 
-                          {only_derived, TableFun}); 
-        OldVal =/= false -> {OldVal,                    
-                             col_append(Skipped, Str)}
+                          { only_derived, TableFun }); 
+        OldVal =/= false -> { OldVal,                    
+                              col_append(Skipped, Str) }
     end.
     
-% lists:reverse(Head) ++ Tail
+% Used in col_extract.
+% Fast realization of:
+% TIP: col_append(Head, Tail) == lists:reverse(Head) ++ Tail
 -spec col_append(InStr :: string(), OutStr :: string()) -> string().
 col_append(InStr, OutStr) ->
-    io:format("App: ~w ~w ~n", [InStr, OutStr]),
+%   io:format("App: ~w ~w ~n", [InStr, OutStr]),
     col_append1(InStr, OutStr).
 col_append1([H|T], Str) ->
     col_append1(T, [H|Str]);
@@ -1241,9 +1254,6 @@ col_implicit_weight(CP, BASE) ->
     BBBB = (CP band 16#7FFF) bor 16#8000,
     [<<0:8, AAAA:16, 16#0020:16, 0002:16, 0:16>>, BBBB]. % reversed
 
-
-% FIXME: Error: [12622,63] lower [4370,63]
- 
 
 %%% Compares on L1, collects data for {L2,L3,L4} comparations.
 %% Extract chars from the strings.
@@ -1334,18 +1344,10 @@ col_compare1([], [CP2|StrTail2], [], [],  _,    Acc1,
     col_compare1([],  StrTail2,  [], CP2, true, Acc1,
                  Acc2, TableFun, ComparatorFun);
 
-%::error:function_clause
-%  in function uxstring:col_compare1/9
-%  called as col_compare1([],[],[<<1,2,123,0,32,0,2,0,33>>],[],513...)
-%  Fixed: (false > 0) = true        (o_O)
-%    called as col_compare1([769],[],[33544],[],64448,
-%       [[32,2],[0,0],[32,2]],[[71,2],[0,0],[32,2]],...
 col_compare1(_, [], _, [], W1L1, _, _, _, _) 
     when (W1L1 > 0) and (W1L1 =/= false) ->
     greater;
-%col_compare1([_], [], [_], [], W1L1, _, _, _, _) 
-%    when (W1L1 > 0) and (W1L1 =/= false) ->
-%    greater;
+
 col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1, 
              Acc2, TableFun, ComparatorFun) when W1L1 == 0 ->
     [W1L1New | Acc] = apply(ComparatorFun, [W1Raw]),
@@ -1363,7 +1365,6 @@ col_compare1([], [], [], [], false, Acc1, Acc2, _, _) ->
                  [], % Other accumulator. Contains L3 and L4.
                  []  % Other acc...
                 ).
-% FIXED: Error: [55199,65] lower [55199,97] Error in col_hangul
 
 
 %%% L2 comparation.
@@ -1725,6 +1726,15 @@ nfc_prof(Count) ->
     nfc_test(InFd, Count),
     ok.
 
+col_append_test_() ->
+	F = fun col_append/2,
+	[?_assertEqual(F("ABC", "DEF"), "CBADEF")
+	,?_assertEqual(F("123", F("ABC", "DEF")), "321CBADEF")
+	].
+
+
+%% SLOW TESTS %%
+
 % Collation Test
 calloc_test(_,    _, _,      0)   -> max;
 calloc_test(InFd, F, false,  Max) ->
@@ -1738,9 +1748,9 @@ calloc_test(InFd, F, {OldFullStr, OldVal}, Max) ->
                 lower -> io:format(user, "Error: ~w ~w ~w ~n", 
                                          [Val, lower, OldVal]),
 
-                         io:format(user,
-                            " Data1: ~ts Data2: ~ts",
-                            [OldFullStr, FullStr]),
+%                         io:format(user,
+%                            " Data1: ~ts Data2: ~ts",
+%                            [OldFullStr, FullStr]),
                         
                          calloc_test(InFd, F, Result, Max - 1);
                 % OK. Try next
@@ -1775,20 +1785,16 @@ calloc_prof(File, Fun, Count) ->
             ok.
 
 nfc_test_() ->
-    {timeout, 600, fun() -> nfc_prof(1) end}.
+    {timeout, 600, fun() -> nfc_prof(1000000) end}.
 
 calloc_test_() ->
     {timeout, 600, fun() -> 
         calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
-                        ++ "CollationTest_NON_IGNORABLE.txt", 
+% Slow, with comments.
+%%                      ++ "CollationTest_NON_IGNORABLE.txt", 
+                        ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
                     1000000) end}.
-
-col_append_test_() ->
-	F = fun col_append/2,
-	[?_assertEqual(F("ABC", "DEF"), "CBADEF")
-	,?_assertEqual(F("123", F("ABC", "DEF")), "321CBADEF")
-	].
 
 
 -endif.

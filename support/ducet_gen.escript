@@ -84,7 +84,7 @@ do_gen(InFd, {OutFd} = OutFds, Chars) ->
 	end.
 	
 hangul_halfwidth_fix([<<HBin:32,TBin/binary>> | T]) ->
-    HBin2 = HBin - 300,
+    HBin2 = HBin - 296,
     [<<HBin2:32,TBin/binary>> | T];
 hangul_halfwidth_fix(Res) ->
     Res.

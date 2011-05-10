@@ -1,16 +1,16 @@
-%% uxstring library 
-%%
-%% @package  ux
-%% @author   Uvarov Michael <freeakk@gmail.com>
-%% @license  http://www.fsf.org/copyleft/lgpl.html LGPL
-%%
-%% @copyright 2010 Uvarov Michael.
-%% %CopyrightBegin%
-%%  Copyright 2010 Uvarov Michael  
-%%
-%%  See the enclosed file COPYING for license information (LGPL). If you
-%%  did not receive this file, see http://www.fsf.org/copyleft/lgpl.html
-%% %CopyrightEnd%
+%%% uxstring library 
+%%%
+%%% @package  ux
+%%% @author   Uvarov Michael <freeakk@gmail.com>
+%%% @license  http://www.fsf.org/copyleft/lgpl.html LGPL
+%%%
+%%% @copyright 2010 Uvarov Michael.
+%%% %CopyrightBegin%
+%%%  Copyright 2010 Uvarov Michael  
+%%%
+%%%  See the enclosed file COPYING for license information (LGPL). If you
+%%%  did not receive this file, see http://www.fsf.org/copyleft/lgpl.html
+%%% %CopyrightEnd%
 
 
 % Additional information
@@ -40,13 +40,14 @@
 % 8. Unicode collation works now
 % http://useless-factor.blogspot.com/2008/05/unicode-collation-works-now.html
 % PS: I found it so late. :(
-% FIXME: Combining character contractions. Apparently, two combining marks can 
+% FIXED: Combining character contractions. Apparently, two combining marks can 
 %        form a contraction. A straight reading of the UCA wouldn't predict 
 %        this, but not all of the UCA tests pass unless you check for 
 %        non-adjacent combining marks being in a contraction together, without 
 %        a noncombining mark to start it off.
 
-% FIXME:Error: [12594,33] lower [4353,33]
+% FIXME: Hangul half- and full-width characters are not sorted right.
+% FIXME: Error: [12594,33] lower [4353,33]
  
 -module(uxstring).
 -author('Uvarov Michael <freeakk@gmail.com>').
@@ -112,6 +113,7 @@
 %%      Types:
 %%      http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category
 %% @end
+% char_type(_) -> false.
 -export([char_type/1, char_types/1]).
 
 -define(ASSERT(TEST,TRUE,FALSE), case TEST of 
@@ -124,7 +126,9 @@ end).
 	false -> fun not_in_array/2
 end).
 
-%% Defines Hangul constants
+% Defines Hangul constants
+% Hangul characters can be decompize to LV or LVT forms.
+
 -define(HANGUL_SBASE,  16#AC00).
 -define(HANGUL_LBASE,  16#1100). % 4352 - 4371
 -define(HANGUL_VBASE,  16#1161). % 4449 - 4470
@@ -193,7 +197,7 @@ end).
 
 % [20940] CJK UNIFIED IDEOGRAPH-4E00..9FCB
 %or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB)) 
-% FIXME: Error: [55296,33] lower [40908,98]
+% FIXED: Error: [55296,33] lower [40908,98]
 % CJK Unified Ideographs
  or ((Ch >= 16#4E00)  and (Ch =< 16#9FFF)) 
 
@@ -224,7 +228,7 @@ end).
  or ((Ch >= 16#2B740) and (Ch =< 16#2B81D))
 )).
 
-% FIXME: Error: [1114111,33] lower [1114110,98]
+% FIXED: Error: [1114111,33] lower [1114110,98]
 -include("string/char_to_upper.hrl").
 %char_to_upper(C) -> C.
 -include("string/char_to_lower.hrl").
@@ -674,7 +678,7 @@ freq_1([Char|Str], Dict) -> freq_1(Str, dict:update_counter(Char, 1, Dict));
 freq_1([], Dict)         -> Dict.
 
 
-% http://unicode.org/reports/tr15/#Hangul
+%% http://unicode.org/reports/tr15/#Hangul
 is_hangul(Char) when
      ((Char>=16#1100) and (Char=<16#11FF)) % Hangul Jamo
   or ((Char>=16#A960) and (Char=<16#A97C)) % Hangul Jamo Extended-A
@@ -762,10 +766,10 @@ char_to_list(Char, Buf, Res) ->
                 char_to_list(Div, [Rem|Buf], Res)
     end.
 
-% internal_decompose(Str)
-% Canonical  If true bit is on in this byte, then selects the recursive 
-%            canonical decomposition, otherwise selects
-%            the recursive compatibility and canonical decomposition.
+%% internal_decompose(Str)
+%% Canonical  If true bit is on in this byte, then selects the recursive 
+%%            canonical decomposition, otherwise selects
+%%            the recursive compatibility and canonical decomposition.
 get_recursive_decomposition(Canonical, Str) -> 
             get_recursive_decomposition(Canonical, Str, []).
 
@@ -805,7 +809,7 @@ get_recursive_decomposition(Canonical, [Char|Tail], Result) ->
     end;
 get_recursive_decomposition(_, [], Result) -> Result.
 
-% Normalize NFD or NFKD
+%% Normalize NFD or NFKD
 normalize(Str)              -> normalize1(Str, [], []).
 normalize1([], [ ], Result) -> Result;
 normalize1([], Buf, Result) -> normalize2(lists:reverse(Buf), Result);
@@ -821,7 +825,7 @@ normalize1([Char|Tail], Buf, Result) ->
         true -> normalize1(Tail, [{Class, Char} | Buf], Result)
     end.
 
-% Append chars from Buf to Result in a right order.
+%% Append chars from Buf to Result in a right order.
 normalize2([], Result)  -> Result;
 normalize2(Buf, Result) ->
     case normalize3(Buf, false, 0) of
@@ -829,7 +833,7 @@ normalize2(Buf, Result) ->
         {_, Char} = Value -> normalize2(Buf -- [Value], [Char|Result])
     end.
 
-% Return char from Buf with max ccc
+%% Return char from Buf with max ccc
 normalize3([{CharClass, _} = Value | Tail], _, MaxClass) 
     when CharClass > MaxClass 
  -> normalize3(Tail, Value, CharClass);
@@ -851,9 +855,9 @@ get_composition([Char|Tail]) ->
     ).
 
 
-% Compose hangul characters
-% 1. check to see if two current characters are L and V
-% 2. check to see if two current characters are LV and T
+%% Compose hangul characters
+%% 1. check to see if two current characters are L and V
+%% 2. check to see if two current characters are LV and T
 get_composition([VChar |Tail], LChar, 0, [], Result) 
     when ?CHAR_IS_HANGUL_L(LChar)
      and ?CHAR_IS_HANGUL_V(VChar)
@@ -908,7 +912,7 @@ get_composition([], Char, _, [],   Result) ->
 get_composition([], Char, _, Mods, Result) ->
     comp_append([Char|Result], Mods).
 
-% Mods ++ Result
+%% Mods ++ Result
 comp_append(Result, []) -> Result;
 comp_append(Result, [_|_] = Mods) -> comp_append1(Result, lists:reverse(Mods)).
 
@@ -925,10 +929,10 @@ to_ncr([         ], Res) -> Res.
 
 -spec char_to_ncr(char()) -> string().
 char_to_ncr(Char) when Char =< 16#7F 
-% one-byte character
+    % one-byte character
     -> [Char];
 char_to_ncr(Char) when Char =< 16#C2
-% non-utf8 character or not a start byte
+    % non-utf8 character or not a start byte
     -> [];
 char_to_ncr(Char) 
     -> lists:flatten(io_lib:format("&#~p;", [Char])).   
@@ -1025,14 +1029,15 @@ col_compare (String1, String2, TableFun, ComparatorFun) ->
                  TableFun, % fun uxstring:ducet/1, in chars are REVERSED.
                  ComparatorFun).
 
-% MANUAL:
-% S2.1   Find the longest initial substring S at each point 
-%        that has a match in the table.
-% S2.1.1 If there are any non-starters following S, process each non-starter C.
-% S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
-% S2.1.3 If there is a match, replace S by S + C, and remove C.
+%% MANUAL:
+%% S2.1   Find the longest initial substring S at each point 
+%%        that has a match in the table.
+%% S2.1.1 If there are any non-starters following S, process each non-starter C.
+%% S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
+%% S2.1.3 If there is a match, replace S by S + C, and remove C.
 -spec col_extract(string(), fun()) 
     -> {[[integer(), ...], ...], Tail :: string()}.
+
 col_extract([     ], _       ) -> % No Any Char
     {[], []};
 
@@ -1231,9 +1236,9 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
                               col_append(Skipped, Str) }
     end.
     
-% Used in col_extract.
-% Fast realization of:
-% TIP: col_append(Head, Tail) == lists:reverse(Head) ++ Tail
+%% Used in col_extract.
+%% Fast realization of:
+%% TIP: col_append(Head, Tail) == lists:reverse(Head) ++ Tail
 -spec col_append(InStr :: string(), OutStr :: string()) -> string().
 col_append(InStr, OutStr) ->
 %   io:format("App: ~w ~w ~n", [InStr, OutStr]),
@@ -1243,21 +1248,21 @@ col_append1([H|T], Str) ->
 col_append1([   ], Str) -> Str.
 
 
-% 7.1.3 Implicit Weights 
-% The result of this process consists of collation elements that are sorted in
-% code point order, that do not collide with any explicit values in the table,
-% and that can be placed anywhere (for example, at BASE) with respect to the 
-% explicit collation element mappings. By default, implicit mappings are given
-% higher weights than all explicit collation elements.
+%% 7.1.3 Implicit Weights 
+%% The result of this process consists of collation elements that are sorted in
+%% code point order, that do not collide with any explicit values in the table,
+%% and that can be placed anywhere (for example, at BASE) with respect to the 
+%% explicit collation element mappings. By default, implicit mappings are given
+%% higher weights than all explicit collation elements.
 col_implicit_weight(CP, BASE) ->
     AAAA = BASE + (CP bsr 15),
     BBBB = (CP band 16#7FFF) bor 16#8000,
     [<<0:8, AAAA:16, 16#0020:16, 0002:16, 0:16>>, BBBB]. % reversed
 
 
-%%% Compares on L1, collects data for {L2,L3,L4} comparations.
+%% Compares on L1, collects data for {L2,L3,L4} comparations.
 %% Extract chars from the strings.
-%
+%%
 %% ComparatorFun    S2.3 Process collation elements according to the 
 %%                  variable-weight setting, as described in Section 
 %%                  3.6.2, Variable Weighting.
@@ -1267,15 +1272,15 @@ col_implicit_weight(CP, BASE) ->
         Acc2 :: [[integer()]], % Acc = [[L2,L3,L4], ...] 
       fun(), fun())  ->  lower | greater | equal.
 
-% col_compare1 ALGORITHM.
-% 1. Extract weights from Str1 to Buf1.
-% 2. Extract weights from Str2 to Buf2.
-% 3. Extract L1 weight from Buf1 to W1L1.
-% 4. Exctaxt L1 weight from Buf1 and compare with W1L1.
-% 5a. If W1L1 > W2L1 then Str1 greater Str2.
-% 5b. If W1L1 < W2L1 then Str1 lower   Str2.
-% 5c. If W1L1 = W2L1 and strings have non-compared characters then go to a step 1.
-% 6. Run col_compare2.
+%% col_compare1 ALGORITHM.
+%% 1. Extract weights from Str1 to Buf1.
+%% 2. Extract weights from Str2 to Buf2.
+%% 3. Extract L1 weight from Buf1 to W1L1.
+%% 4. Exctaxt L1 weight from Buf1 and compare with W1L1.
+%% 5a. If W1L1 > W2L1 then Str1 greater Str2.
+%% 5b. If W1L1 < W2L1 then Str1 lower   Str2.
+%% 5c. If W1L1 = W2L1 and strings have non-compared characters then go to a step 1.
+%% 6. Run col_compare2.
 col_compare1([_|_] = Str1, StrTail2, [], Buf2, W1L1, Acc1, 
              Acc2, TableFun, ComparatorFun) ->
     {Buf1,     % [<<Flag,L1,L2,...>>, ..]
@@ -1412,8 +1417,8 @@ col_compare2([], [], false, [_|_] = OutAcc1, [_|_] = OutAcc2) ->
 col_compare2([], [], false, [], []) ->
     equal. % on all levels
 
-% http://unicode.org/reports/tr10/#Step_2
-% Produce Sort Array
+%% http://unicode.org/reports/tr10/#Step_2
+%% Produce Sort Array
 col_sort_array(Str, TableFun) ->
     col_sort_array1(to_nfd(Str), TableFun, [], []).
 
@@ -1426,7 +1431,7 @@ col_sort_array1([_|_] = Str, TableFun, [   ], Res) ->
     col_sort_array1(StrTail, TableFun, Buf, [test|Res]).
 
 
-% Convert binary from DUCET to list [L1, L2, L3, L4]
+%% Convert binary from DUCET to list [L1, L2, L3, L4]
 col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, _:16>>) ->
     [L1, L2, L3];
 col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, _:24>>) ->
@@ -1457,6 +1462,10 @@ char_is_unified_ideograph(_) -> false.
    %    %   % % %       %     %
    %    %    %% %       %     %
   %%%   %     % %       %%%%%%%
+
+%% Collect information about string.
+-spec str_info(Str::string()) -> #unistr_info {}.
+
 str_info(Rec = #unistr_info {}) ->
     str_info1([
         fun str_info_comment/1,
@@ -1552,6 +1561,9 @@ to_lower_test_() ->
 	M = 'uxstring',
 	F = 'to_lower',
 	[?_assertEqual(M:F("small BIG"), "small big")
+	,?_assertEqual(M:F(	"You want your freedom?"), 
+				"you want your freedom?")
+	% Russian text
 	,?_assertEqual(M:F(	[1069,1056,1051,1040,1053,1043]), 
 				[1101,1088,1083,1072,1085,1075])
 	].
@@ -1559,6 +1571,8 @@ to_upper_test_() ->
 	M = 'uxstring',
 	F = 'to_upper',
 	[?_assertEqual(M:F("small BIG"), "SMALL BIG")
+	,?_assertEqual(M:F(	"I'm making a note here: HUGE SUCCESS."), 
+				"I'M MAKING A NOTE HERE: HUGE SUCCESS.")
 	,?_assertEqual(M:F(	[1101,1088,1083,1072,1085,1075]),
 				[1069,1056,1051,1040,1053,1043])
 	].
@@ -1648,19 +1662,22 @@ first_types_test_() ->
 	,?_assertEqual(M:F([ll], "AavbfFDsdfffds", 5), "avbfs")
 	].
 
-%    NFC
-%      c2 ==  NFC(c1) ==  NFC(c2) ==  NFC(c3)
-%      c4 ==  NFC(c4) ==  NFC(c5)
-%
-%    NFD
-%      c3 ==  NFD(c1) ==  NFD(c2) ==  NFD(c3)
-%      c5 ==  NFD(c4) ==  NFD(c5)
-%
-%    NFKC
-%      c4 == NFKC(c1) == NFKC(c2) == NFKC(c3) == NFKC(c4) == NFKC(c5)
-%
-%    NFKD
-%      c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4) == NFKD(c5)
+%% Normalization Conformance Test
+%% http://unicode.org/reports/tr41/tr41-7.html#Tests15
+%%
+%%    NFC
+%%      c2 ==  NFC(c1) ==  NFC(c2) ==  NFC(c3)
+%%      c4 ==  NFC(c4) ==  NFC(c5)
+%%
+%%    NFD
+%%      c3 ==  NFD(c1) ==  NFD(c2) ==  NFD(c3)
+%%      c5 ==  NFD(c4) ==  NFD(c5)
+%%
+%%    NFKC
+%%      c4 == NFKC(c1) == NFKC(c2) == NFKC(c3) == NFKC(c4) == NFKC(c5)
+%%
+%%    NFKD
+%%      c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4) == NFKD(c5)
 
 nfc_test(_, 0) -> max;
 nfc_test(InFd, Max) ->
@@ -1687,31 +1704,31 @@ nfc_test(InFd, Max) ->
                    C3 = lists:nth(3, Row),
                    C4 = lists:nth(4, Row),
                    C5 = lists:nth(5, Row),
-                   % {Result from function, From, To}
-                   %NFD
-                   ?assertEqual({Max,C3, C1, C3}, {Max,NFD(C1), C1, C3}),
-                   ?assertEqual({C3, C2, C3}, {NFD(C2), C2, C3}),
-                   ?assertEqual({C3, C3, C3}, {NFD(C3), C3, C3}),
-                   ?assertEqual({C5, C4, C5}, {NFD(C4), C4, C5}),
-                   ?assertEqual({C5, C5, C5}, {NFD(C5), C5, C5}),
-                   %NFC
-                   ?assertEqual({Max, C2, C1, C2}, {Max, NFC(C1), C1, C2}),
-                   ?assertEqual({C2, C2, C2}, {NFC(C2), C2, C2}),
-                   ?assertEqual({C2, C3, C2}, {NFC(C3), C3, C2}),
-                   ?assertEqual({C4, C4, C4}, {NFC(C4), C4, C4}),
-                   ?assertEqual({C4, C5, C4}, {NFC(C5), C5, C4}),
-                   %NFKC
-                   ?assertEqual({C4, C1}, {NFKC(C1), C1}),
-                   ?assertEqual({C4, C2}, {NFKC(C2), C2}),
-                   ?assertEqual({C4, C3}, {NFKC(C3), C3}),
-                   ?assertEqual({C4, C4}, {NFKC(C4), C4}),
-                   ?assertEqual({C4, C5}, {NFKC(C5), C5}),
-                   %NFCD
-                   ?assertEqual({C5, C1}, {NFKD(C1), C1}),
-                   ?assertEqual({C5, C2}, {NFKD(C2), C2}),
-                   ?assertEqual({C5, C3}, {NFKD(C3), C3}),
-                   ?assertEqual({C5, C4}, {NFKD(C4), C4}),
-                   ?assertEqual({C5, C5}, {NFKD(C5), C5})
+                   % {Test info atom, Result from function, From, To}
+       %NFD
+       ?assertEqual({c3__nfd_c1, C3, C1, C3}, {c3__nfd_c1, NFD(C1), C1, C3}),
+       ?assertEqual({c3__nfd_c2, C3, C2, C3}, {c3__nfd_c2, NFD(C2), C2, C3}),
+       ?assertEqual({c3__nfd_c3, C3, C3, C3}, {c3__nfd_c3, NFD(C3), C3, C3}),
+       ?assertEqual({c3__nfd_c4, C5, C4, C5}, {c3__nfd_c4, NFD(C4), C4, C5}),
+       ?assertEqual({c3__nfd_c5, C5, C5, C5}, {c3__nfd_c5, NFD(C5), C5, C5}),
+       %NFC
+       ?assertEqual({c2__nfc_c1, C2, C1, C2}, {c2__nfc_c1, NFC(C1), C1, C2}),
+       ?assertEqual({c2__nfc_c2, C2, C2, C2}, {c2__nfc_c2, NFC(C2), C2, C2}),
+       ?assertEqual({c2__nfc_c3, C2, C3, C2}, {c2__nfc_c3, NFC(C3), C3, C2}),
+       ?assertEqual({c2__nfc_c4, C4, C4, C4}, {c2__nfc_c4, NFC(C4), C4, C4}),
+       ?assertEqual({c2__nfc_c5, C4, C5, C4}, {c2__nfc_c5, NFC(C5), C5, C4}),
+       %NFKC
+       ?assertEqual({c4__nfkc_c1, C4, C1}, {c4__nfkc_c1, NFKC(C1), C1}),
+       ?assertEqual({c4__nfkc_c2, C4, C2}, {c4__nfkc_c2, NFKC(C2), C2}),
+       ?assertEqual({c4__nfkc_c3, C4, C3}, {c4__nfkc_c3, NFKC(C3), C3}),
+       ?assertEqual({c4__nfkc_c4, C4, C4}, {c4__nfkc_c4, NFKC(C4), C4}),
+       ?assertEqual({c4__nfkc_c5, C4, C5}, {c4__nfkc_c5, NFKC(C5), C5}),
+       %NFKD
+       ?assertEqual({c5__nfkd_c1, C5, C1}, {c5__nfkd_c1, NFKD(C1), C1}),
+       ?assertEqual({c5__nfkd_c2, C5, C2}, {c5__nfkd_c2, NFKD(C2), C2}),
+       ?assertEqual({c5__nfkd_c3, C5, C3}, {c5__nfkd_c3, NFKD(C3), C3}),
+       ?assertEqual({c5__nfkd_c4, C5, C4}, {c5__nfkd_c4, NFKD(C4), C4}),
+       ?assertEqual({c5__nfkd_c5, C5, C5}, {c5__nfkd_c5, NFKD(C5), C5})
                    % end body
 
             catch error:_ -> next
@@ -1732,10 +1749,14 @@ col_append_test_() ->
 	,?_assertEqual(F("123", F("ABC", "DEF")), "321CBADEF")
 	].
 
+%---------------------------------------------------------------
+% SLOW TESTS 
+%---------------------------------------------------------------
 
-%% SLOW TESTS %%
-
-% Collation Test
+%% Collation Test
+%% Parse data files from 
+%% http://www.unicode.org/Public/UCA/latest/
+%% README: http://www.unicode.org/Public/UCA/latest/CollationTest.html
 calloc_test(_,    _, _,      0)   -> max;
 calloc_test(InFd, F, false,  Max) ->
     OldVal = calloc_test_read(InFd),
@@ -1790,8 +1811,9 @@ nfc_test_() ->
 calloc_test_() ->
     {timeout, 600, fun() -> 
         calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
-% Slow, with comments.
-%%                      ++ "CollationTest_NON_IGNORABLE.txt", 
+			% Slow, with comments.
+%                       ++ "CollationTest_NON_IGNORABLE.txt", 
+			% Fast version (data from slow version are equal).
                         ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
                     1000000) end}.

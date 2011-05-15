@@ -999,21 +999,109 @@ hex_to_int(Code) ->
 % http://en.wikipedia.org/wiki/KSX1001
 -spec col_non_ignorable(string(), string()) -> less | greater | equal.
 
-% Levels: http://unicode.org/reports/tr10/#Multi-Level%20Comparison
+% Levels: http://unicode.org/reports/tr10/#Multi_Level_Comparison
 % L1 Base characters
 % L2 Accents
 % L3 Case
 % L4 Punctuation
 
+%% Variable collation elements are not reset to be ignorable, but
+%% get the weights explicitly mentioned in the file.
+%% * SPACE would have the value [.0209.0020.0002]
+%% * Capital A would be unchanged, with the value [.06D9.0020.0008]
+%% * Ignorables are unchanged.
 col_non_ignorable(S1, S2) -> 
     col_compare  (S1, S2, 
         fun ducet_r/1, % ducet_r(reversed_in) -> non_reversed_key;
         fun col_bin_to_list/1).
 ducet(A) -> ducet_r(lists:reverse(A)).
 
+
+%% Blanked: Variable collation elements and any subsequent ignorables 
+%% are reset so that their weights at levels one through three are zero. 
+%% For example,
+%% * SPACE would have the value [.0000.0000.0000]
+%% * A combining grave accent after a space would have the value [.0000.0000.0000]
+%% * Capital A would be unchanged, with the value [.06D9.0020.0008]
+%% * A combining grave accent after a Capital A would be unchanged
+col_blanked(S1, S2) -> 
+    col_compare  (S1, S2, 
+        fun ducet_blanked_r/1, % ducet_r(reversed_in) -> non_reversed_key;
+        fun col_bin_to_list/1).
+
+%% Shifted: Variable collation elements are reset to zero at levels one through
+%% three. In addition, a new fourth-level weight is appended, whose value 
+%% depends on the type, as shown in Table 12.
+%% Any subsequent primary or secondary ignorables following a variable are reset
+%% so that their weights at levels one through four are zero.
+%% * A combining grave accent after a space would have the value 
+%%   [.0000.0000.0000.0000].
+%% * A combining grave accent after a Capital A would be unchanged.
+col_shifted(S1, S2) -> 
+    col_compare  (S1, S2, 
+        fun ducet_shifted_r/1, % ducet_r(reversed_in) -> non_reversed_key;
+        fun col_shifted_bin_to_list/1).
+
+%% Shift-Trimmed: This option is the same as Shifted, except that all trailing 
+%% FFFFs are trimmed from the sort key. 
+%% This could be used to emulate POSIX behavior.
+col_shift_trimmed(S1, S2) -> 
+    col_compare  (S1, S2, 
+        fun ducet_shift_trimmed_r/1, % ducet_r(reversed_in) -> non_reversed_key;
+        fun col_shifted_bin_to_list/1).
+
+ducet_blanked_r(" ") ->
+    % A combining grave accent after a space would have the value 
+    % [.0000.0000.0000]
+    {set_ignorables_to_0, <<0:72>>}; 
+ducet_blanked_r(Val) ->
+    ducet_r(Val).
+
+ducet_shifted_r([_] = Val) ->
+    case ducet_r(Val) of
+        DucetWeightList = [<<1:8, _:48, L4:16>>] ->
+            {set_ignorables_to_0, [<<0:56, L4:16>>]};
+        DucetWeightList -> col_l4_to_ffff(DucetWeightList)
+    end;
+ducet_shifted_r(Val) ->
+    col_l4_to_ffff(ducet_r(Val)).
+
+ducet_shift_trimmed_r([_] = Val) ->
+    case ducet_r(Val) of
+        DucetWeightList = [<<1:8, _:48, L4:16>>] ->
+            {set_ignorables_to_0, [<<0:56, L4:16>>]};
+        DucetWeightList -> DucetWeightList
+    end;
+ducet_shift_trimmed_r(Val) ->
+    ducet_r(Val).
+
+col_l4_to_ffff([_|_] = Value) ->
+    col_l4_to_ffff(Value, []);
+col_l4_to_ffff(Value) ->
+    Value.
+col_l4_to_ffff([<<Bin:56, L4:16>> | Tail], Res) ->
+    col_l4_to_ffff(Tail, [<<Bin:56, 16#FFFF:16>> | Res]);
+col_l4_to_ffff([], Res) ->
+    lists:reverse(Res).
+
+%% Convert binary from DUCET to list [L1, L2, L3, L4]
+%% A variable CE is "*" in ducet (1).
+%% A non-varialbe CE is "." in ducet (0).
+col_bin_to_list(<<_Variable:8, L1:16, L2:16, L3:16, _:16>>) ->
+    [L1, L2, L3];
+col_bin_to_list(<<_Variable:8, L1:16, L2:16, L3:16, _:24>>) ->
+    [L1, L2, L3];
+% For hangul
+col_bin_to_list(L1) when is_integer(L1) ->
+    [L1, 0,  0].
+
+col_shifted_bin_to_list(<<_Variable:8, L1:16, L2:16, L3:16, L4:24>>) ->
+    [L1, L2, L3, L4];
+col_shifted_bin_to_list(Val) ->
+	col_bin_to_list(Val).
+
 col_sort_array(Str) -> 
     col_sort_array(Str, fun ducet_r/1).
-
 
 %% TableFun returns value from DUCET table
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
@@ -1430,15 +1518,6 @@ col_sort_array1([_|_] = Str, TableFun, [   ], Res) ->
     {Buf, StrTail} = col_extract(Str, TableFun), 
     col_sort_array1(StrTail, TableFun, Buf, [test|Res]).
 
-
-%% Convert binary from DUCET to list [L1, L2, L3, L4]
-col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, _:16>>) ->
-    [L1, L2, L3];
-col_bin_to_list(<<_:8, L1:16, L2:16, L3:16, _:24>>) ->
-    [L1, L2, L3];
-% For hangul
-col_bin_to_list(L1) when is_integer(L1) ->
-    [L1, 0,  0].
 
 % Collation end
 

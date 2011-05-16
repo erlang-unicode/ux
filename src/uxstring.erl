@@ -95,8 +95,16 @@
 -export([hex_to_int/1]).
 
 -export([ducet/1]).
--export([col_non_ignorable/2]).
--export([col_sort_array/1]).
+-export([col_non_ignorable/2,
+         col_blanked/2,
+         col_shifted/2,
+         col_shift_trimmed/2]).
+-export([col_sort_array/1,
+	 col_sort_array_non_ignorable/1,
+	 col_sort_array_blanked/1,
+	 col_sort_array_shifted/1,
+	 col_sort_array_shift_trimmed/1
+        ]).
 -export([col_sort_array/2]).
 -export([col_extract/2]).
 
@@ -1014,6 +1022,9 @@ col_non_ignorable(S1, S2) ->
     col_compare  (S1, S2, 
         fun ducet_r/1, % ducet_r(reversed_in) -> non_reversed_key;
         fun col_bin_to_list/1).
+
+%% In:  not reversed string.
+%% Out: not reversed weight list.
 ducet(A) -> ducet_r(lists:reverse(A)).
 
 
@@ -1061,6 +1072,8 @@ ducet_shifted_r([_] = Val) ->
     case ducet_r(Val) of
         DucetWeightList = [<<1:8, _:48, L4:16>>] ->
             {set_ignorables_to_0, [<<0:56, L4:16>>]};
+        DucetWeightList = [<<1:8, _:48, L4:24>>] ->
+            {set_ignorables_to_0, [<<0:56, L4:24>>]};
         DucetWeightList -> col_l4_to_ffff(DucetWeightList)
     end;
 ducet_shifted_r(Val) ->
@@ -1070,6 +1083,8 @@ ducet_shift_trimmed_r([_] = Val) ->
     case ducet_r(Val) of
         DucetWeightList = [<<1:8, _:48, L4:16>>] ->
             {set_ignorables_to_0, [<<0:56, L4:16>>]};
+        DucetWeightList = [<<1:8, _:48, L4:24>>] ->
+            {set_ignorables_to_0, [<<0:56, L4:24>>]};
         DucetWeightList -> DucetWeightList
     end;
 ducet_shift_trimmed_r(Val) ->
@@ -1095,13 +1110,28 @@ col_bin_to_list(<<_Variable:8, L1:16, L2:16, L3:16, _:24>>) ->
 col_bin_to_list(L1) when is_integer(L1) ->
     [L1, 0,  0].
 
+col_shifted_bin_to_list(<<_Variable:8, L1:16, L2:16, L3:16, L4:16>>) ->
+    [L1, L2, L3, L4];
 col_shifted_bin_to_list(<<_Variable:8, L1:16, L2:16, L3:16, L4:24>>) ->
     [L1, L2, L3, L4];
 col_shifted_bin_to_list(Val) ->
 	col_bin_to_list(Val).
 
+% http://unicode.org/reports/tr10/#Variable_Weighting
 col_sort_array(Str) -> 
     col_sort_array(Str, fun ducet_r/1).
+
+col_sort_array_non_ignorable(Str) -> 
+    col_sort_array(Str, fun ducet_r/1).
+
+col_sort_array_blanked(Str) -> 
+    col_sort_array(Str, fun ducet_blanked_r/1).
+
+col_sort_array_shifted(Str) -> 
+    col_sort_array(Str, fun ducet_shifted_r/1).
+
+col_sort_array_shift_trimmed(Str) -> 
+    col_sort_array(Str, fun ducet_shift_trimmed_r/1).
 
 %% TableFun returns value from DUCET table
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
@@ -1123,6 +1153,8 @@ col_compare (String1, String2, TableFun, ComparatorFun) ->
 %% S2.1.1 If there are any non-starters following S, process each non-starter C.
 %% S2.1.2 If C is not blocked from S, find if S + C has a match in the table.
 %% S2.1.3 If there is a match, replace S by S + C, and remove C.
+%%
+%% Returns:  {Not reversed list of weight elements, Tail of the string}.
 -spec col_extract(string(), fun()) 
     -> {[[integer(), ...], ...], Tail :: string()}.
 
@@ -1230,20 +1262,29 @@ col_extract([CP|Tail], { only_derived, TableFun }) ->
     case apply(TableFun, [[CP]]) of
         [_|_] = Value -> % from ducet 
          {Value, Tail};
+        {set_ignorables_to_0, Value} ->
+		{Value, Tail}; % maybe need to delete ignorables
         _             -> % other, more 
          {col_implicit_weight(CP, 16#FBC0), Tail}
     end;
 
 % Try extract from ducet.
 col_extract([CP|[]], TableFun) -> % Last Char
-    {apply(TableFun, [[CP]]), []};
+    case apply(TableFun, [[CP]]) of 
+        [_|_] = Value ->
+            {Value, []};
+        {set_ignorables_to_0, Value} ->
+            {Value, []};
+        _ ->
+            {[], []}
+    end;    
 col_extract([CP | Tail] = Str, TableFun) ->
     Res = col_extract1(Tail, TableFun, [CP], 
     false, % Max ccc among ccces of skipped chars beetween the starter char 
            % and the processed char. If there are no skipped chars, then 
            % Ccc1=false.
     [], false),
-%   io:format("In: ~w Out: ~w ~n", [Str, Res]),
+%   io:format(user, "In: ~w Out: ~w ~n", [Str, Res]),
     Res.
 
 % Note: A non-starter in a string is called blocked if there is another 
@@ -1306,7 +1347,10 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
 		% Ccc1 =/= false, because this is a second step of algorithm.
                 [_|_] when (false =/= Ccc1) -> 
 			col_extract1(Tail, TableFun, NewCPList, 
-                                     Ccc2, Skipped, Bin)
+                                     Ccc2, Skipped, Bin);
+                {set_ignorables_to_0, Value} ->
+                        col_extract_set_ignorables_to_0(Tail,  % Skipped is []
+                                                        Value) % CPList is []
             end; % if
 
 	% Last skipped char was blocked.
@@ -1323,6 +1367,22 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
         OldVal =/= false -> { OldVal,                    
                               col_append(Skipped, Str) }
     end.
+
+%% Gets all ignorables (code paints with ccc > 0) from begining of the string
+%% to a first non-ignorable and set their weights to 0 [L1=0,L2=0,L3=0,L4=0].
+%% Arg 1: The tail of the string.
+%% Arg 2: A list of weight elements.
+%% Returns: see col_extract.
+%%
+%% Used in col_extract.
+col_extract_set_ignorables_to_0([Ch|Tail] = Str, Value) ->
+	case ccc(Ch) of
+		0 -> { lists:reverse(Value), Str }; 
+		_ -> col_extract_set_ignorables_to_0(Tail, [<<0:72>>, Value])
+	end;
+col_extract_set_ignorables_to_0([       ]      , Value) ->
+	{ lists:reverse(Value), [] }.
+
     
 %% Used in col_extract.
 %% Fast realization of:
@@ -1451,6 +1511,7 @@ col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1,
 %% Now, Funs are not neeaded.
 %% Acc1 and Acc2 are reversed.
 col_compare1([], [], [], [], false, Acc1, Acc2, _, _) ->
+% TST
 %   io:format(user, "~w ~w ~n", [Acc1, Acc2]),
     col_compare2(lists:reverse(Acc1), 
                  lists:reverse(Acc2),
@@ -1552,7 +1613,10 @@ str_info(Rec = #unistr_info {}) ->
         fun str_info_nfc/1,
         fun str_info_ducet_simple/1,
         fun str_info_ccc/1,
-        fun str_info_col_sort_array/1,
+        fun str_info_col_sort_array_non_ignorable/1,
+        fun str_info_col_sort_array_blanked/1,
+        fun str_info_col_sort_array_shifted/1,
+        fun str_info_col_sort_array_shift_trimmed/1,
         fun str_info_char_block/1
     ], Rec);
 str_info([_|_] = Str) -> 
@@ -1581,8 +1645,19 @@ str_info_nfd(Obj = #unistr_info{ str=Str }) ->
 str_info_nfc(Obj = #unistr_info{ str=Str }) ->
     Obj#unistr_info{ nfc = to_nfc(Str) }.
 
-str_info_col_sort_array(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ col_sort_array = col_sort_array(Str)}.
+str_info_col_sort_array_non_ignorable(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ col_sort_array_non_ignorable 
+                        = col_sort_array_non_ignorable(Str)}.
+
+str_info_col_sort_array_blanked(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ col_sort_array_blanked = col_sort_array_blanked(Str)}.
+
+str_info_col_sort_array_shifted(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ col_sort_array_shifted = col_sort_array_shifted(Str)}.
+
+str_info_col_sort_array_shift_trimmed(Obj = #unistr_info{ str=Str }) ->
+    Obj#unistr_info{ col_sort_array_shift_trimmed 
+                        = col_sort_array_shift_trimmed(Str)}.
 
 str_info_char_block(Obj = #unistr_info{ str=Str }) ->
     Obj#unistr_info{ blocks = lists:map(fun char_block/1, [Ch || Ch <- Str])}.
@@ -1848,9 +1923,9 @@ calloc_test(InFd, F, {OldFullStr, OldVal}, Max) ->
                 lower -> io:format(user, "Error: ~w ~w ~w ~n", 
                                          [Val, lower, OldVal]),
 
-%                         io:format(user,
-%                            " Data1: ~ts Data2: ~ts",
-%                            [OldFullStr, FullStr]),
+                         io:format(user,
+                            " Data1: ~ts Data2: ~ts",
+                            [OldFullStr, FullStr]),
                         
                          calloc_test(InFd, F, Result, Max - 1);
                 % OK. Try next
@@ -1885,9 +1960,9 @@ calloc_prof(File, Fun, Count) ->
             ok.
 
 nfc_test_() ->
-    {timeout, 600, fun() -> nfc_prof(1000000) end}.
+    {timeout, 600, fun() -> nfc_prof(1) end}.
 
-calloc_test_() ->
+cal_non_ignorable_test_() ->
     {timeout, 600, fun() -> 
         calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
 			% Slow, with comments.
@@ -1895,7 +1970,16 @@ calloc_test_() ->
 			% Fast version (data from slow version are equal).
                         ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
-                    1000000) end}.
+                    1) end}.
+
+cal_shifted_test_() ->
+    {timeout, 600, fun() -> 
+        calloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
+			% Slow, with comments.
+                        ++ "CollationTest_SHIFTED.txt", 
+%                       ++ "CollationTest_SHIFTED_SHORT.txt", 
+                    fun col_non_ignorable/2, 
+                    200) end}.
 
 
 -endif.

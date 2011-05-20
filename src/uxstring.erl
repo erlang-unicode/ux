@@ -1064,16 +1064,17 @@ col_shift_trimmed(S1, S2) ->
 ducet_blanked_r(" ") ->
     % A combining grave accent after a space would have the value 
     % [.0000.0000.0000]
-    {set_ignorables_to_0, <<0:72>>}; 
+    {set_ignorables_to_0, [<<0:72>>]}; 
 ducet_blanked_r(Val) ->
     ducet_r(Val).
 
+%% L4 = Old L1 for variables.
 ducet_shifted_r([_] = Val) ->
     case ducet_r(Val) of
-        DucetWeightList = [<<1:8, _:48, L4:16>>] ->
-            {set_ignorables_to_0, [<<0:56, L4:16>>]};
-        DucetWeightList = [<<1:8, _:48, L4:24>>] ->
-            {set_ignorables_to_0, [<<0:56, L4:24>>]};
+        DucetWeightList = [<<1:8, L1:16, _:32, L4:16>>] ->
+            {set_ignorables_to_0, [<<0:56, L1:16>>]};
+        DucetWeightList = [<<1:8, L1:16, _:32, L4:24>>] ->
+            {set_ignorables_to_0, [<<0:56, L1:24>>]};
         DucetWeightList -> col_l4_to_ffff(DucetWeightList)
     end;
 ducet_shifted_r(Val) ->
@@ -1081,10 +1082,10 @@ ducet_shifted_r(Val) ->
 
 ducet_shift_trimmed_r([_] = Val) ->
     case ducet_r(Val) of
-        DucetWeightList = [<<1:8, _:48, L4:16>>] ->
-            {set_ignorables_to_0, [<<0:56, L4:16>>]};
-        DucetWeightList = [<<1:8, _:48, L4:24>>] ->
-            {set_ignorables_to_0, [<<0:56, L4:24>>]};
+        DucetWeightList = [<<1:8, L1:16, _:32, L4:16>>] ->
+            {set_ignorables_to_0, [<<0:56, L1:16>>]};
+        DucetWeightList = [<<1:8, L1:16, _:32, L4:24>>] ->
+            {set_ignorables_to_0, [<<0:56, L1:24>>]};
         DucetWeightList -> DucetWeightList
     end;
 ducet_shift_trimmed_r(Val) ->
@@ -1096,6 +1097,8 @@ col_l4_to_ffff(Value) ->
     Value.
 col_l4_to_ffff([<<Bin:56, L4:16>> | Tail], Res) ->
     col_l4_to_ffff(Tail, [<<Bin:56, 16#FFFF:16>> | Res]);
+col_l4_to_ffff([<<Bin:56, L4:24>> | Tail], Res) ->
+    col_l4_to_ffff(Tail, [<<Bin:56, 16#FFFF:24>> | Res]);
 col_l4_to_ffff([], Res) ->
     lists:reverse(Res).
 
@@ -1263,7 +1266,9 @@ col_extract([CP|Tail], { only_derived, TableFun }) ->
         [_|_] = Value -> % from ducet 
          {Value, Tail};
         {set_ignorables_to_0, Value} ->
-		{Value, Tail}; % maybe need to delete ignorables
+%		{Value, Tail}; % maybe need to delete ignorables
+                col_extract_set_ignorables_to_0(Tail,  
+                                                Value);
         _             -> % other, more 
          {col_implicit_weight(CP, 16#FBC0), Tail}
     end;
@@ -1378,7 +1383,7 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
 col_extract_set_ignorables_to_0([Ch|Tail] = Str, Value) ->
 	case ccc(Ch) of
 		0 -> { lists:reverse(Value), Str }; 
-		_ -> col_extract_set_ignorables_to_0(Tail, [<<0:72>>, Value])
+		_ -> col_extract_set_ignorables_to_0(Tail, [<<0:72>> | Value])
 	end;
 col_extract_set_ignorables_to_0([       ]      , Value) ->
 	{ lists:reverse(Value), [] }.
@@ -1970,7 +1975,7 @@ cal_non_ignorable_test_() ->
 			% Fast version (data from slow version are equal).
                         ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
-                    1) end}.
+                    500) end}.
 
 cal_shifted_test_() ->
     {timeout, 600, fun() -> 
@@ -1978,8 +1983,8 @@ cal_shifted_test_() ->
 			% Slow, with comments.
                         ++ "CollationTest_SHIFTED.txt", 
 %                       ++ "CollationTest_SHIFTED_SHORT.txt", 
-                    fun col_non_ignorable/2, 
-                    200) end}.
+                    fun col_shifted/2, 
+                    2000) end}.
 
 
 -endif.

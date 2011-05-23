@@ -146,22 +146,13 @@ end).
 -define(HANGUL_NCOUNT, 588).
 -define(HANGUL_SCOUNT, 11172).
 
-% [65469,65]  <<0,48,66,0,32,0,18,255,189>>   12354
-% < [4369,97]   
-% < [12593,33]  <<0,48,49,0,32,0,4,49,49>>    12337
-% < [12637,98]  <<0,48,189,0,32,0,4,49,93>>   12477
-
 -define(HANGUL_SLAST,  ?HANGUL_SBASE + ?HANGUL_SCOUNT).
 -define(HANGUL_LLAST,  ?HANGUL_LBASE + ?HANGUL_LCOUNT).
 -define(HANGUL_VLAST,  ?HANGUL_VBASE + ?HANGUL_VCOUNT).
 -define(HANGUL_TLAST,  ?HANGUL_TBASE + ?HANGUL_TCOUNT).
 
 % TERMINATOR < T <  V < L
--define(COL_HANGUL_TERMINATOR, 12269). % 12337 - 68
--define(COL_HANGUL_TWEIGHT, 1 + ?COL_HANGUL_TERMINATOR).
--define(COL_HANGUL_VWEIGHT,     ?COL_HANGUL_TWEIGHT + ?HANGUL_TCOUNT).
--define(COL_HANGUL_LWEIGHT,     ?COL_HANGUL_VWEIGHT + ?HANGUL_VCOUNT).
--define(COL_HANGUL_LAST_WEIGHT, ?COL_HANGUL_LWEIGHT + ?HANGUL_LCOUNT).
+-define(COL_HANGUL_TERMINATOR, [13000]). % 12337 - 68
 
 -define(CHAR_IS_HANGUL_L(Ch), (
  (Ch>=?HANGUL_LBASE) and (Ch=<?HANGUL_LLAST) 
@@ -173,18 +164,6 @@ end).
 
 -define(CHAR_IS_HANGUL_T(Ch), (
  (Ch>=?HANGUL_TBASE) and (Ch=<?HANGUL_TLAST) 
-)).
-
--define(COL_HANGUL_WEIGHT_L(Ch), (
- Ch - ?HANGUL_LBASE + ?COL_HANGUL_LWEIGHT
-)).
-
--define(COL_HANGUL_WEIGHT_V(Ch), (
- Ch - ?HANGUL_VBASE + ?COL_HANGUL_VWEIGHT
-)).
-
--define(COL_HANGUL_WEIGHT_T(Ch), (
- Ch - ?HANGUL_TBASE + ?COL_HANGUL_TWEIGHT
 )).
 
 
@@ -203,10 +182,10 @@ end).
     ((Ch >= 16#3400)  and (Ch =< 16#4DB5)) 
 
 % [20940] CJK UNIFIED IDEOGRAPH-4E00..9FCB
-%or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB)) 
+or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB)) 
 % FIXED: Error: [55296,33] lower [40908,98]
 % CJK Unified Ideographs
- or ((Ch >= 16#4E00)  and (Ch =< 16#9FFF)) 
+%or ((Ch >= 16#4E00)  and (Ch =< 16#9FFF)) 
 
 % [2] CJK COMPATIBILITY IDEOGRAPH-FA0E..FA0F
  or ((Ch >= 16#FA0E)  and (Ch =< 16#FA0F)) 
@@ -749,6 +728,21 @@ to_nfd(Str)     ->  normalize(get_recursive_decomposition(true,  Str)).
 to_nfkd([])     -> [];
 to_nfkd(Str)    ->  normalize(get_recursive_decomposition(false, Str)).
 
+to_nfd_col(Str) -> to_nfd_col_hack(to_nfd(Str)).
+to_nfd_col_hack(Str) -> lists:reverse(to_nfd_col_hack(Str, []).
+
+% Unicode Block 'Enclosed CJK Letters and Months'
+to_nfd_col_hack([Ch|StrTail], Res) when (Ch >= 16#3200) and (Ch =< 16#32FF) ->
+    to_nfd_col_hack(StrTail, hack_decomp(Ch) ++ Res);
+to_nfd_col_hack([Ch|StrTail], Res) ->
+    to_nfd_col_hack(StrTail, [Ch|Res]).
+
+hack_decomp(Ch) ->
+    case decomp(Ch) of
+        [] -> [Ch];
+        Val -> Val
+    end.
+
 is_acsii(Char) when (Char>=0) and (Char=<16#7F) 
     -> true;
 is_acsii(_) 
@@ -1127,8 +1121,8 @@ col_bin_to_bin(Val) ->
 %% TableFun returns value from DUCET table
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
 col_compare (String1, String2, TableFun, ComparatorFun) ->
-    col_compare1(to_nfd(String1), 
-                 to_nfd(String2), 
+    col_compare1(to_nfd_col(String1), 
+                 to_nfd_col(String2), 
                  [], % Buf 1, contains ducet(Char)
                  [], % Buf 2
                  false, % CompValue 1
@@ -1183,47 +1177,36 @@ col_extract([L1|Tail] = Str, TableFun) when ?CHAR_IS_HANGUL_L(L1) ->
         [V1,T1|Tail2] 
             when ?CHAR_IS_HANGUL_V(V1)
             and  ?CHAR_IS_HANGUL_T(T1)
-        -> {[
-            ?COL_HANGUL_WEIGHT_L(L1),
-            ?COL_HANGUL_WEIGHT_V(V1),
-            ?COL_HANGUL_WEIGHT_T(T1),
-            ?COL_HANGUL_TERMINATOR
-            ], Tail2};
+        -> {   apply(TableFun, [[L1]]) 
+            ++ apply(TableFun, [[V1]]) 
+            ++ apply(TableFun, [[T1]])
+            ++ ?COL_HANGUL_TERMINATOR, Tail2};
         [V1,V2|Tail2]
             when ?CHAR_IS_HANGUL_V(V1)
             and  ?CHAR_IS_HANGUL_V(V2)
-        -> {[
-            ?COL_HANGUL_WEIGHT_L(L1),
-            ?COL_HANGUL_WEIGHT_V(V1),
-            ?COL_HANGUL_WEIGHT_V(V2),
-            ?COL_HANGUL_TERMINATOR
-            ], Tail2};
+        -> {   apply(TableFun, [[L1]])
+            ++ apply(TableFun, [[V1]])
+            ++ apply(TableFun, [[V2]])
+            ++ ?COL_HANGUL_TERMINATOR, Tail2};
         [L2,V1|Tail2] 
             when ?CHAR_IS_HANGUL_L(L2)
             and  ?CHAR_IS_HANGUL_V(V1)
-        -> {[
-            ?COL_HANGUL_WEIGHT_L(L1),
-            ?COL_HANGUL_WEIGHT_L(L2),
-            ?COL_HANGUL_WEIGHT_V(V1),
-            ?COL_HANGUL_TERMINATOR
-            ], Tail2};
+        -> {   apply(TableFun, [[L1]])
+            ++ apply(TableFun, [[L2]])
+            ++ apply(TableFun, [[V1]])
+            ++ ?COL_HANGUL_TERMINATOR, Tail2};
         [V1|Tail2] 
             when ?CHAR_IS_HANGUL_V(V1)
-        -> {[
-            ?COL_HANGUL_WEIGHT_L(L1),
-            ?COL_HANGUL_WEIGHT_V(V1),
-            ?COL_HANGUL_TERMINATOR
-            ], Tail2};
-        _ -> {[
-            ?COL_HANGUL_WEIGHT_L(L1)
-            ], Tail}
+        -> {   apply(TableFun, [[L1]])
+            ++ apply(TableFun, [[V1]])
+%            ++ ?COL_HANGUL_TERMINATOR
+            , Tail2};
+        _ -> { apply(TableFun, [[L1]]), Tail}
     end;
-col_extract([V1|Tail] = Str, _) when ?CHAR_IS_HANGUL_V(V1) -> {[
-            ?COL_HANGUL_WEIGHT_V(V1)
-            ], Tail};
-col_extract([T1|Tail] = Str, _) when ?CHAR_IS_HANGUL_T(T1) -> {[
-            ?COL_HANGUL_WEIGHT_T(T1)
-            ], Tail};
+col_extract([V1|Tail] = Str, TableFun) when ?CHAR_IS_HANGUL_V(V1) -> 
+            {apply(TableFun, [[V1]]), Tail};
+col_extract([T1|Tail] = Str, TableFun) when ?CHAR_IS_HANGUL_T(T1) -> 
+            {apply(TableFun, [[T1]]), Tail};
     
 
 % Table 18. Values for Base
@@ -1947,9 +1930,9 @@ col_non_ignorable_test_() ->
     {timeout, 600, fun() -> 
         colloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
         		% Slow, with comments.
-%                       ++ "CollationTest_NON_IGNORABLE.txt", 
+                        ++ "CollationTest_NON_IGNORABLE.txt", 
         		% Fast version (data from slow version are equal).
-                        ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
+%                       ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
                     1000000) end}.
 

@@ -8,6 +8,7 @@
 %-export([expectation/1]). % http://en.wikipedia.org/wiki/Expected_value
 -export([variance/1]).    % http://en.wikipedia.org/wiki/Variance 
 -export([stdev/1]).       % http://en.wikipedia.org/wiki/Standard_deviation
+-export([stdev_error/1]).       
 
 -define(POW2(X), ((X) * (X))).
 
@@ -41,4 +42,15 @@ stdev1([X|Tail], A, Sum, Count) ->
     stdev1(Tail, A, Sum + ?POW2(Diff), Count + 1);
 stdev1([], _, Sum, Count) -> math:sqrt(Sum / (Count - 1)).
 
+stdev_error(Val) ->
+    stdev_error1(Val, 3*stdev(Val), average(Val), []). % 3-sigma rule
+
+stdev_error1([H|T], Sigma3, Avg, Res) ->
+    Res2 = case erlang:abs(H - Avg) >= Sigma3 of
+        true -> [H|Res];
+        false -> Res
+    end,
+    stdev_error1(T, Sigma3, Avg, Res2);
+stdev_error1([   ],_Sigma3,_Avg, Res) ->
+    lists:reverse(Res).
 

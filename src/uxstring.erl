@@ -53,6 +53,7 @@
 -author('Uvarov Michael <freeakk@gmail.com>').
 
 -include("uxstring.hrl").
+-export([nope/1]).
 
 -export([list_to_latin1/1]).
 -export([char_comment/1]).
@@ -106,6 +107,7 @@
          col_sort_array_shift_trimmed/1
         ]).
 -export([col_extract/2]).
+-export([col_sort_key/2]).
 
 -export([char_is_cjk_compatibility_ideograph/1,
          char_is_cjk_unified_ideograph/1,
@@ -114,6 +116,8 @@
 -export([str_info/1]).
 -export([decomp/1]).
 -export([char_block/1]).
+
+-export([sort/2]).
 
 %% @doc Returns various "character types" which can be used 
 %%      as a default categorization in implementations.
@@ -1068,7 +1072,7 @@ col_shifted(S1, S2) ->
 col_shift_trimmed(S1, S2) -> 
     col_compare  (S1, S2, 
         fun ducet_r/1, % ducet_r(reversed_in) -> non_reversed_key;
-        fun col_shifted_bin_to_list/1).  % FIXME: Make realization
+        fun col_shift_trimmed_bin_to_list/1).  
 
 col_non_ignorable_bin_to_list(Value) ->
         { fun col_non_ignorable_bin_to_list/1, col_bin_to_list(Value) }.
@@ -1092,7 +1096,7 @@ col_shifted_bin_to_list(<<_:8, 0:48, _/binary>>) ->
 col_shifted_bin_to_list(<<1:8, L1:16, _/binary>>) ->
     { fun col_shifted_bin_to_list2/1, [0, 0, 0, L1] };
 col_shifted_bin_to_list(Value) ->
-        { fun col_shifted_bin_to_list/1, col_bin_to_list_ffff(Value) }.
+    { fun col_shifted_bin_to_list/1, col_set_l4_to_value(Value, 16#FFFF) }.
 
 %% This function is a version of col_shifted_bin_to_list/1, but its value is
 %% after variable.
@@ -1103,15 +1107,90 @@ col_shifted_bin_to_list2(<<_:8, 0:16, _/binary>>) ->
 col_shifted_bin_to_list2(<<1:8, L1:16, _/binary>>) ->
     { fun col_shifted_bin_to_list2/1, [0, 0, 0, L1] };
 col_shifted_bin_to_list2(Value) ->
-    { fun col_shifted_bin_to_list/1, col_bin_to_list_ffff(Value) }.
+    { fun col_shifted_bin_to_list/1, col_set_l4_to_value(Value, 16#FFFF) }.
 
-col_bin_to_list_ffff(<<_Variable:8, L1:16, L2:16, L3:16, _:16>>) ->
-    [L1, L2, L3, 16#FFFF];
-col_bin_to_list_ffff(<<_Variable:8, L1:16, L2:16, L3:16, _:24>>) ->
-    [L1, L2, L3, 16#FFFF];
+
+
+% If it is a tertiary ignorable, then L4 = 0.
+col_shift_trimmed_bin_to_list(<<_:8, 0:48, _/binary>>) ->
+    { fun col_shift_trimmed_bin_to_list/1, [0, 0, 0, 0] };
+% If it is a variable, then L4 = Old L1.
+col_shift_trimmed_bin_to_list(<<1:8, L1:16, _/binary>>) ->
+    { fun col_shift_trimmed_bin_to_list2/1, [0, 0, 0, L1] };
+col_shift_trimmed_bin_to_list(Value) ->
+    { fun col_shift_trimmed_bin_to_list/1, col_set_l4_to_value(Value, 0) }.
+
+%% This function is a version of col_shifted_bin_to_list/1, but its value is
+%% after variable.
+% If it is a ignorable, then L4 = 0.
+col_shift_trimmed_bin_to_list2(<<_:8, 0:16, _/binary>>) ->
+    { fun col_shift_trimmed_bin_to_list2/1, [0, 0, 0, 0] };
+% If it is a variable, then L4 = Old L1.
+col_shift_trimmed_bin_to_list2(<<1:8, L1:16, _/binary>>) ->
+    { fun col_shift_trimmed_bin_to_list2/1, [0, 0, 0, L1] };
+col_shift_trimmed_bin_to_list2(Value) ->
+    { fun col_shift_trimmed_bin_to_list/1, col_set_l4_to_value(Value, 0) }.
+
+
+
+
+col_set_l4_to_value(<<_Variable:8, L1:16, L2:16, L3:16, _:16>>, Val) ->
+    [L1, L2, L3, Val];
+col_set_l4_to_value(<<_Variable:8, L1:16, L2:16, L3:16, _:24>>, Val) ->
+    [L1, L2, L3, Val];
 % For hangul
-col_bin_to_list_ffff(L1) when is_integer(L1) ->
-    [L1, 0,  0, 16#FFFF].
+col_set_l4_to_value(L1, Val) when is_integer(L1) ->
+    [L1, 0,  0, Val].
+
+
+
+%% Example:
+%%  f().
+%%  Data = ["death", "de luge", "de-luge", "deluge", "de-luge", "de Luge", "de-Luge", "deLuge", "de-Luge", "demark"].
+%%  uxstring:sort(Data, non_ignorable).
+%%  uxstring:sort(Data, blanked).
+%%  uxstring:sort(Data, shifted).
+%%  uxstring:sort(Data, shift_trimmed).
+sort(Lists, Fn) ->
+    lists:map(fun({V, _} = X) -> X end, 
+        lists:keysort(1, 
+            lists:map(fun(X) -> { X, col_sort_key(X, Fn) } end, 
+                Lists ))).
+
+get_sort_fn(non_ignorable) ->
+    fun col_sort_array_non_ignorable/1;
+get_sort_fn(blanked) ->
+    fun col_sort_array_blanked/1;
+get_sort_fn(shifted) ->
+    fun col_sort_array_shifted/1;
+get_sort_fn(shift_trimmed) ->
+    fun col_sort_array_shift_trimmed/1.
+
+col_sort_key(Str, Fn) when is_function(Fn) ->
+    Array = apply(Fn, [Str]),
+    col_sort_key1(Array, [], []);
+col_sort_key(Str, FnName) when is_atom(FnName) ->
+    Fn = get_sort_fn(FnName), 
+    col_sort_key(Str, Fn).
+ 
+
+col_sort_key1([[0  ] | ArrTail], Acc, Res) ->
+    col_sort_key1(ArrTail,    Acc ,    Res );
+col_sort_key1([[H  ] | ArrTail], Acc, Res) ->
+    col_sort_key1(ArrTail,    Acc , [H|Res]);
+col_sort_key1([[0|T] | ArrTail], Acc, Res) ->
+    col_sort_key1(ArrTail, [T|Acc],    Res );
+col_sort_key1([[H|T] | ArrTail], Acc, Res) ->
+    col_sort_key1(ArrTail, [T|Acc], [H|Res]);
+col_sort_key1([[H|T] | ArrTail], Acc, Res) ->
+    col_sort_key1(ArrTail, [T|Acc], [H|Res]);
+col_sort_key1([[   ] | ArrTail], Acc, Res) ->
+    col_sort_key1(ArrTail,    Acc ,    Res );
+col_sort_key1([] = _InArray, [_|_] = Acc, Res) ->
+    col_sort_key1(lists:reverse(Acc), [], Res);
+col_sort_key1([] = _InArray, [] = _Acc, Res) -> 
+    lists:reverse(Res).
+
 
 
 % http://unicode.org/reports/tr10/#Variable_Weighting
@@ -1128,7 +1207,7 @@ col_sort_array_shifted(Str) ->
     col_sort_array(Str, fun ducet_r/1, fun col_shifted_bin_to_list/1).
 
 col_sort_array_shift_trimmed(Str) -> 
-    col_sort_array(Str, fun ducet_r/1, fun col_shifted_bin_to_list/1).
+    col_sort_array(Str, fun ducet_r/1, fun col_shift_trimmed_bin_to_list/1).
 
 %% This function does nothing :)
 col_bin_to_bin(Val) ->
@@ -1577,7 +1656,9 @@ col_sort_array1(        Str,  TableFun,  CompFun, [H|T], Res) ->
     col_sort_array1(Str, TableFun, NewCompFun, T, [Val|Res]);
 col_sort_array1([_|_] = Str, TableFun, CompFun, [   ], Res) ->
     {Buf, StrTail} = col_extract(Str, TableFun), 
-    col_sort_array1(StrTail, TableFun, CompFun, Buf, [test|Res]).
+    col_sort_array1(StrTail, TableFun, CompFun, Buf, 
+%       [test|Res]).
+        Res).
 
 
 % Collation end
@@ -1674,6 +1755,7 @@ str_info_char_block(Obj = #unistr_info{ str=Str }) ->
 
 is_always_true(_)  -> true.
 is_always_false(_) -> false.
+nope(X) -> X.
 
   %%%%%  %%%%%%   %%%%    %%%%%   %%%%
     %    %       %          %    %
@@ -1827,6 +1909,13 @@ first_types_test_() ->
         F = 'first_types',
         [?_assertEqual(M:F([ll], "AavbfFDsdfffds", 4), "avbf")
         ,?_assertEqual(M:F([ll], "AavbfFDsdfffds", 5), "avbfs")
+        ].
+col_sort_key_test_() ->
+        M = 'uxstring',
+        F = 'col_sort_key',
+        FF = fun uxstring:nope/1,
+        [?_assertEqual(M:F([[1,2,3], [4,5,6], [0,7], [8,9]], FF), 
+            [1,4,8,2,5,7,9,3,6])
         ].
 
 %% Normalization Conformance Test

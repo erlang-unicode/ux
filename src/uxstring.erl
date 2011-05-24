@@ -152,7 +152,7 @@ end).
 -define(HANGUL_TLAST,  ?HANGUL_TBASE + ?HANGUL_TCOUNT).
 
 % TERMINATOR < T <  V < L
--define(COL_HANGUL_TERMINATOR, [13000]). % 12337 - 68
+-define(COL_HANGUL_TERMINATOR, 13000). % 12337 - 68
 
 -define(CHAR_IS_HANGUL_L(Ch), (
  (Ch>=?HANGUL_LBASE) and (Ch=<?HANGUL_LLAST) 
@@ -165,6 +165,34 @@ end).
 -define(CHAR_IS_HANGUL_T(Ch), (
  (Ch>=?HANGUL_TBASE) and (Ch=<?HANGUL_TLAST) 
 )).
+
+
+
+
+
+-define(COL_HANGUL_LBASE,  12337). % 12337 - 12356
+-define(COL_HANGUL_VBASE,  12463). % 12463 - 12484
+-define(COL_HANGUL_TBASE,  12533). % 12533 - 12584
+
+-define(COL_HANGUL_LLAST,  ?COL_HANGUL_LBASE + ?HANGUL_LCOUNT).
+-define(COL_HANGUL_VLAST,  ?COL_HANGUL_VBASE + ?HANGUL_VCOUNT).
+-define(COL_HANGUL_TLAST,  ?COL_HANGUL_TBASE + ?HANGUL_TCOUNT).
+
+% Weight on level 1 (L1) is L1 of Hangul jamo L.
+-define(IS_L1_OF_HANGUL_L(Ch), (
+ (Ch>=?COL_HANGUL_LBASE) and (Ch=<?COL_HANGUL_LLAST) 
+)).
+
+% Weight on level 1 (L1) is L1 of Hangul jamo V.
+-define(IS_L1_OF_HANGUL_V(Ch), (
+ (Ch>=?COL_HANGUL_VBASE) and (Ch=<?COL_HANGUL_VLAST) 
+)).
+
+% Weight on level 1 (L1) is L1 of Hangul jamo T.
+-define(IS_L1_OF_HANGUL_T(Ch), (
+ (Ch>=?COL_HANGUL_TBASE) and (Ch=<?COL_HANGUL_TLAST) 
+)).
+
 
 
 % CJK_Unified_Ideograph and CJK_Compatibility_Ideographs from 
@@ -728,21 +756,6 @@ to_nfd(Str)     ->  normalize(get_recursive_decomposition(true,  Str)).
 to_nfkd([])     -> [];
 to_nfkd(Str)    ->  normalize(get_recursive_decomposition(false, Str)).
 
-to_nfd_col(Str) -> to_nfd_col_hack(to_nfd(Str)).
-to_nfd_col_hack(Str) -> lists:reverse(to_nfd_col_hack(Str, []).
-
-% Unicode Block 'Enclosed CJK Letters and Months'
-to_nfd_col_hack([Ch|StrTail], Res) when (Ch >= 16#3200) and (Ch =< 16#32FF) ->
-    to_nfd_col_hack(StrTail, hack_decomp(Ch) ++ Res);
-to_nfd_col_hack([Ch|StrTail], Res) ->
-    to_nfd_col_hack(StrTail, [Ch|Res]).
-
-hack_decomp(Ch) ->
-    case decomp(Ch) of
-        [] -> [Ch];
-        Val -> Val
-    end.
-
 is_acsii(Char) when (Char>=0) and (Char=<16#7F) 
     -> true;
 is_acsii(_) 
@@ -771,6 +784,10 @@ char_to_list(Char, Buf, Res) ->
 %% Canonical  If true bit is on in this byte, then selects the recursive 
 %%            canonical decomposition, otherwise selects
 %%            the recursive compatibility and canonical decomposition.
+get_recursive_decomposition(true, Str) -> 
+            get_recursive_decomposition(fun is_compat/1, Str, []);
+get_recursive_decomposition(false, Str) -> 
+            get_recursive_decomposition(fun is_always_false/1, Str, []);
 get_recursive_decomposition(Canonical, Str) -> 
             get_recursive_decomposition(Canonical, Str, []).
 
@@ -798,8 +815,7 @@ get_recursive_decomposition(Canonical, [Char|Tail], Result) ->
     case decomp(Char) of
         []  -> get_recursive_decomposition(Canonical, Tail,
                                             [Char|Result]);
-        Dec -> case Canonical 
-                and is_compat(Char) % not is_compat = singleton
+        Dec -> case Canonical(Char) % not is_compat = singleton
                 of 
                 true  -> get_recursive_decomposition(Canonical,
                         Tail,  [Char|Result]);
@@ -1121,8 +1137,8 @@ col_bin_to_bin(Val) ->
 %% TableFun returns value from DUCET table
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
 col_compare (String1, String2, TableFun, ComparatorFun) ->
-    col_compare1(to_nfd_col(String1), 
-                 to_nfd_col(String2), 
+    col_compare1(to_nfd(String1), 
+                 to_nfd(String2), 
                  [], % Buf 1, contains ducet(Char)
                  [], % Buf 2
                  false, % CompValue 1
@@ -1146,8 +1162,17 @@ ducet_blanked_r(Value) -> ducet(Value).
 -spec col_extract(string(), fun()) 
     -> {[[integer(), ...], ...], Tail :: string()}.
 
-col_extract([     ], _       ) -> % No Any Char
-    {[], []};
+
+col_extract(Str, TableFun) ->
+    Res = col_extract0(Str, TableFun),
+    {Weights, StrTail} = Res,
+    case col_hangul(Weights, [], StrTail, TableFun) of
+        % There is no any hangul jamo L chars in this string 
+        % (or other char with a weight of jamo L char)
+        false -> Res;
+        HangulRes -> HangulRes
+    end.
+        
 
 % 7.1.5 Hangul Collation
 % Interleaving Method
@@ -1172,42 +1197,55 @@ col_extract([     ], _       ) -> % No Any Char
 % the following gap weight, followed by all the jamo weight bytes, 
 % followed by the terminator byte.
 %
-col_extract([L1|Tail] = Str, TableFun) when ?CHAR_IS_HANGUL_L(L1) ->
-    case Tail of
-        [V1,T1|Tail2] 
-            when ?CHAR_IS_HANGUL_V(V1)
-            and  ?CHAR_IS_HANGUL_T(T1)
-        -> {   apply(TableFun, [[L1]]) 
-            ++ apply(TableFun, [[V1]]) 
-            ++ apply(TableFun, [[T1]])
-            ++ ?COL_HANGUL_TERMINATOR, Tail2};
-        [V1,V2|Tail2]
-            when ?CHAR_IS_HANGUL_V(V1)
-            and  ?CHAR_IS_HANGUL_V(V2)
-        -> {   apply(TableFun, [[L1]])
-            ++ apply(TableFun, [[V1]])
-            ++ apply(TableFun, [[V2]])
-            ++ ?COL_HANGUL_TERMINATOR, Tail2};
-        [L2,V1|Tail2] 
-            when ?CHAR_IS_HANGUL_L(L2)
-            and  ?CHAR_IS_HANGUL_V(V1)
-        -> {   apply(TableFun, [[L1]])
-            ++ apply(TableFun, [[L2]])
-            ++ apply(TableFun, [[V1]])
-            ++ ?COL_HANGUL_TERMINATOR, Tail2};
-        [V1|Tail2] 
-            when ?CHAR_IS_HANGUL_V(V1)
-        -> {   apply(TableFun, [[L1]])
-            ++ apply(TableFun, [[V1]])
-%            ++ ?COL_HANGUL_TERMINATOR
-            , Tail2};
-        _ -> { apply(TableFun, [[L1]]), Tail}
-    end;
-col_extract([V1|Tail] = Str, TableFun) when ?CHAR_IS_HANGUL_V(V1) -> 
-            {apply(TableFun, [[V1]]), Tail};
-col_extract([T1|Tail] = Str, TableFun) when ?CHAR_IS_HANGUL_T(T1) -> 
-            {apply(TableFun, [[T1]]), Tail};
-    
+
+% L1 as an argument is first hangul jamo L.
+% L1 as an part of ?IS_L1_OF_HANGUL_L is first level.
+col_hangul([<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, TableFun) 
+    when ?IS_L1_OF_HANGUL_L(L1)     
+    -> col_hangul2(l, T, [H|Acc], StrTail, TableFun);
+col_hangul([H|T], Acc, StrTail, TableFun) 
+    -> col_hangul(T, [H|Acc], StrTail, TableFun);
+col_hangul([   ], _Acc, _StrTail, _TableFun) 
+    -> false. % L1 is not found. There is no hangul jamo in this string.
+
+%% L1 was found. 
+%% Mod: l
+col_hangul2(Mod, [<<_:8, 0:16, _/binary>> = H | T], Acc, StrTail, TableFun) 
+    -> col_hangul2(Mod, T, [H|Acc], StrTail, TableFun); % skip an ignorable element.
+col_hangul2(l,  [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, TableFun) 
+    when ?IS_L1_OF_HANGUL_L(L1) % L2 is found. LL*
+    -> col_hangul2(ll, T, [H|Acc], StrTail, TableFun); 
+col_hangul2(l,  [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, TableFun) 
+    when ?IS_L1_OF_HANGUL_V(L1) % V1 is found. LV*
+    -> col_hangul2(lv, T, [H|Acc], StrTail, TableFun); 
+col_hangul2(lv, [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, _TableFun) 
+    when ?IS_L1_OF_HANGUL_T(L1) % T1 is found. LVT
+    -> col_hangul_result(T, [H|Acc], StrTail); 
+col_hangul2(lv, [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, _TableFun) 
+    when ?IS_L1_OF_HANGUL_V(L1) % V2 is found. LVV
+    -> col_hangul_result(T, [H|Acc], StrTail); 
+col_hangul2(ll, [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, _TableFun) 
+    when ?IS_L1_OF_HANGUL_V(L1) % V1 is found. LLV
+    -> col_hangul_result(T, [H|Acc], StrTail); 
+%col_hangul2(lv, T, Acc, StrTail, _TableFun) 
+%    % Skip and try to found other L. LVX
+%    -> col_hangul_result(T, Acc, StrTail); 
+col_hangul2(_Mod, [H|T], Acc, StrTail, TableFun) 
+    % Skip and try to found other L. LX
+    -> col_hangul(T, [H|Acc], StrTail, TableFun);
+col_hangul2(Mod,  [   ], Acc, StrTail, TableFun)
+    -> 
+    {Weights, StrTail2} = col_extract0(StrTail, TableFun), % We need more gold.
+    col_hangul2(Mod, Weights, Acc, StrTail2, TableFun);
+col_hangul2(_Mod, [   ], _Acc, [] = _StrTail, _TableFun) % L
+    -> false.
+
+col_hangul_result(T, Acc, StrTail) ->
+    { lists:reverse(col_append(T, [?COL_HANGUL_TERMINATOR | Acc])), StrTail }.
+
+
+col_extract0([     ], _       ) -> % No Any Char
+    {[], []};
 
 % Table 18. Values for Base
 % -----------------------------------------------------------------------------
@@ -1220,13 +1258,13 @@ col_extract([T1|Tail] = Str, TableFun) when ?CHAR_IS_HANGUL_T(T1) ->
 % Base  3: FBC0 Any other code point
 % Range 3: Ideographic AND NOT Unified_Ideograph
 % -----------------------------------------------------------------------------
- col_extract([CP|Tail], _)  
+ col_extract0([CP|Tail], _)  
      when ?CHAR_IS_UNIFIED_IDEOGRAPH(CP) 
       and (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(CP) 
         or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(CP)) ->
          {col_implicit_weight(CP, 16#FB40), Tail};
     
- col_extract([CP|Tail], _)  
+ col_extract0([CP|Tail], _)  
      when ?CHAR_IS_UNIFIED_IDEOGRAPH(CP) 
       and (not (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(CP) 
              or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(CP))) ->
@@ -1235,7 +1273,7 @@ col_extract([T1|Tail] = Str, TableFun) when ?CHAR_IS_HANGUL_T(T1) ->
 % If TableFun = only_derived then don't use ducet, 
 % try only ideographs and hangul characters.
 % This function runs when ducet() return 'other'. 
-col_extract([CP|Tail], { only_derived, TableFun }) ->
+col_extract0([CP|Tail], { only_derived, TableFun }) ->
     case apply(TableFun, [[CP]]) of
         [_|_] = Value -> % from ducet 
          {Value, Tail};
@@ -1244,7 +1282,7 @@ col_extract([CP|Tail], { only_derived, TableFun }) ->
     end;
 
 % Try extract from ducet.
-col_extract([CP|[]], TableFun) -> % Last Char
+col_extract0([CP|[]], TableFun) -> % Last Char
     case apply(TableFun, [[CP]]) of 
         [_|_] = Value ->
             {Value, []};
@@ -1253,7 +1291,7 @@ col_extract([CP|[]], TableFun) -> % Last Char
         _ ->
             {[], []}
     end;    
-col_extract([CP | Tail] = Str, TableFun) ->
+col_extract0([CP | Tail] = Str, TableFun) ->
     Res = col_extract1(Tail, TableFun, [CP], 
     false, % Max ccc among ccces of skipped chars beetween the starter char 
            % and the processed char. If there are no skipped chars, then 
@@ -1262,6 +1300,9 @@ col_extract([CP | Tail] = Str, TableFun) ->
 %   io:format(user, "In: ~w Out: ~w ~n", [Str, Res]),
     Res.
 
+
+
+
 % Note: A non-starter in a string is called blocked if there is another 
 %       non-starter of the same canonical combining class or zero between 
 %       it and the last character of canonical combining class 0.
@@ -1269,7 +1310,7 @@ col_extract([CP | Tail] = Str, TableFun) ->
 % There is only one char which was compared.
 % TableFun(CPlist) is always return right weight.
 col_extract1([        ],       TableFun, [Ch],   _   , Skipped, false ) ->
-    col_extract([Ch | lists:reverse(Skipped)], { only_derived, TableFun }); 
+    col_extract0([Ch | lists:reverse(Skipped)], { only_derived, TableFun }); 
 % see BUG 7
 col_extract1([        ],       _,        _,      _   ,       _, more  ) ->
     more_error;
@@ -1333,9 +1374,9 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
         OldVal ==  more  -> more_error;
         OldVal ==  false -> % and (CPList == [_]) 
               % http://unicode.org/reports/tr10/#Unassigned_And_Other
-              col_extract(col_append(CPList, 
+              col_extract0(col_append(CPList, 
                              col_append(Skipped, Str)), 
-                          { only_derived, TableFun }); 
+                          { only_derived, TableFun }); % Or *timed out*
         OldVal =/= false -> { OldVal,                    
                               col_append(Skipped, Str) }
     end.
@@ -1620,6 +1661,19 @@ str_info_col_sort_array_shift_trimmed(Obj = #unistr_info{ str=Str }) ->
 
 str_info_char_block(Obj = #unistr_info{ str=Str }) ->
     Obj#unistr_info{ blocks = lists:map(fun char_block/1, [Ch || Ch <- Str])}.
+
+
+
+
+
+
+
+
+
+
+
+is_always_true(_)  -> true.
+is_always_false(_) -> false.
 
   %%%%%  %%%%%%   %%%%    %%%%%   %%%%
     %    %       %          %    %
@@ -1924,15 +1978,15 @@ colloc_prof(File, Fun, Count) ->
             ok.
 
 nfc_test_() ->
-    {timeout, 600, fun() -> nfc_prof(1) end}.
+    {timeout, 600, fun() -> nfc_prof(1000000) end}.
 
 col_non_ignorable_test_() ->
     {timeout, 600, fun() -> 
         colloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
         		% Slow, with comments.
-                        ++ "CollationTest_NON_IGNORABLE.txt", 
+%                       ++ "CollationTest_NON_IGNORABLE.txt", 
         		% Fast version (data from slow version are equal).
-%                       ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
+                        ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                     fun col_non_ignorable/2, 
                     1000000) end}.
 
@@ -1940,8 +1994,8 @@ col_shifted_test_() ->
     {timeout, 600, fun() -> 
         colloc_prof(?COLLATION_TEST_DATA_DIRECTORY 
         		% Slow, with comments.
-                        ++ "CollationTest_SHIFTED.txt", 
-%                       ++ "CollationTest_SHIFTED_SHORT.txt", 
+%                       ++ "CollationTest_SHIFTED.txt", 
+                        ++ "CollationTest_SHIFTED_SHORT.txt", 
                     fun col_shifted/2, 
                     1000000) end}.
 

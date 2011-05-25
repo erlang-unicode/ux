@@ -167,10 +167,7 @@ end).
  (Ch>=?HANGUL_TBASE) and (Ch=<?HANGUL_TLAST) 
 )).
 
-
-
-
-
+% Hangul & UCA
 -define(COL_HANGUL_LBASE,  12337). % 12337 - 12356
 -define(COL_HANGUL_VBASE,  12463). % 12463 - 12484
 -define(COL_HANGUL_TBASE,  12533). % 12533 - 12584
@@ -294,26 +291,29 @@ char_types(Str)        -> lists:map({?MODULE, char_type}, Str).
 %% @doc Returns true, if C is a letter.
 -spec is_letter(C::char()) -> boolean().
 
-is_letter(C) -> case erlang:atom_to_list(char_type(C)) of 
-        		[$l,_] -> true;
-        		_      -> false
-        	end.	
+is_letter(C) -> 
+    case erlang:atom_to_list(char_type(C)) of 
+    [$l,_] -> true;
+    _      -> false
+    end.    
 
 %% @doc Returns true, if is C is a number.
 -spec is_number(C::char()) -> boolean().
 
-is_number(C) -> case erlang:atom_to_list(char_type(C)) of 
-        		[$n,_] -> true;
-        		_      -> false
-        	end.	
+is_number(C) -> 
+    case erlang:atom_to_list(char_type(C)) of 
+    [$n,_] -> true;
+    _      -> false
+    end.    
 
 %% @doc Return true, if is C is a separator.
 -spec is_separator(C::char()) -> boolean().
 
-is_separator(C) -> case erlang:atom_to_list(char_type(C)) of 
-        		[$z,_] -> true;
-        		_      -> false
-        	end.	
+is_separator(C) -> 
+    case erlang:atom_to_list(char_type(C)) of 
+    [$z,_] -> true;
+    _      -> false
+    end.    
 
 %% @see uxstring:is_punctiation_mark/1
 -spec is_pm(C::char()) -> boolean().
@@ -323,10 +323,11 @@ is_pm(C) -> is_punctuation_mark(C).
 %% @doc Returns true, if is C is a punctiation mark.
 -spec is_punctuation_mark(C::char()) -> boolean().
 
-is_punctuation_mark(C) -> case erlang:atom_to_list(char_type(C)) of 
-        		[$p,_] -> true;
-        		_      -> false
-        	end.	
+is_punctuation_mark(C) -> 
+    case erlang:atom_to_list(char_type(C)) of 
+    [$p,_] -> true;
+    _      -> false
+    end.    
 
 %% @doc Return true, if C is a decimal number.
 -spec is_decimal(C::char()) -> boolean().
@@ -339,8 +340,8 @@ is_decimal(C) -> char_type(C) == nd.
 -spec delete_types([atom()], string()) -> string().
 
 delete_types(Types, Str) -> 
-        lists:filter(fun(El) -> 
-        	not lists:member(char_type(El), Types) 
+    lists:filter(fun(El) -> 
+            not lists:member(char_type(El), Types) 
         end, Str).
 
 %% @doc Stops delete_type/2 after Limit deleted chars. If Limit < 0, then
@@ -349,11 +350,11 @@ delete_types(Types, Str) ->
 -spec delete_types([atom()], string(), integer()) -> string().
 
 delete_types(Types, Str, Limit) when Limit > 0 ->
-        lists:reverse(get_types(Types, Str, Limit, [], true, 
-        			fun not_in_array/2, 0, -1));
+    lists:reverse(get_types(Types, Str, Limit, [], true, 
+        fun not_in_array/2, 0, -1));
 delete_types(Types, Str, Limit) when Limit < 0 ->
-        lists:reverse(get_types(Types, Str, Limit, [], true, 
-        			fun not_in_array/2, 1,  0)).
+    lists:reverse(get_types(Types, Str, Limit, [], true, 
+        fun not_in_array/2, 1,  0)).
 
 %% @doc Returns a new string which is made from the chars of Str 
 %%      which are a type from Types list.
@@ -361,8 +362,8 @@ delete_types(Types, Str, Limit) when Limit < 0 ->
 -spec filter_types([atom()], string()) -> string().
 
 filter_types(Types, Str) -> 
-        lists:filter(fun(El) -> 
-        	lists:member(char_type(El), Types) 
+    lists:filter(fun(El) -> 
+            lists:member(char_type(El), Types) 
         end, Str).
 
 %%      stops after -Limit skipped chars.
@@ -370,46 +371,51 @@ filter_types(Types, Str) ->
 -spec filter_types([atom()], string(), integer()) -> string().
 
 filter_types(Types, Str, Limit) when Limit > 0 ->
-        lists:reverse(get_types(Types, Str, Limit, [], true, 
-        				fun lists:member/2, -1, 0));
+    lists:reverse(
+        get_types(Types, Str, Limit, [], true, 
+            fun lists:member/2, -1, 0));
 filter_types(Types, Str, Limit) when Limit < 0 ->
-        lists:reverse(get_types(Types, Str, Limit, [], true, 
-        				fun lists:member/2,  0, 1)).
+    lists:reverse(
+        get_types(Types, Str, Limit, [], true, 
+            fun lists:member/2,  0, 1)).
 
 %% @doc If Len>0, then gets first Len chars of type, which is in Types
 %%      If Len<0, then gets first -Len chars of type, which is NOT in Types
 %% @end
 -spec first_types([atom()], string(), integer()) -> string().
 first_types(Types, Str, Len) -> 
-        lists:reverse(get_types(Types, Str, Len, [], false, 
-        	?ASSERT_IN_ARRAY_LAMBDA(Len>0), ?ASSERT(Len>0, -1, 1), 0)).
+    lists:reverse(
+        get_types(Types, Str, Len, [], false, 
+            ?ASSERT_IN_ARRAY_LAMBDA(Len>0), 
+            ?ASSERT(Len>0, -1, 1), 0)).
 
 %% @doc If Len>0, then gets last Len chars of type, which is in Types
 %%      If Len<0, then gets last -Len chars of type, which is NOT in Types
 %% @end
 -spec last_types([atom()], string(), integer()) -> string().
 last_types(Types, Str, Len) -> 
-        get_types(Types, lists:reverse(Str), Len, [], false, 
-        	?ASSERT_IN_ARRAY_LAMBDA(Len>0), ?ASSERT(Len>0, -1, 1), 0).
+    get_types(Types, lists:reverse(Str), Len, [], false, 
+        ?ASSERT_IN_ARRAY_LAMBDA(Len>0), 
+        ?ASSERT(Len>0, -1, 1), 0).
         
 %% @private
 get_types(_, [], _, Result, _, _, _, _) -> Result;
 get_types(_,  _, 0, Result, false, _, _, _) -> Result;
 get_types(_,  Tail, 0, Result, true, _, _, _) -> 
-        lists:reverse(Tail)++Result;
+    lists:reverse(Tail)++Result;
 get_types(Types, [Char|Tail], 
-        Len, % Strop after Len chars
-        Result, % Result array
-        RetTail, % Concat tail with Result or not
-        Fun, % Check function
-        TrueStep, % Len+TrueStep, if Fun return true
-        FalseStep) -> 
-        case apply(Fun, [char_type(Char), Types]) of
-        	true  -> get_types(Types, Tail, Len+TrueStep, [Char|Result], 
-        				RetTail, Fun, TrueStep, FalseStep);
-        	false -> get_types(Types, Tail, Len+FalseStep, Result, 
-        				RetTail, Fun, TrueStep, FalseStep)
-        end.
+    Len, % Strop after Len chars
+    Result, % Result array
+    RetTail, % Concat tail with Result or not
+    Fun, % Check function
+    TrueStep, % Len+TrueStep, if Fun return true
+    FalseStep) -> 
+    case apply(Fun, [char_type(Char), Types]) of
+    true  -> get_types(Types, Tail, Len+TrueStep, [Char|Result], 
+                RetTail, Fun, TrueStep, FalseStep);
+    false -> get_types(Types, Tail, Len+FalseStep, Result, 
+                RetTail, Fun, TrueStep, FalseStep)
+    end.
 
 %% @doc Returns a new list of strings which are parts of Str splited 
 %%      by separator chars of a type from Types list.
@@ -417,16 +423,16 @@ get_types(Types, [Char|Tail],
 -spec explode_types([atom()], string()) -> string().
 
 explode_types(Types, Str) -> 
-        explode_reverse(explode_types_cycle(Types, Str, [], [])).
+    explode_reverse(explode_types_cycle(Types, Str, [], [])).
 
 %% @private
 explode_types_cycle(_, [], [], Res) -> Res;
 explode_types_cycle(_, [], Buf, Res) -> [Buf|Res];
 explode_types_cycle(Types, [Char|Str], Buf, Res) -> 
-        case lists:member(char_type(Char), Types) of
-        	true  -> explode_types_cycle(Types, Str, [], [Buf|Res]);
-        	false -> explode_types_cycle(Types, Str, [Char|Buf], Res)
-        end.
+    case lists:member(char_type(Char), Types) of
+    true  -> explode_types_cycle(Types, Str, [], [Buf|Res]);
+    false -> explode_types_cycle(Types, Str, [Char|Buf], Res)
+    end.
 
 %% @doc Returns a new list of strings which are parts of Str splited 
 %%      by separator chars of a type from Types list. Parts can not be
@@ -467,21 +473,21 @@ explode([Delimeter], Str) when is_integer(Delimeter) ->
 explode(Delimeter,   Str) when is_integer(Delimeter) -> 
     explode_simple(Delimeter, lists:reverse(Str), [], []);
 explode(Delimeter, Str) -> 
-        case explode_cycle(Delimeter, Str, [], []) of
-        	false -> [Str];
-        	Res -> explode_reverse(Res)
-        end.
+    case explode_cycle(Delimeter, Str, [], []) of
+    false -> [Str];
+    Res -> explode_reverse(Res)
+    end.
 
 explode([], _, _) -> false;
 explode(Delimeter, Str, Limit) when is_integer(Delimeter) ->
     explode([Delimeter], Str, Limit); 
 explode(Delimeter, Str, Limit) when Limit > 0 -> 
-        explode_reverse(explode_cycle_pos(Delimeter, Str, [], [], Limit));
+    explode_reverse(explode_cycle_pos(Delimeter, Str, [], [], Limit));
 explode(Delimeter, Str, Limit) when Limit < 0 -> 
-        case explode_cycle(Delimeter, Str, [], []) of
-        	false -> [];
-        	Res -> explode_reverse(lists:nthtail(-Limit, Res))
-        end;
+    case explode_cycle(Delimeter, Str, [], []) of
+    false -> [];
+    Res -> explode_reverse(lists:nthtail(-Limit, Res))
+    end;
 explode(Delimeter, Str, _) -> explode(Delimeter, Str).
 
 %% @private
@@ -508,53 +514,53 @@ explode_simple(_        , [   ], Buf,     Res) -> [Buf | Res].
 explode_cycle(_, [], _,   [])     -> false;
 explode_cycle(_, [], Buf, Result) -> [Buf | Result];
 explode_cycle(Delimeter, Str, Buf, Result) ->
-        case explode_check(Delimeter, Str) of
-        	false -> [C|Tail] = Str, 
-        		explode_cycle(Delimeter, Tail, [C|Buf], Result);
-        	Tail -> explode_cycle(Delimeter, Tail, [], [Buf | Result])
-        end.
+    case explode_check(Delimeter, Str) of
+    false -> [C|Tail] = Str, 
+        explode_cycle(Delimeter, Tail, [C|Buf], Result);
+    Tail -> explode_cycle(Delimeter, Tail, [], [Buf | Result])
+    end.
 
 %% @private
 explode_cycle_pos(_, [], Buf, Result, _) -> [Buf|Result];
 explode_cycle_pos(_, Str, _, Result, 1) -> [lists:reverse(Str)|Result];
 explode_cycle_pos(Delimeter, Str, Buf, Result, Limit) ->
-        case explode_check(Delimeter, Str) of
-        	false -> [C|Tail] = Str, 
-        		explode_cycle_pos(Delimeter, Tail, [C|Buf], Result, 
-        				Limit);
-        	Tail  -> explode_cycle_pos(Delimeter, Tail, [], [Buf|Result], 
-        				Limit-1)
-        end.
+    case explode_check(Delimeter, Str) of
+    false -> [C|Tail] = Str, 
+        explode_cycle_pos(Delimeter, Tail, [C|Buf], Result, 
+            Limit);
+    Tail  -> explode_cycle_pos(Delimeter, Tail, [], [Buf|Result], 
+            Limit-1)
+    end.
 
 %% @doc This function get a delimeter and a part of the string 
 %%      If (Str = Delimeter + Tail), return a Tail, else return 'false'.
 %% @end
 %% @private
 explode_check([], Tail) ->
-        Tail;
+    Tail;
 explode_check([Delimeter], Str) when is_list(Delimeter) ->
-        explode_check(Delimeter, Str);	
+    explode_check(Delimeter, Str);    
 explode_check([Delimeter|DelArr], Str) when is_list(Delimeter) ->
-        case explode_check(Delimeter, Str) of
-        	false  -> explode_check(DelArr, Str);
-        	Result -> Result 
-        end;
+    case explode_check(Delimeter, Str) of
+    false  -> explode_check(DelArr, Str);
+    Result -> Result 
+    end;
 explode_check([DelHead|DelTail], [Head|Tail]) when (DelHead == Head) ->
-        explode_check(DelTail, Tail);
+    explode_check(DelTail, Tail);
 explode_check(_, _) ->
-        false.
+    false.
 
 %% @doc Converts characters of a string to a lowercase format.
 -spec to_lower(string()) -> string().
 
 to_lower(Str) ->
-        lists:map({?MODULE, char_to_lower}, Str).
+    lists:map({?MODULE, char_to_lower}, Str).
 
 %% @doc Converts characters of a string to a uppercase format.
 -spec to_upper(string()) -> string().
 
 to_upper(Str) ->
-        lists:map({?MODULE, char_to_upper}, Str).
+    lists:map({?MODULE, char_to_upper}, Str).
 
 %% @doc Encodes html special chars.
 -spec htmlspecialchars(string()) -> string().
@@ -611,11 +617,11 @@ st(Str, [], []) -> st(Str);
 st(Str, [$<|Allowed], Alt) -> st(Str, tags_to_list(Allowed), Alt);
 st(Str, [], Alt) -> st_cycle(Str, [], 0, lists:reverse(Alt)); 
 st(Str, Allowed, Alt) -> 
-        st_cycle_with_allowed(Str, [],
-        		lists:map({lists, reverse},
-        	    	lists:map({string, to_lower},
-        	        	lists:map({?MODULE, to_string}, Allowed))), 
-        		lists:reverse(Alt)).
+    st_cycle_with_allowed(Str, [],
+        lists:map({lists, reverse},
+            lists:map({string, to_lower},
+                lists:map({?MODULE, to_string}, Allowed))), 
+        lists:reverse(Alt)).
 
 %% @doc Drops all tags from the string.
 %%      Cnt is a count of not closed <
@@ -633,42 +639,46 @@ st_cycle([        ], Buf, _,   _  ) -> lists:reverse(Buf).
 
 %% @doc Is used by st_cycle_with_allowed
 %% @private
-st_get_tag    ([$> | T],       Buf , Tag, _, 1) ->
-        {Tag, [$> | Buf], T};
-st_get_tag    ([$> | T],       Buf , Tag    , _    , Cnt    ) ->
-        st_get_tag(T       ,       Buf , Tag    , false, Cnt - 1);
-st_get_tag    ([$< | T],       Buf , Tag    , false, Cnt    ) ->
-        st_get_tag(T       ,       Buf , Tag    , false, Cnt + 1);
-st_get_tag    ([$  | T],       Buf , Tag    , _    , Cnt    ) ->
-        st_get_tag(T       , [$  | Buf], Tag    , false, Cnt    );
-st_get_tag    ([$/ | T],       Buf , Tag    , true , Cnt    ) ->
-        st_get_tag(T       , [$/ | Buf], Tag    , true , Cnt    );
-st_get_tag    ([H  | T],       Buf , Tag    , true , Cnt    ) ->
-        st_get_tag(T       , [H  | Buf], [H|Tag], true , Cnt    );
+%% If Flag = false, then don't append chars (as name of a tag <name>).
+%% If Flag = true (default), then append chars (as the body of the tag).
+%% Cnt is a level of subtag (<a> Cnt=1 <b> Cnt=2 </b> Cnt=1</a>)
+%% Returns: {tag_name, tag_body, string_tail}
+st_get_tag([$>|T], Buf, Tag, _Flag, 1) ->
+    {Tag, [$>|Buf], T};
+st_get_tag([$>|T], Buf, Tag, _Flag, Cnt) ->
+    st_get_tag(T, Buf, Tag, false, Cnt - 1);
+st_get_tag([$<|T], Buf, Tag, false, Cnt) ->
+    st_get_tag(T, Buf, Tag, false, Cnt + 1);
+st_get_tag([$ |T], Buf, Tag, _, Cnt) ->
+    st_get_tag(T, [$ |Buf], Tag, false, Cnt);
+st_get_tag([$/|T], Buf, Tag, true, Cnt) ->
+    st_get_tag(T, [$/|Buf], Tag, true, Cnt);
+st_get_tag([H|T], Buf, Tag, true, Cnt) ->
+    st_get_tag(T, [H|Buf], [H|Tag], true, Cnt);
 % TODO: control atributes (onclick, for example. xss fix!)
-st_get_tag    ([H  | T],       Buf , Tag    , false, Cnt    ) ->
-        st_get_tag(T       , [H  | Buf], Tag    , false, Cnt    );
-st_get_tag    ([      ], _         , _      , _,     _) -> false; 
-st_get_tag    (_       , [        ], _      , _,     _) -> false. 
+st_get_tag([H|T], Buf, Tag, false, Cnt) ->
+    st_get_tag(T, [H|Buf], Tag, false, Cnt);
+st_get_tag([], _, _, _, _) -> false; 
+st_get_tag(_, [], _, _, _) -> false. 
 
 %% @doc Drops tags, but saves tags in the Allowed list.
 %% @private
-st_cycle_with_allowed([$< | T], Res, Allowed, Alt) ->
-        case st_get_tag(T, [$<], [], true, 1) of 
-        	{Tag, SubStr, Tail} -> 
-        		case lists:member(string:to_lower(Tag), Allowed) of 
-        			true  -> st_cycle_with_allowed(Tail, 
-        				SubStr ++ Res, Allowed, Alt); % Allowed tag
-        			false -> st_cycle_with_allowed(Tail,
-        				Alt    ++ Res, Allowed, Alt)  % Alt is replacement
-        		end;
-        _ -> lists:reverse(Res) % deletes unclosed string 
+st_cycle_with_allowed([$<|T], Res, Allowed, Alt) ->
+    case st_get_tag(T, [$<], [], true, 1) of 
+    {Tag, SubStr, Tail} -> 
+        case lists:member(string:to_lower(Tag), Allowed) of 
+        true  -> st_cycle_with_allowed(Tail, 
+            SubStr ++ Res, Allowed, Alt); % Allowed tag
+        false -> st_cycle_with_allowed(Tail,
+            Alt ++ Res, Allowed, Alt)  % Alt is replacement
+       end;
+    _ -> lists:reverse(Res) % deletes unclosed string 
     end;
-st_cycle_with_allowed([$> | T], Res, Allowed, Alt) ->
+st_cycle_with_allowed([$>|T], Res, Allowed, Alt) ->
     st_cycle_with_allowed(T, Res, Allowed, Alt);
-st_cycle_with_allowed([Ch | T], Res, Allowed, Alt) ->
+st_cycle_with_allowed([Ch|T], Res, Allowed, Alt) ->
     st_cycle_with_allowed(T, [Ch | Res], Allowed, Alt);
-st_cycle_with_allowed([      ], Res, _, _) -> lists:reverse(Res).
+st_cycle_with_allowed([], Res, _, _) -> lists:reverse(Res).
 
 %% @doc Convert string of tags to list
 %%      Example:
@@ -679,12 +689,12 @@ st_cycle_with_allowed([      ], Res, _, _) -> lists:reverse(Res).
 tags_to_list(Str) -> tags_to_list(Str, [], []).
 
 %% @private
-tags_to_list([$< | Str], Res, Buf) -> tags_to_list(Str, Res, Buf);
-tags_to_list([$/ | Str], Res, Buf) -> tags_to_list(Str, Res, Buf);
-tags_to_list([$> | Str], Res, Buf) -> tags_to_list(Str, 
-                                        [lists:reverse(Buf)|Res], []);
-tags_to_list([Ch | Str], Res, Buf) -> tags_to_list(Str, Res, [Ch|Buf]);
-tags_to_list([        ], Res, _  ) -> Res. 
+tags_to_list([$<|Str], Res, Buf) -> tags_to_list(Str, Res, Buf);
+tags_to_list([$/|Str], Res, Buf) -> tags_to_list(Str, Res, Buf);
+tags_to_list([$>|Str], Res, Buf) -> tags_to_list(Str, 
+        [lists:reverse(Buf)|Res], []);
+tags_to_list([Ch|Str], Res, Buf) -> tags_to_list(Str, Res, [Ch|Buf]);
+tags_to_list([], Res, _) -> Res. 
 
 
 %% @private
@@ -733,12 +743,13 @@ is_hangul_precomposed(_) -> false.
 %% http://unicode.org/reports/tr15/
 is_nf([Head|Tail], LastCC, Result, CheckFun) -> 
     case ccc(Head) of
-        CC when (LastCC > CC) and (CC =/= 0) -> no;
-        CC ->   case apply(CheckFun, [Head]) of
-                    n -> no;
-                    m -> is_nf(Tail, CC, maybe,  CheckFun);
-                    y -> is_nf(Tail, CC, Result, CheckFun)
-                end
+    CC when (LastCC > CC) and (CC =/= 0) -> no;
+    CC -> 
+        case apply(CheckFun, [Head]) of
+        n -> no;
+        m -> is_nf(Tail, CC, maybe,  CheckFun);
+        y -> is_nf(Tail, CC, Result, CheckFun)
+        end
     end;
 is_nf([], _, Result, _) -> Result.
 
@@ -752,40 +763,41 @@ is_nfkc(Str) -> is_nf(Str, 0, yes, fun nfkc_qc/1).
 is_nfkd(Str) -> is_nf(Str, 0, yes, fun nfkd_qc/1).
 
 to_nfc([])   -> [];
-to_nfc(Str)  -> case is_nfc(Str) of
+to_nfc(Str)  -> 
+    case is_nfc(Str) of
     yes -> Str;
     _   -> get_composition(to_nfd(Str))
-end.
-to_nfkc([])     -> [];
-to_nfkc(Str)    -> get_composition(
-                    normalize(get_recursive_decomposition(false, Str))).
-to_nfd([])      -> [];
-to_nfd(Str)     ->  normalize(get_recursive_decomposition(true,  Str)).
-to_nfkd([])     -> [];
-to_nfkd(Str)    ->  normalize(get_recursive_decomposition(false, Str)).
+    end.
+to_nfkc([])  -> [];
+to_nfkc(Str) -> get_composition(
+        normalize(get_recursive_decomposition(false, Str))).
+to_nfd([])   -> [];
+to_nfd(Str)  ->  normalize(get_recursive_decomposition(true,  Str)).
+to_nfkd([])  -> [];
+to_nfkd(Str) ->  normalize(get_recursive_decomposition(false, Str)).
 
-is_acsii(Char) when (Char>=0) and (Char=<16#7F) 
-    -> true;
-is_acsii(_) 
-    -> false.
+is_acsii(Char) when (Char>=0) and (Char=<16#7F) -> true;
+is_acsii(_) -> false.
 
 list_to_latin1(Str) ->
     lists:reverse(list_to_latin1(Str, [])).
 
 list_to_latin1([Char|Str], Res) ->
     list_to_latin1(Str, char_to_list(Char, [], Res));
-list_to_latin1([],         Res) -> Res.
+list_to_latin1([], Res) -> Res.
 
 % magic
 % Char>255
 char_to_list(Char, Buf, Res) ->
     case Char bsr 8 of
-        0   ->  case Buf of
-                    [] -> [Char|Res];
-                    _  -> lists:reverse(Buf)++[Char|Res]
-                end;
-        Div ->  Rem = Char band 2#11111111,
-                char_to_list(Div, [Rem|Buf], Res)
+    0   ->  
+        case Buf of
+        [] -> [Char|Res];
+        _  -> lists:reverse(Buf)++[Char|Res]
+        end;
+    Div -> 
+        Rem = Char band 2#11111111,
+        char_to_list(Div, [Rem|Buf], Res)
     end.
 
 %% internal_decompose(Str)
@@ -794,18 +806,18 @@ char_to_list(Char, Buf, Res) ->
 %%            the recursive compatibility and canonical decomposition.
 %% @private
 get_recursive_decomposition(true, Str) -> 
-            get_recursive_decomposition(fun is_compat/1, Str, []);
+    get_recursive_decomposition(fun is_compat/1, Str, []);
 get_recursive_decomposition(false, Str) -> 
-            get_recursive_decomposition(fun is_always_false/1, Str, []);
+    get_recursive_decomposition(fun is_always_false/1, Str, []);
 get_recursive_decomposition(Canonical, Str) -> 
-            get_recursive_decomposition(Canonical, Str, []).
+    get_recursive_decomposition(Canonical, Str, []).
 
 % Skip ASCII
 %% @private
-get_recursive_decomposition(Canonical, [Char|Tail], Result) when 
-      Char < 128 % Cannot be decomposed 
-      ->  get_recursive_decomposition(Canonical, Tail,
-               [Char|Result]);
+get_recursive_decomposition(Canonical, [Char|Tail], Result) 
+    when Char < 128 -> % Cannot be decomposed 
+    get_recursive_decomposition(Canonical, Tail,
+    [Char|Result]);
 
 % Decompose one char of hangul
 get_recursive_decomposition(Canonical, [Char|Tail], Result)
@@ -814,25 +826,26 @@ get_recursive_decomposition(Canonical, [Char|Tail], Result)
     L = ?HANGUL_LBASE + (SIndex div ?HANGUL_NCOUNT),
     V = ?HANGUL_VBASE + (SIndex rem ?HANGUL_NCOUNT) div ?HANGUL_TCOUNT,
     T = ?HANGUL_TBASE + (SIndex rem ?HANGUL_TCOUNT),
-            
     get_recursive_decomposition(Canonical, Tail,
-    case T of
+        case T of
         ?HANGUL_TBASE -> [V|[L|Result]];
         _ -> [T|[V|[L|Result]]]
-    end);
+        end);
 
 get_recursive_decomposition(Canonical, [Char|Tail], Result) ->
     case decomp(Char) of
-        []  -> get_recursive_decomposition(Canonical, Tail,
-                                            [Char|Result]);
-        Dec -> case Canonical(Char) % not is_compat = singleton
-                of 
-                true  -> get_recursive_decomposition(Canonical,
-                        Tail,  [Char|Result]);
-                false -> get_recursive_decomposition(Canonical,
-                        Tail,  get_recursive_decomposition(Canonical,
-                        Dec, Result))
-               end
+    []  -> get_recursive_decomposition(Canonical, Tail,
+            [Char|Result]);
+    Dec -> 
+        case Canonical(Char) of % not is_compat = singleton
+        true  -> 
+            get_recursive_decomposition(Canonical, Tail, 
+                [Char|Result]);
+        false -> 
+            get_recursive_decomposition(Canonical, Tail, 
+                get_recursive_decomposition(Canonical,
+                    Dec, Result))
+        end
     end;
 get_recursive_decomposition(_, [], Result) -> Result.
 
@@ -844,12 +857,11 @@ normalize1([], Buf, Result) -> normalize2(lists:reverse(Buf), Result);
 normalize1([Char|Tail], Buf, Result) ->
     Class = ccc(Char),
     if
-        (Class == 0) and 
-        (Buf == [])  -> normalize1(Tail, [], [Char | Result]);
-
-        (Class == 0) -> normalize1(Tail, [], 
-            [Char | normalize2(lists:reverse(Buf), Result)]);
-
+        (Class == 0) and (Buf == []) -> 
+            normalize1(Tail, [], [Char | Result]);
+        (Class == 0) -> 
+            normalize1(Tail, [], 
+                [Char | normalize2(lists:reverse(Buf), Result)]);
         true -> normalize1(Tail, [{Class, Char} | Buf], Result)
     end.
 
@@ -858,17 +870,17 @@ normalize1([Char|Tail], Buf, Result) ->
 normalize2([], Result)  -> Result;
 normalize2(Buf, Result) ->
     case normalize3(Buf, false, 0) of
-        false             -> Result;
-        {_, Char} = Value -> normalize2(Buf -- [Value], [Char|Result])
+    false -> Result;
+    {_, Char} = Value -> normalize2(Buf -- [Value], [Char|Result])
     end.
 
 %% Return char from Buf with max ccc
 %% @private
 normalize3([{CharClass, _} = Value | Tail], _, MaxClass) 
-    when CharClass > MaxClass 
- -> normalize3(Tail, Value, CharClass);
-normalize3([_|Tail], Value, MaxClass) 
- -> normalize3(Tail, Value, MaxClass);
+    when CharClass > MaxClass -> 
+    normalize3(Tail, Value, CharClass);
+normalize3([_|Tail], Value, MaxClass) -> 
+    normalize3(Tail, Value, MaxClass);
 normalize3([], Value, _) -> Value.
 
 -define(COMP_CHAR_CLASS(Char),
@@ -881,8 +893,8 @@ normalize3([], Value, _) -> Value.
 %% @private
 get_composition([Char|Tail]) -> 
     lists:reverse(
-            get_composition(Tail, Char, 
-             ?COMP_CHAR_CLASS(Char), [], [])
+        get_composition(Tail, Char, 
+            ?COMP_CHAR_CLASS(Char), [], [])
     ).
 
 
@@ -900,30 +912,27 @@ get_composition([VChar |Tail], LChar, 0, [], Result)
            * (LIndex * ?HANGUL_VCOUNT + VIndex),
 
     case Tail of
-        [TChar|Tail2] when ?CHAR_IS_HANGUL_T(TChar) ->
-            TIndex = TChar - ?HANGUL_TBASE,
-            LVTChar = LVChar + TIndex,
-            Result3 = [LVTChar|Result],
-            case Tail2 of
-                [Char|Tail3] ->
-                   get_composition(Tail3, Char, 
-                     ?COMP_CHAR_CLASS(Char), [], Result3);
-                [] -> Result3
-            end;
-        [Char|Tail2] ->
-                   get_composition(Tail2, Char, 
-                     ?COMP_CHAR_CLASS(Char), [], [LVChar|Result]);
-        [] -> [LVChar|Result]
+    [TChar|Tail2] when ?CHAR_IS_HANGUL_T(TChar) ->
+        TIndex = TChar - ?HANGUL_TBASE,
+        LVTChar = LVChar + TIndex,
+        Result3 = [LVTChar|Result],
+        case Tail2 of
+        [Char|Tail3] ->
+            get_composition(Tail3, Char, 
+                ?COMP_CHAR_CLASS(Char), [], Result3);
+        [] -> Result3
+        end;
+    [Char|Tail2] ->
+        get_composition(Tail2, Char, 
+            ?COMP_CHAR_CLASS(Char), [], [LVChar|Result]);
+    [] -> [LVChar|Result]
     end;
 
 get_composition([Char | Tail], LChar, 0, [], Result) 
     when ?CHAR_IS_HANGUL_L(LChar) ->
-         get_composition(Tail, Char, 
-            ?COMP_CHAR_CLASS(Char), [], [LChar|Result]);
+    get_composition(Tail, Char, 
+        ?COMP_CHAR_CLASS(Char), [], [LChar|Result]);
                     
-            
-   
-
 get_composition([Char|Tail], LastChar, _, Mods, Result) when Char < 128 ->
     get_composition(Tail, Char, 0, [], comp_append([LastChar|Result], Mods));
 
@@ -939,9 +948,9 @@ get_composition([Char|Tail], LastChar, LastClass, Mods, Result) ->
                 comp_append([LastChar|Result], Mods));
         true -> get_composition(Tail, LastChar, CharClass, [Char|Mods], Result)
     end;
-get_composition([], Char, _, [],   Result) ->
+get_composition([], Char, _LastClass, [], Result) ->
     [Char|Result];
-get_composition([], Char, _, Mods, Result) ->
+get_composition([], Char, _LastClass, Mods, Result) ->
     comp_append([Char|Result], Mods).
 
 %% Mods ++ Result
@@ -962,14 +971,12 @@ to_ncr([Char|Tail], Res) -> to_ncr(Tail, char_to_ncr(Char) ++ Res);
 to_ncr([         ], Res) -> Res.
 
 -spec char_to_ncr(char()) -> string().
-char_to_ncr(Char) when Char =< 16#7F 
-    % one-byte character
-    -> [Char];
-char_to_ncr(Char) when Char =< 16#C2
-    % non-utf8 character or not a start byte
-    -> [];
-char_to_ncr(Char) 
-    -> lists:flatten(io_lib:format("&#~p;", [Char])).   
+char_to_ncr(Char) when Char =< 16#7F ->
+    [Char]; % one-byte character
+char_to_ncr(Char) when Char =< 16#C2 ->
+    [];     % non-utf8 character or not a start byte
+char_to_ncr(Char) -> 
+    lists:flatten(io_lib:format("&#~p;", [Char])).   
 
 %% Split unicode string on graphemes http://en.wikipedia.org/wiki/Grapheme
 to_graphemes(Str) ->
@@ -979,38 +986,36 @@ to_graphemes(Str) ->
 %% @private
 to_graphemes_raw([H|T], Buf, Res) ->
     case {ccc(H), Buf} of
-        {0, []} -> to_graphemes_raw(T, [H], Res);
-        {0, _ } -> to_graphemes_raw(T, [H], [Buf|Res]);
-        _       -> to_graphemes_raw(T, [H|Buf], Res)
+    {0, []} -> to_graphemes_raw(T, [H], Res);
+    {0, _ } -> to_graphemes_raw(T, [H], [Buf|Res]);
+    _       -> to_graphemes_raw(T, [H|Buf], Res)
     end;
 to_graphemes_raw([   ], [ ], Res) -> Res;
-to_graphemes_raw([   ], Buf, Res) -> [Buf | Res].
+to_graphemes_raw([   ], Buf, Res) -> [Buf|Res].
 
 %% Compute count of graphemes in the string
-length(Str) ->
-    len_graphemes(Str, 0).
-
-len(Str) ->
-    len_graphemes(Str, 0).
+length(Str) -> len_graphemes(Str, 0).
+len(Str) -> len_graphemes(Str, 0).
 
 len_graphemes([H|T], Len) ->
     case ccc(H) of
-        0 -> len_graphemes(T, Len + 1);
-        _ -> len_graphemes(T, Len)
+    0 -> len_graphemes(T, Len + 1);
+    _ -> len_graphemes(T, Len)
     end;
 len_graphemes([   ], Len) -> Len.
 
 %% Reverses string graphemes 
 reverse(Str) ->
     reverse_flatten(
-        lists:reverse(to_graphemes_raw(Str, [], [])), [], []).
+        lists:reverse(to_graphemes_raw(Str, [], [])), 
+        [], []).
 
-reverse_flatten(    [H|T], [],       Res) ->
-    reverse_flatten(T,     H,        Res);
-reverse_flatten(    T,     [HH|TT],  Res) ->
-    reverse_flatten(T,     TT,       [HH|Res]);
-reverse_flatten(    _,     [],       Res) ->
-                                     Res.
+reverse_flatten([H|T], [], Res) ->
+    reverse_flatten(T, H, Res);
+reverse_flatten(T, [HH|TT],  Res) ->
+    reverse_flatten(T, TT, [HH|Res]);
+reverse_flatten(_, [], Res) ->
+    Res.
 hex_to_int(Code) ->
     {ok, [Int], []} = io_lib:fread("~16u", Code),
     Int.
@@ -1089,7 +1094,7 @@ col_shift_trimmed(S1, S2) ->
         fun col_shift_trimmed_bin_to_list/1).  
 
 col_non_ignorable_bin_to_list(Value) ->
-        { fun col_non_ignorable_bin_to_list/1, col_bin_to_list(Value) }.
+        {fun col_non_ignorable_bin_to_list/1, col_bin_to_list(Value)}.
 
 %% Convert binary from DUCET to list [L1, L2, L3, L4]
 %% A variable CE is "*" in ducet (1).
@@ -1107,62 +1112,62 @@ col_bin_to_list(L1) when is_integer(L1) ->
 %% @private
 % If it is a tertiary ignorable, then L4 = 0.
 col_shifted_bin_to_list(<<_:8, 0:48, _/binary>>) ->
-    { fun col_shifted_bin_to_list/1, [0, 0, 0, 0] };
+    {fun col_shifted_bin_to_list/1, [0, 0, 0, 0]};
 % If it is a variable, then L4 = Old L1.
 col_shifted_bin_to_list(<<1:8, L1:16, _/binary>>) ->
-    { fun col_shifted_bin_to_list2/1, [0, 0, 0, L1] };
+    {fun col_shifted_bin_to_list2/1, [0, 0, 0, L1]};
 col_shifted_bin_to_list(Value) ->
-    { fun col_shifted_bin_to_list/1, col_set_l4_to_value(Value, 16#FFFF) }.
+    {fun col_shifted_bin_to_list/1, col_set_l4_to_value(Value, 16#FFFF)}.
 
 %% This function is a version of col_shifted_bin_to_list/1, but its value is
 %% after variable.
 %% @private
 % If it is a ignorable, then L4 = 0.
 col_shifted_bin_to_list2(<<_:8, 0:16, _/binary>>) ->
-    { fun col_shifted_bin_to_list2/1, [0, 0, 0, 0] };
+    {fun col_shifted_bin_to_list2/1, [0, 0, 0, 0]};
 % If it is a variable, then L4 = Old L1.
 col_shifted_bin_to_list2(<<1:8, L1:16, _/binary>>) ->
-    { fun col_shifted_bin_to_list2/1, [0, 0, 0, L1] };
+    {fun col_shifted_bin_to_list2/1, [0, 0, 0, L1]};
 col_shifted_bin_to_list2(Value) ->
-    { fun col_shifted_bin_to_list/1, col_set_l4_to_value(Value, 16#FFFF) }.
+    {fun col_shifted_bin_to_list/1, col_set_l4_to_value(Value, 16#FFFF)}.
 
 
 %% @private
 col_blanked_bin_to_list(<<1:8, L1:16, _/binary>>) ->
-    { fun col_blanked_bin_to_list2/1, [0, 0, 0] };
+    {fun col_blanked_bin_to_list2/1, [0, 0, 0]};
 col_blanked_bin_to_list(Value) ->
-    { fun col_blanked_bin_to_list/1, col_bin_to_list(Value) }.
+    {fun col_blanked_bin_to_list/1, col_bin_to_list(Value)}.
 
 %% @private
 col_blanked_bin_to_list2(<<_:8, 0:16, _/binary>>) ->
-    { fun col_blanked_bin_to_list2/1, [0, 0, 0] };
+    {fun col_blanked_bin_to_list2/1, [0, 0, 0]};
 col_blanked_bin_to_list2(<<1:8, _/binary>>) ->
-    { fun col_blanked_bin_to_list2/1, [0, 0, 0] };
+    {fun col_blanked_bin_to_list2/1, [0, 0, 0]};
 col_blanked_bin_to_list2(Value) ->
-    { fun col_blanked_bin_to_list/1, col_bin_to_list(Value) }.
+    {fun col_blanked_bin_to_list/1, col_bin_to_list(Value)}.
 
 
 %% @private
 % If it is a tertiary ignorable, then L4 = 0.
 col_shift_trimmed_bin_to_list(<<_:8, 0:48, _/binary>>) ->
-    { fun col_shift_trimmed_bin_to_list/1, [0, 0, 0, 0] };
+    {fun col_shift_trimmed_bin_to_list/1, [0, 0, 0, 0]};
 % If it is a variable, then L4 = Old L1.
 col_shift_trimmed_bin_to_list(<<1:8, L1:16, _/binary>>) ->
-    { fun col_shift_trimmed_bin_to_list2/1, [0, 0, 0, L1] };
+    {fun col_shift_trimmed_bin_to_list2/1, [0, 0, 0, L1]};
 col_shift_trimmed_bin_to_list(Value) ->
-    { fun col_shift_trimmed_bin_to_list/1, col_set_l4_to_value(Value, 0) }.
+    {fun col_shift_trimmed_bin_to_list/1, col_set_l4_to_value(Value, 0)}.
 
 %% This function is a version of col_shifted_bin_to_list/1, but its value is
 %% after variable.
 %% @private
 % If it is a ignorable, then L4 = 0.
 col_shift_trimmed_bin_to_list2(<<_:8, 0:16, _/binary>>) ->
-    { fun col_shift_trimmed_bin_to_list2/1, [0, 0, 0, 0] };
+    {fun col_shift_trimmed_bin_to_list2/1, [0, 0, 0, 0]};
 % If it is a variable, then L4 = Old L1.
 col_shift_trimmed_bin_to_list2(<<1:8, L1:16, _/binary>>) ->
-    { fun col_shift_trimmed_bin_to_list2/1, [0, 0, 0, L1] };
+    {fun col_shift_trimmed_bin_to_list2/1, [0, 0, 0, L1]};
 col_shift_trimmed_bin_to_list2(Value) ->
-    { fun col_shift_trimmed_bin_to_list/1, col_set_l4_to_value(Value, 0) }.
+    {fun col_shift_trimmed_bin_to_list/1, col_set_l4_to_value(Value, 0)}.
 
 %% @private
 col_set_l4_to_value(<<_Variable:8, L1:16, L2:16, L3:16, _:16>>, Val) ->
@@ -1195,7 +1200,7 @@ sort(Lists, Fn) ->
 %% lists:map(fun(X) -> col_sort_key(X, Fn) end, Lists).
 %% @private
 sort_map([H|T], Fn, Res) ->
-    sort_map(T, Fn, [ { apply(Fn, [H]), H } | Res ]).
+    sort_map(T, Fn, [{apply(Fn, [H]), H}|Res]).
 
 %% @private
 get_sort_fn(non_ignorable) ->
@@ -1216,18 +1221,19 @@ col_sort_key(Str, FnName) when is_atom(FnName) ->
  
 
 %% @private
-col_sort_key1([[0  ] | ArrTail], Acc, Res) ->
-    col_sort_key1(ArrTail,    Acc ,    Res );
-col_sort_key1([[H  ] | ArrTail], Acc, Res) ->
-    col_sort_key1(ArrTail,    Acc , [H|Res]);
-col_sort_key1([[0|T] | ArrTail], Acc, Res) ->
-    col_sort_key1(ArrTail, [T|Acc],    Res );
-col_sort_key1([[H|T] | ArrTail], Acc, Res) ->
-    col_sort_key1(ArrTail, [T|Acc], [H|Res]);
-col_sort_key1([[H|T] | ArrTail], Acc, Res) ->
-    col_sort_key1(ArrTail, [T|Acc], [H|Res]);
-col_sort_key1([[   ] | ArrTail], Acc, Res) ->
-    col_sort_key1(ArrTail,    Acc ,    Res );
+%% AT is Array Tail.
+col_sort_key1([[0]|AT], Acc, Res) ->
+    col_sort_key1(AT, Acc, Res);
+col_sort_key1([[H]|AT], Acc, Res) ->
+    col_sort_key1(AT, Acc, [H|Res]);
+col_sort_key1([[0|T]|AT], Acc, Res) ->
+    col_sort_key1(AT, [T|Acc], Res);
+col_sort_key1([[H|T]|AT], Acc, Res) ->
+    col_sort_key1(AT, [T|Acc], [H|Res]);
+col_sort_key1([[H|T]|AT], Acc, Res) ->
+    col_sort_key1(AT, [T|Acc], [H|Res]);
+col_sort_key1([[]|AT], Acc, Res) ->
+    col_sort_key1(AT, Acc, Res);
 col_sort_key1([] = _InArray, [_|_] = Acc, Res) ->
     col_sort_key1(lists:reverse(Acc), [], [0|Res]);
 col_sort_key1([] = _InArray, [] = _Acc, Res) -> 
@@ -1260,15 +1266,15 @@ col_bin_to_bin(Val) ->
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
 col_compare (String1, String2, TableFun, ComparatorFun) ->
     col_compare1(to_nfd(String1), 
-                 to_nfd(String2), 
-                 [], % Buf 1, contains ducet(Char)
-                 [], % Buf 2
-                 false, % CompValue 1
-                 [], % Accumulator for String 1 
-                     % saves values for next levels comparation
-                 [], % Accumulator for String 2
-                 TableFun, % fun uxstring:ducet/1, in chars are REVERSED.
-                 ComparatorFun, ComparatorFun).
+        to_nfd(String2), 
+        [], % Buf 1, contains ducet(Char)
+        [], % Buf 2
+        false, % CompValue 1
+        [], % Accumulator for String 1 
+            % saves values for next levels comparation
+        [], % Accumulator for String 2
+        TableFun, % fun uxstring:ducet/1, in chars are REVERSED.
+        ComparatorFun, ComparatorFun).
 
 %% MANUAL:
 %% S2.1   Find the longest initial substring S at each point 
@@ -1285,10 +1291,10 @@ col_extract(Str, TableFun) ->
     Res = col_extract0(Str, TableFun),
     {Weights, StrTail} = Res,
     case col_hangul(Weights, [], StrTail, TableFun) of
-        % There is no any hangul jamo L chars in this string 
-        % (or other char with a weight of jamo L char)
-        false -> Res;
-        HangulRes -> HangulRes
+    % There is no any hangul jamo L chars in this string 
+    % (or other char with a weight of jamo L char)
+    false -> Res;
+    HangulRes -> HangulRes
     end.
         
 
@@ -1320,53 +1326,52 @@ col_extract(Str, TableFun) ->
 % L1 as an part of ?IS_L1_OF_HANGUL_L is first level.
 %% @private
 col_hangul([<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, TableFun) 
-    when ?IS_L1_OF_HANGUL_L(L1)     
-    -> col_hangul2(l, T, [H|Acc], StrTail, TableFun);
-col_hangul([H|T], Acc, StrTail, TableFun) 
-    -> col_hangul(T, [H|Acc], StrTail, TableFun);
-col_hangul([   ], _Acc, _StrTail, _TableFun) 
-    -> false. % L1 is not found. There is no hangul jamo in this string.
+    when ?IS_L1_OF_HANGUL_L(L1) ->
+    col_hangul2(l, T, [H|Acc], StrTail, TableFun);
+col_hangul([H|T], Acc, StrTail, TableFun) ->
+    col_hangul(T, [H|Acc], StrTail, TableFun);
+col_hangul([   ], _Acc, _StrTail, _TableFun) ->
+    false. % L1 is not found. There is no hangul jamo in this string.
 
 %% L1 was found. 
 %% Mod: l
 %% @private
-col_hangul2(Mod, [<<_:8, 0:16, _/binary>> = H | T], Acc, StrTail, TableFun) 
-    -> col_hangul2(Mod, T, [H|Acc], StrTail, TableFun); % skip an ignorable element.
+col_hangul2(Mod, [<<_:8, 0:16, _/binary>> = H | T], Acc, StrTail, TableFun) ->
+    col_hangul2(Mod, T, [H|Acc], StrTail, TableFun); % skip an ignorable element.
 col_hangul2(l,  [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, TableFun) 
-    when ?IS_L1_OF_HANGUL_L(L1) % L2 is found. LL*
-    -> col_hangul2(ll, T, [H|Acc], StrTail, TableFun); 
+    when ?IS_L1_OF_HANGUL_L(L1) -> % L2 is found. LL*
+    col_hangul2(ll, T, [H|Acc], StrTail, TableFun); 
 col_hangul2(l,  [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, TableFun) 
-    when ?IS_L1_OF_HANGUL_V(L1) % V1 is found. LV*
-    -> col_hangul2(lv, T, [H|Acc], StrTail, TableFun); 
+    when ?IS_L1_OF_HANGUL_V(L1) -> % V1 is found. LV*
+    col_hangul2(lv, T, [H|Acc], StrTail, TableFun); 
 col_hangul2(lv, [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, _TableFun) 
-    when ?IS_L1_OF_HANGUL_T(L1) % T1 is found. LVT
-    -> col_hangul_result(T, [H|Acc], StrTail); 
+    when ?IS_L1_OF_HANGUL_T(L1) -> % T1 is found. LVT
+    col_hangul_result(T, [H|Acc], StrTail); 
 col_hangul2(lv, [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, _TableFun) 
-    when ?IS_L1_OF_HANGUL_V(L1) % V2 is found. LVV
-    -> col_hangul_result(T, [H|Acc], StrTail); 
+    when ?IS_L1_OF_HANGUL_V(L1) -> % V2 is found. LVV
+    col_hangul_result(T, [H|Acc], StrTail); 
 col_hangul2(ll, [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, _TableFun) 
-    when ?IS_L1_OF_HANGUL_V(L1) % V1 is found. LLV
-    -> col_hangul_result(T, [H|Acc], StrTail); 
+    when ?IS_L1_OF_HANGUL_V(L1) -> % V1 is found. LLV
+    col_hangul_result(T, [H|Acc], StrTail); 
 %col_hangul2(lv, T, Acc, StrTail, _TableFun) 
 %    % Skip and try to found other L. LVX
 %    -> col_hangul_result(T, Acc, StrTail); 
-col_hangul2(_Mod, [H|T], Acc, StrTail, TableFun) 
+col_hangul2(_Mod, [H|T], Acc, StrTail, TableFun) ->
     % Skip and try to found other L. LX
-    -> col_hangul(T, [H|Acc], StrTail, TableFun);
-col_hangul2(Mod,  [   ], Acc, StrTail, TableFun)
-    -> 
+    col_hangul(T, [H|Acc], StrTail, TableFun);
+col_hangul2(Mod,  [   ], Acc, StrTail, TableFun) -> 
     {Weights, StrTail2} = col_extract0(StrTail, TableFun), % We need more gold.
     col_hangul2(Mod, Weights, Acc, StrTail2, TableFun);
-col_hangul2(_Mod, [   ], _Acc, [] = _StrTail, _TableFun) % L
-    -> false.
+col_hangul2(_Mod, [   ], _Acc, [] = _StrTail, _TableFun) -> % L
+    false.
 
 %% @private
 col_hangul_result(T, Acc, StrTail) ->
-    { lists:reverse(col_append(T, [?COL_HANGUL_TERMINATOR | Acc])), StrTail }.
+    {lists:reverse(col_append(T, [?COL_HANGUL_TERMINATOR|Acc])), StrTail}.
 
 
 %% @private
-col_extract0([     ], _       ) -> % No Any Char
+col_extract0([], _) -> % No Any Char
     {[], []};
 
 % Table 18. Values for Base
@@ -1381,37 +1386,37 @@ col_extract0([     ], _       ) -> % No Any Char
 % Range 3: Ideographic AND NOT Unified_Ideograph
 % -----------------------------------------------------------------------------
  col_extract0([CP|Tail], _)  
-     when ?CHAR_IS_UNIFIED_IDEOGRAPH(CP) 
-      and (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(CP) 
-        or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(CP)) ->
-         {col_implicit_weight(CP, 16#FB40), Tail};
+    when ?CHAR_IS_UNIFIED_IDEOGRAPH(CP) 
+     and (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(CP) 
+       or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(CP)) ->
+     {col_implicit_weight(CP, 16#FB40), Tail};
     
  col_extract0([CP|Tail], _)  
-     when ?CHAR_IS_UNIFIED_IDEOGRAPH(CP) 
+    when ?CHAR_IS_UNIFIED_IDEOGRAPH(CP) 
       and (not (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(CP) 
              or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(CP))) ->
-         {col_implicit_weight(CP, 16#FB80), Tail};
+    {col_implicit_weight(CP, 16#FB80), Tail};
 
 % If TableFun = only_derived then don't use ducet, 
 % try only ideographs and hangul characters.
 % This function runs when ducet() return 'other'. 
 col_extract0([CP|Tail], { only_derived, TableFun }) ->
     case apply(TableFun, [[CP]]) of
-        [_|_] = Value -> % from ducet 
-         {Value, Tail};
-        _             -> % other, more 
-         {col_implicit_weight(CP, 16#FBC0), Tail}
+    [_|_] = Value -> % from ducet 
+        {Value, Tail};
+    _ -> % other, more 
+        {col_implicit_weight(CP, 16#FBC0), Tail}
     end;
 
 % Try extract from ducet.
 col_extract0([CP|[]], TableFun) -> % Last Char
     case apply(TableFun, [[CP]]) of 
-        [_|_] = Value ->
-            {Value, []};
-        {set_ignorables_to_0, Value} ->
-            {Value, []};
-        _ ->
-            {[], []}
+    [_|_] = Value ->
+        {Value, []};
+    {set_ignorables_to_0, Value} ->
+        {Value, []};
+    _ ->
+        {[], []}
     end;    
 col_extract0([CP | Tail] = Str, TableFun) ->
     Res = col_extract1(Tail, TableFun, [CP], 
@@ -1432,14 +1437,16 @@ col_extract0([CP | Tail] = Str, TableFun) ->
 % There is only one char which was compared.
 % TableFun(CPlist) is always return right weight.
 %% @private
-col_extract1([        ],       TableFun, [Ch],   _   , Skipped, false ) ->
-    col_extract0([Ch | lists:reverse(Skipped)], { only_derived, TableFun }); 
+col_extract1([], TableFun, [Ch], _, Skipped, false ) ->
+    col_extract0(
+        [Ch|lists:reverse(Skipped)], 
+        {only_derived, TableFun}); 
 % see BUG 7
-col_extract1([        ],       _,        _,      _   ,       _, more  ) ->
+col_extract1([], _, _, _, _, more) ->
     more_error;
 % ... One or more chars
-col_extract1([        ],       _,        _,      _   , Skipped, OldVal) ->
-    { OldVal, lists:reverse(Skipped) }; % Return result
+col_extract1([], _,  _,  _, Skipped, OldVal) ->
+    {OldVal, lists:reverse(Skipped)}; % Return result
 
 % TIP: OldVal = apply(TableFun, [CPList])
 col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
@@ -1456,52 +1463,49 @@ col_extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
             % extract. We only get old value from ducat in other places.
             Bin = apply(TableFun, [NewCPList]),
             case Bin of
-                % Bin(CPList) == other, but Bin(CPList+NextChar) may be 
-        	% have a specified collation weight.
-                more ->
-                    case col_extract1(Tail, TableFun, NewCPList, 
-                                      Ccc1, Skipped, more) of
-                        more_error -> % Cannot add any next char.
-                            col_extract1(Tail, TableFun, CPList, Ccc2, 
-                                         [CP2|Skipped], OldVal); % skip CP2
-                        MoreRes    -> MoreRes
-                    end;
-
-        	% Cannot extract collation element.
-                other when (more == OldVal)  ->
-                    more_error;
-
-                other when (more =/= OldVal) ->
+            % Bin(CPList) == other, but Bin(CPList+NextChar) may be 
+            % have a specified collation weight.
+            more ->
+                case col_extract1(Tail, TableFun, NewCPList, 
+                    Ccc1, Skipped, more) of
+                more_error -> % Cannot add any next char.
                     col_extract1(Tail, TableFun, CPList, Ccc2, 
-                                 [CP2|Skipped], OldVal); % skip CP2
+                        [CP2|Skipped], OldVal); % skip CP2
+                MoreRes -> MoreRes
+                end;
+            % Cannot extract collation element.
+            other when (more == OldVal) -> more_error;
+            other when (more =/= OldVal) ->
+                col_extract1(Tail, TableFun, CPList, Ccc2, 
+                    [CP2|Skipped], OldVal); % skip CP2
 
-                % Append char CP2. Try find more characters.
-        	% Ccc1 == false, because this is a first step of algorithm.
-        	% (don't save canonical class of previous character (ccc1))
-                [_|_] when (false == Ccc1) -> 
-        		col_extract1(Tail, TableFun, NewCPList, 
-                                     false, Skipped, Bin);
-        	
-                % Append char CP2. Try find more characters.
-        	% Ccc1 =/= false, because this is a second step of algorithm.
-                [_|_] when (false =/= Ccc1) -> 
-        		col_extract1(Tail, TableFun, NewCPList, 
-                                     Ccc2, Skipped, Bin)
+            % Append char CP2. Try find more characters.
+            % Ccc1 == false, because this is a first step of algorithm.
+            % (don't save canonical class of previous character (ccc1))
+            [_|_] when (false == Ccc1) -> 
+            col_extract1(Tail, TableFun, NewCPList, false, 
+                Skipped, Bin);
+            
+            % Append char CP2. Try find more characters.
+            % Ccc1 =/= false, because this is a second step of algorithm.
+            [_|_] when (false =/= Ccc1) -> 
+            col_extract1(Tail, TableFun, NewCPList, Ccc2, 
+                Skipped, Bin)
             end; % if
 
         % Last skipped char was blocked.
         (Ccc1 == Ccc2) and (0 =/= Ccc1) ->
             col_extract1(Tail, TableFun, CPList, Ccc2, 
-                         [CP2|Skipped], OldVal); % skip CP2
+                [CP2|Skipped], OldVal); % skip CP2
 
         OldVal ==  more  -> more_error;
         OldVal ==  false -> % and (CPList == [_]) 
-              % http://unicode.org/reports/tr10/#Unassigned_And_Other
-              col_extract0(col_append(CPList, 
-                             col_append(Skipped, Str)), 
-                          { only_derived, TableFun }); % Or *timed out*
-        OldVal =/= false -> { OldVal,                    
-                              col_append(Skipped, Str) }
+            % http://unicode.org/reports/tr10/#Unassigned_And_Other
+            col_extract0(
+                col_append(CPList, 
+                    col_append(Skipped, Str)), 
+                {only_derived, TableFun}); % Or *timed out*
+        OldVal =/= false -> {OldVal, col_append(Skipped, Str)}
     end.
 
     
@@ -1516,7 +1520,7 @@ col_append(InStr, OutStr) ->
 %% @private
 col_append1([H|T], Str) ->
     col_append1(T, [H|Str]);
-col_append1([   ], Str) -> Str.
+col_append1([], Str) -> Str.
 
 
 %% 7.1.3 Implicit Weights 
@@ -1543,7 +1547,7 @@ col_implicit_weight(CP, BASE) ->
         Buf1 :: [binary(), ...], Buf2 :: [binary()], char(), 
         Acc1 :: [[integer(), ...], ...], 
         Acc2 :: [[integer()]], % Acc = [[L2,L3,L4], ...] 
-      fun(), fun(), fun())  ->  lower | greater | equal.
+        fun(), fun(), fun()) -> lower | greater | equal.
 
 %% col_compare1 ALGORITHM.
 %% 1. Extract weights from Str1 to Buf1.
@@ -1556,50 +1560,50 @@ col_implicit_weight(CP, BASE) ->
 %% 6. Run col_compare2.
 %% @private
 col_compare1([_|_] = Str1, StrTail2, [], Buf2, W1L1, Acc1, 
-             Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
+    Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
     {Buf1,     % [<<Flag,L1,L2,...>>, ..]
      StrTail1} = col_extract(Str1, TableFun), 
 %   io:format("B1: ~w ~n", [Buf1]),
     col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, Acc1,
-                 Acc2, TableFun, ComparatorFun1, ComparatorFun2);
-
+        Acc2, TableFun, ComparatorFun1, ComparatorFun2);
 col_compare1(StrTail1, [_|_] = Str2, Buf1, [], W1L1, Acc1, 
-             Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
+    Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
     {Buf2,     % [<<Flag,L1,L2,...>>, ..]
      StrTail2} = col_extract(Str2, TableFun), 
 %   io:format("B2: ~w ~n", [Buf2]),
-    col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, 
-                 Acc1, Acc2, TableFun, ComparatorFun1, ComparatorFun2);
+    col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, Acc1, 
+        Acc2, TableFun, ComparatorFun1, ComparatorFun2);
     
 %% Extracts a non-ignorable L1 from the Str1.
-col_compare1(StrTail1, StrTail2, [CV1Raw|Buf1], Buf2, false, 
-             Acc1, Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
-    case apply(ComparatorFun1, [CV1Raw]) of % This function can reverse argument or set 0.
-        { NewFun, [0    | Acc] } -> % Find other W1L1
-            col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, [Acc|Acc1], 
-                         Acc2, TableFun, NewFun, ComparatorFun2);
-        { NewFun, [W1L1 | Acc] } -> % W1L1 was found. Try find W2L1.
-            col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1,  [Acc|Acc1],
-                         Acc2, TableFun, NewFun, ComparatorFun2)
+col_compare1(StrTail1, StrTail2, [CV1Raw|Buf1], Buf2, false, Acc1, 
+    Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
+    % This function can reverse argument or set 0.
+    case apply(ComparatorFun1, [CV1Raw]) of 
+    {NewFun, [0|Acc]} -> % Find other W1L1
+        col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, [Acc|Acc1], 
+            Acc2, TableFun, NewFun, ComparatorFun2);
+    {NewFun, [W1L1|Acc]} -> % W1L1 was found. Try find W2L1.
+        col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1,  [Acc|Acc1],
+            Acc2, TableFun, NewFun, ComparatorFun2)
     end;
 
 col_compare1(StrTail1, StrTail2, Buf1, [CV2Raw|Buf2], W1L1, Acc1, 
-             Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
+    Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
     case apply(ComparatorFun2, [CV2Raw]) of
-        {  NewFun, [0    | Acc] } -> % Find other W2L1
-            col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, 
-                         Acc1, [Acc|Acc2], TableFun, ComparatorFun1, NewFun);
-        { _NewFun, [_    | _  ] } when W1L1 == true -> 
-            lower;   % Sting 1 was ended; 
-                     % string 2 still has a non-ignorable char 
-                     % => string2 greater.
-        { _NewFun, [W2L1 | _  ] } when W1L1 >  W2L1 ->
-            greater; % Return result: S1 greater S2 on L1
-        { _NewFun, [W2L1 | _  ] } when W1L1 <  W2L1 ->
-            lower;   % Return result: S1 lower S2 on L1
-        {  NewFun, [W2L1 | Acc] } when W1L1 == W2L1 ->
-            col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, Acc1, 
-                         [Acc|Acc2], TableFun, ComparatorFun1, NewFun)
+    {NewFun, [0|Acc]} -> % Find other W2L1
+        col_compare1(StrTail1, StrTail2, Buf1, Buf2, W1L1, Acc1, 
+            [Acc|Acc2], TableFun, ComparatorFun1, NewFun);
+    {_NewFun, [_|_]} when W1L1 == true -> 
+        lower;   % Sting 1 was ended; 
+                 % string 2 still has a non-ignorable char 
+                 % => string2 greater.
+    {_NewFun, [W2L1|_]} when W1L1 > W2L1 ->
+        greater; % Return result: S1 greater S2 on L1
+    {_NewFun, [W2L1|_]} when W1L1 < W2L1 ->
+        lower;   % Return result: S1 lower S2 on L1
+    {NewFun, [W2L1|Acc]} when W1L1 == W2L1 ->
+        col_compare1(StrTail1, StrTail2, Buf1, Buf2, false, Acc1, 
+            [Acc|Acc2], TableFun, ComparatorFun1, NewFun)
     end;
 
 % MANUAL:
@@ -1610,73 +1614,71 @@ col_compare1(StrTail1, StrTail2, Buf1, [CV2Raw|Buf2], W1L1, Acc1,
 % be any character(s).
 
 %% String 1 conrains more codepaints, but we cannot throw them.
-col_compare1([CP1|StrTail1], [], [],  [], _,     Acc1, Acc2, 
-             TableFun, ComparatorFun1, ComparatorFun2) ->
-    col_compare1(StrTail1,   [], CP1, [], false, Acc1, Acc2, 
-             TableFun, ComparatorFun1, ComparatorFun2);
+col_compare1([CP1|StrTail1], [] = _Str2, [] = _Buf1, [] = _Buf2, _, Acc1, 
+    Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
+    col_compare1(StrTail1, [], CP1, [], false, Acc1, 
+        Acc2, TableFun, ComparatorFun1, ComparatorFun2);
 
 %% String 2 conrains more codepaints, but we cannot throw them.
-col_compare1([], [CP2|StrTail2], [], [],  _,    Acc1, Acc2, 
-             TableFun, ComparatorFun1, ComparatorFun2) ->
-    col_compare1([],   StrTail2, [], CP2, true, Acc1, Acc2, 
-             TableFun, ComparatorFun1, ComparatorFun2);
+col_compare1([] = _Str1, [CP2|StrTail2], [] = _Buf1, [] = _Buf2, _, Acc1, 
+    Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
+    col_compare1([], StrTail2, [], CP2, true, Acc1, 
+        Acc2, TableFun, ComparatorFun1, ComparatorFun2);
 
-col_compare1(_Str1, [] = _Str2, _Buf1, [] = _Buf2, W1L1, 
-        _Acc1, _Acc2, 
-        _TableFun, _ComparatorFun1, _ComparatorFun2) 
+col_compare1(_Str1, [] = _Str2, _Buf1, [] = _Buf2, W1L1, _Acc1, 
+    _Acc2, _TableFun, _ComparatorFun1, _ComparatorFun2) 
     when (W1L1 > 0) and (W1L1 =/= false) ->
     greater;
 
-col_compare1([], [], [W1Raw|Buf1], [], W1L1, Acc1, Acc2, 
-        TableFun, ComparatorFun1, ComparatorFun2) when W1L1 == 0 ->
-    { NewFun, [W1L1New | Acc] } = apply(ComparatorFun1, [W1Raw]),
+col_compare1([] = _Str1, [] = _Str2, [W1Raw|Buf1], [] = _Buf2, W1L1, Acc1, 
+    Acc2, TableFun, ComparatorFun1, ComparatorFun2) when W1L1 == 0 ->
+    {NewFun, [W1L1New|Acc]} = apply(ComparatorFun1, [W1Raw]),
     col_compare1([], [], Buf1, [], W1L1New, [Acc|Acc1], 
-                 Acc2, TableFun, NewFun, ComparatorFun2);
+        Acc2, TableFun, NewFun, ComparatorFun2);
 
 %% L1 was ended :(
 %% Now, Funs are not neeaded.
 %% Acc1 and Acc2 are reversed.
-col_compare1([], [], [], [], false, Acc1, Acc2, 
-        _TableFun, _ComparatorFun1, _ComparatorFun2) -> 
-% TST
+col_compare1([] = _Str1, [] = _Str2, [] = _Buf1, [] = Buf2, false, Acc1, 
+    Acc2, _TableFun, _ComparatorFun1, _ComparatorFun2) -> 
 %   io:format(user, "~w ~w ~n", [Acc1, Acc2]),
     col_compare2(lists:reverse(Acc1), 
-                 lists:reverse(Acc2),
-                 false, % W1L{2,3,4} 
-                 [], % Other accumulator. Contains L3 and L4.
-                 []  % Other acc...
-                ).
+        lists:reverse(Acc2),
+        false, % W1L{2,3,4} 
+        [], % Other accumulator. Contains L3 and L4.
+        []  % Other acc...
+    ).
 
 
 %%% L2 comparation.
 %% Try extract W1LX, but 0 was found => try next weigth in InAcc.
 %% @private
 % skip if higher levels are not defined.
-col_compare2([ [] | InAcc1], InAcc2, W1LX, OutAcc1, OutAcc2) ->
+col_compare2([[]|InAcc1], InAcc2, W1LX, OutAcc1, OutAcc2) ->
     col_compare2(InAcc1, InAcc2, W1LX, OutAcc1, OutAcc2);
-col_compare2(InAcc1, [ [] | InAcc2], W1LX, OutAcc1, OutAcc2) ->
+col_compare2(InAcc1, [[]|InAcc2], W1LX, OutAcc1, OutAcc2) ->
     col_compare2(InAcc1, InAcc2, W1LX, OutAcc1, OutAcc2);
 
-col_compare2([ [0   |OutAcc] | InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
+col_compare2([[0|OutAcc]|InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
     col_compare2(InAccTail1, InAcc2, false, [OutAcc|OutAcc1], OutAcc2);
 % W1LX was found. => Try found W2LX.
-col_compare2([ [W1LX|OutAcc] | InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
+col_compare2([[W1LX|OutAcc]|InAccTail1], InAcc2, false, OutAcc1, OutAcc2) ->
     col_compare2(InAccTail1, InAcc2, W1LX, [OutAcc|OutAcc1], OutAcc2);
 
 % Try extract W2LX.
-col_compare2(InAcc1, [ [0   |OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) ->
+col_compare2(InAcc1, [[0|OutAcc]|InAccTail2], W1LX, OutAcc1, OutAcc2) ->
     col_compare2(InAcc1, InAccTail2, W1LX, OutAcc1, [OutAcc|OutAcc2]);
     
-col_compare2(_     , [ [W2LX|_     ] | _], W1LX, _, _) 
-    when W1LX <  W2LX -> lower;
-col_compare2(_     , [ [W2LX|_     ] | _], W1LX, _, _) 
-    when W1LX >  W2LX -> greater;
-col_compare2(InAcc1, [ [W2LX|OutAcc] | InAccTail2], W1LX, OutAcc1, OutAcc2) 
+col_compare2(_, [[W2LX|_]|_], W1LX, _, _) 
+    when W1LX < W2LX -> lower;
+col_compare2(_, [[W2LX|_]|_], W1LX, _, _) 
+    when W1LX > W2LX -> greater;
+col_compare2(InAcc1, [[W2LX|OutAcc]|InAccTail2], W1LX, OutAcc1, OutAcc2) 
     when W1LX == W2LX ->
     col_compare2(InAcc1, InAccTail2, false, OutAcc1, [OutAcc|OutAcc2]);
 
 % Try extract from Str1, which is empty.
-col_compare2([], [W2LX|_  ], false, _, _) when W2LX>0 ->
+col_compare2([], [W2LX|_], false, _, _) when W2LX>0 ->
     lower;
 col_compare2([], [W2LX|Acc], false, Acc1, Acc2) when W2LX == 0 ->
     col_compare2([], Acc, false, Acc1, [Acc|Acc2]);
@@ -1699,12 +1701,12 @@ col_compare2([], [], false, [], []) ->
 col_sort_array(Str, TableFun, CompFun) ->
     col_sort_array1(to_nfd(Str), TableFun, CompFun, [], []).
 
-col_sort_array1([   ]      , _TableFun, _CompFun, [   ], Res) ->
+col_sort_array1([], _TableFun, _CompFun, [], Res) ->
     lists:reverse(Res);
-col_sort_array1(        Str,  TableFun,  CompFun, [H|T], Res) ->
+col_sort_array1(Str, TableFun, CompFun, [H|T], Res) ->
     {NewCompFun, Val} = apply(CompFun, [H]),
     col_sort_array1(Str, TableFun, NewCompFun, T, [Val|Res]);
-col_sort_array1([_|_] = Str, TableFun, CompFun, [   ], Res) ->
+col_sort_array1([_|_] = Str, TableFun, CompFun, [], Res) ->
     {Buf, StrTail} = col_extract(Str, TableFun), 
     col_sort_array1(StrTail, TableFun, CompFun, Buf, 
 %       [test|Res]).
@@ -1749,60 +1751,74 @@ str_info(Rec = #unistr_info {}) ->
         fun str_info_col_sort_array_shifted/1,
         fun str_info_col_sort_array_shift_trimmed/1,
         fun str_info_char_block/1
-    ], Rec);
+        ], Rec);
 str_info([_|_] = Str) -> 
-    str_info(#unistr_info{ str = Str });
+    str_info(#unistr_info{str=Str});
 str_info(Ch) when is_integer(Ch) -> 
-    str_info(#unistr_info{ str = [Ch] }).
+    str_info(#unistr_info{str=[Ch]}).
 
 %% @private
 str_info1([F|Tail], Rec) ->
     NewRec = apply(F, [Rec]),
     str_info1(Tail, NewRec);
-str_info1([      ], Rec) ->
+str_info1([], Rec) ->
     Rec.
 
 %% @private
-str_info_comment(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ comment = lists:map(fun char_comment/1, Str)}.
+str_info_comment(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{
+        comment=lists:map(fun char_comment/1, Str)
+    }.
 
 %% @private
-str_info_ducet_simple(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ ducet = lists:map(fun ducet/1, [[Ch] || Ch <- Str])}.
+str_info_ducet_simple(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{ 
+        ducet=lists:map(fun ducet/1, [[Ch] || Ch <- Str])
+    }.
 
 %% @private
-str_info_ccc(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ ccc = lists:map(fun ccc/1, [Ch || Ch <- Str])}.
+str_info_ccc(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{
+        ccc=lists:map(fun ccc/1, [Ch || Ch <- Str])
+    }.
 
 %% @private
-str_info_nfd(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ nfd = to_nfd(Str)}.
+str_info_nfd(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{nfd=to_nfd(Str)}.
 
 %% @private
-str_info_nfc(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ nfc = to_nfc(Str) }.
+str_info_nfc(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{nfc=to_nfc(Str)}.
 
 %% @private
-str_info_col_sort_array_non_ignorable(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ col_sort_array_non_ignorable 
-                        = col_sort_array_non_ignorable(Str)}.
+str_info_col_sort_array_non_ignorable(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{ 
+        col_sort_array_non_ignorable=col_sort_array_non_ignorable(Str)
+    }.
 
 %% @private
-str_info_col_sort_array_blanked(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ col_sort_array_blanked = col_sort_array_blanked(Str)}.
+str_info_col_sort_array_blanked(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{ 
+        col_sort_array_blanked=col_sort_array_blanked(Str)
+    }.
 
 %% @private
-str_info_col_sort_array_shifted(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ col_sort_array_shifted = col_sort_array_shifted(Str)}.
+str_info_col_sort_array_shifted(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{ 
+        col_sort_array_shifted=col_sort_array_shifted(Str)
+    }.
 
 %% @private
-str_info_col_sort_array_shift_trimmed(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ col_sort_array_shift_trimmed 
-                        = col_sort_array_shift_trimmed(Str)}.
+str_info_col_sort_array_shift_trimmed(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{ 
+        col_sort_array_shift_trimmed=col_sort_array_shift_trimmed(Str)
+    }.
 
 %% @private
-str_info_char_block(Obj = #unistr_info{ str=Str }) ->
-    Obj#unistr_info{ blocks = lists:map(fun char_block/1, [Ch || Ch <- Str])}.
+str_info_char_block(Obj = #unistr_info{str=Str}) ->
+    Obj#unistr_info{ 
+        blocks=lists:map(fun char_block/1, [Ch || Ch <- Str])
+    }.
 
 % String Info End.
 
@@ -1830,153 +1846,154 @@ nope(X) -> X.
 -define(NFTESTDATA, ?UNIDATA_DIRECTORY ++ "NormalizationTest.txt"). 
 
 explode_test_() ->
-        M = 'uxstring',
-        F = 'explode',
-        [?_assertEqual(M:F(":", "1:2:3"), ["1", "2", "3"])
-        ,?_assertEqual(M:F(":", "aa::aa"), ["aa", "", "aa"])
-        ,?_assertEqual(M:F(":", "aa::"), ["aa", "", ""])
-        ,?_assertEqual(M:F("::", "aa::aa"), ["aa", "aa"])
-        ,?_assertEqual(M:F("::", "aa:::aa"), ["aa", ":aa"])
-        ,?_assertEqual(M:F("::", "aa:::"), ["aa", ":"])
+    M = 'uxstring',
+    F = 'explode',
+    [?_assertEqual(M:F(":", "1:2:3"), ["1", "2", "3"])
+    ,?_assertEqual(M:F(":", "aa::aa"), ["aa", "", "aa"])
+    ,?_assertEqual(M:F(":", "aa::"), ["aa", "", ""])
+    ,?_assertEqual(M:F("::", "aa::aa"), ["aa", "aa"])
+    ,?_assertEqual(M:F("::", "aa:::aa"), ["aa", ":aa"])
+    ,?_assertEqual(M:F("::", "aa:::"), ["aa", ":"])
 
-        ,?_assertEqual(M:F([":", ";"], "aa:;:aa"), ["aa", "", "", "aa"])
-        ,?_assertEqual(M:F([";:", ";"], "aa:;:aa"), ["aa:", "aa"])
+    ,?_assertEqual(M:F([":", ";"], "aa:;:aa"), ["aa", "", "", "aa"])
+    ,?_assertEqual(M:F([";:", ";"], "aa:;:aa"), ["aa:", "aa"])
 
-        ,?_assertEqual(M:F($c, "dfsawcddcs"), ["dfsaw", "dd", "s"])
-        ,?_assertEqual(M:F($c, "dfsawcddcs",2 ), ["dfsaw", "ddcs"])
+    ,?_assertEqual(M:F($c, "dfsawcddcs"), ["dfsaw", "dd", "s"])
+    ,?_assertEqual(M:F($c, "dfsawcddcs",2 ), ["dfsaw", "ddcs"])
 
-        % empty delimeter
-        ,?_assertEqual(M:F("", "test"), false)
-        % limit >0
-        ,?_assertEqual(M:F("|", "one|two|three|four", 2), ["one", "two|three|four"])
+    % empty delimeter
+    ,?_assertEqual(M:F("", "test"), false)
+    % limit >0
+    ,?_assertEqual(M:F("|", "one|two|three|four", 2), ["one", "two|three|four"])
 
-        % limit <0
-        ,?_assertEqual(M:F("|", "one|two|three|four", -1), ["one", "two", "three"])
-        ,?_assertEqual(M:F("-", "one|two|three|four", -1), [])
-        ,?_assertEqual(M:F("-", "one|two|three|four"), ["one|two|three|four"])
-        ].
+    % limit <0
+    ,?_assertEqual(M:F("|", "one|two|three|four", -1), ["one", "two", "three"])
+    ,?_assertEqual(M:F("-", "one|two|three|four", -1), [])
+    ,?_assertEqual(M:F("-", "one|two|three|four"), ["one|two|three|four"])
+    ].
 
 html_special_chars_test_() ->
-        F = 'html_special_chars',
-        M = 'uxstring',
-        [?_assertEqual(M:F("ddf2#$\""), "ddf2#$&quot;")
-        ,?_assertEqual(M:F("test1 & test2"), "test1 &amp; test2")
-        ].
+    F = 'html_special_chars',
+    M = 'uxstring',
+    [?_assertEqual(M:F("ddf2#$\""), "ddf2#$&quot;")
+    ,?_assertEqual(M:F("test1 & test2"), "test1 &amp; test2")
+    ].
 
 to_lower_test_() ->
-        M = 'uxstring',
-        F = 'to_lower',
-        [?_assertEqual(M:F("small BIG"), "small big")
-        ,?_assertEqual(M:F(	"You want your freedom?"), 
-        			"you want your freedom?")
-        % Russian text
-        ,?_assertEqual(M:F(	[1069,1056,1051,1040,1053,1043]), 
-        			[1101,1088,1083,1072,1085,1075])
-        ].
+    M = 'uxstring',
+    F = 'to_lower',
+    [?_assertEqual(M:F("small BIG"), "small big")
+    ,?_assertEqual(M:F(    "You want your freedom?"), 
+                "you want your freedom?")
+    % Russian text
+    ,?_assertEqual(M:F(    [1069,1056,1051,1040,1053,1043]), 
+                [1101,1088,1083,1072,1085,1075])
+    ].
 
 to_upper_test_() ->
-        M = 'uxstring',
-        F = 'to_upper',
-        [?_assertEqual(M:F("small BIG"), "SMALL BIG")
-        ,?_assertEqual(M:F(	"I'm making a note here: HUGE SUCCESS."), 
-        			"I'M MAKING A NOTE HERE: HUGE SUCCESS.")
-        ,?_assertEqual(M:F(	[1101,1088,1083,1072,1085,1075]),
-        			[1069,1056,1051,1040,1053,1043])
-        ].
+    M = 'uxstring',
+    F = 'to_upper',
+    [?_assertEqual(M:F("small BIG"), "SMALL BIG")
+    ,?_assertEqual(M:F(    "I'm making a note here: HUGE SUCCESS."), 
+                "I'M MAKING A NOTE HERE: HUGE SUCCESS.")
+    ,?_assertEqual(M:F(    [1101,1088,1083,1072,1085,1075]),
+                [1069,1056,1051,1040,1053,1043])
+    ].
 
 strip_tags_test_(F) ->
-        M = 'uxstring',
-        F = 'strip_tags',
-        [?_assertEqual(M:F("<b>a</b>"), "a")
-        ,?_assertEqual(M:F("<b>a b c</b>"), "a b c")
-% Check a long tag
-        ,?_assertEqual(M:F("<H1>A B C</H1>"), "A B C")
-        ,?_assertEqual(M:F("a<img src='i.img' />b"), "ab")
-% Check allowed tags
-        ,?_assertEqual(M:F("<b>a b c</b>", ["b"]), "<b>a b c</b>")
-        ,?_assertEqual(M:F("<B>a b c</B>", ["b"]), "<B>a b c</B>")
-        ,?_assertEqual(M:F("<code>a b c</code>", ["b"]), "a b c")
-        ,?_assertEqual(M:F("<code>a b c</code>", ["b", "code"]), "<code>a b c</code>")
-        ,?_assertEqual(M:F("<span>a b c</span>", ["b", "span"]), "<span>a b c</span>")
-% Check a tag with an attribute
-        ,?_assertEqual(M:F("a<img src='i.gif' />b", ["b"]), "ab")
-        ,?_assertEqual(M:F("a<img src='i.gif' />b", ["img"]), "a<img src='i.gif' />b")
-        ,?_assertEqual(M:F("a<br/>b", ["br"]), "a<br/>b")
-% Check an atom in the list allowed tags 
-        ,?_assertEqual(M:F("a<br/>b", [br]), "a<br/>b")
-        ,?_assertEqual(M:F("a<br/><b>b</b>", [br]), "a<br/>b")
-% Check a replacement argument
-        ,?_assertEqual(M:F("<b>a b c</b>", [], " "), " a b c ")
-        ,?_assertEqual(M:F("<b>a b c</b>", [], "tag"), "taga b ctag")
-        ,?_assertEqual(M:F("<b>a b c</b>", [test], "tag"), "taga b ctag")
-% PHP style
-        ,?_assertEqual(M:F("<b>a b c</b>", "<b>"), "<b>a b c</b>")
-        ,?_assertEqual(M:F("<span>a b c</span>", "<b><span>"), "<span>a b c</span>")
-        ,?_assertEqual(M:F("<a><b>test<a", "a"), "<a>test")
-        ].
+    M = 'uxstring',
+    F = 'strip_tags',
+    [?_assertEqual(M:F("<b>a</b>"), "a")
+    ,?_assertEqual(M:F("<b>a b c</b>"), "a b c")
+    % Check a long tag
+    ,?_assertEqual(M:F("<H1>A B C</H1>"), "A B C")
+    ,?_assertEqual(M:F("a<img src='i.img' />b"), "ab")
+    % Check allowed tags
+    ,?_assertEqual(M:F("<b>a b c</b>", ["b"]), "<b>a b c</b>")
+    ,?_assertEqual(M:F("<B>a b c</B>", ["b"]), "<B>a b c</B>")
+    ,?_assertEqual(M:F("<code>a b c</code>", ["b"]), "a b c")
+    ,?_assertEqual(M:F("<code>a b c</code>", ["b", "code"]), "<code>a b c</code>")
+    ,?_assertEqual(M:F("<span>a b c</span>", ["b", "span"]), "<span>a b c</span>")
+    % Check a tag with an attribute
+    ,?_assertEqual(M:F("a<img src='i.gif' />b", ["b"]), "ab")
+    ,?_assertEqual(M:F("a<img src='i.gif' />b", ["img"]), "a<img src='i.gif' />b")
+    ,?_assertEqual(M:F("a<br/>b", ["br"]), "a<br/>b")
+    % Check an atom in the list allowed tags 
+    ,?_assertEqual(M:F("a<br/>b", [br]), "a<br/>b")
+    ,?_assertEqual(M:F("a<br/><b>b</b>", [br]), "a<br/>b")
+    % Check a replacement argument
+    ,?_assertEqual(M:F("<b>a b c</b>", [], " "), " a b c ")
+    ,?_assertEqual(M:F("<b>a b c</b>", [], "tag"), "taga b ctag")
+    ,?_assertEqual(M:F("<b>a b c</b>", [test], "tag"), "taga b ctag")
+    % PHP style
+    ,?_assertEqual(M:F("<b>a b c</b>", "<b>"), "<b>a b c</b>")
+    ,?_assertEqual(M:F("<span>a b c</span>", "<b><span>"), "<span>a b c</span>")
+    ,?_assertEqual(M:F("<a><b>test<a", "a"), "<a>test")
+    ].
 
 tags_to_list_test_() ->
-        M = 'uxstring',
-        F = 'tags_to_list',
-        [?_assertEqual(M:F("<a><b>"), ["b", "a"])
-        ,?_assertEqual(M:F("<span>"), ["span"])
-        ,?_assertEqual(M:F("<b><span>"), ["span", "b"])
-        ,?_assertEqual(M:F("<i>"), ["i"])
-        ].
+    M = 'uxstring',
+    F = 'tags_to_list',
+    [?_assertEqual(M:F("<a><b>"), ["b", "a"])
+    ,?_assertEqual(M:F("<span>"), ["span"])
+    ,?_assertEqual(M:F("<b><span>"), ["span", "b"])
+    ,?_assertEqual(M:F("<i>"), ["i"])
+    ].
 
 delete_types_test_() ->
-        M = 'uxstring',
-        F = 'delete_types',
-        [?_assertEqual(M:F([ll, lu], "Tom Cat!"), " !")
-        ,?_assertEqual(M:F([ll],     "Tom Cat!"), "T C!")
-        ,?_assertEqual(M:F([po],     "Tom Cat!"), "Tom Cat")
-        ,?_assertEqual(M:F([ll], "AaBbCc44ff", -2), "ABbCc44ff") %skip 2 (A,B)
-        ,?_assertEqual(M:F([ll], "AaBbCc44ff",  2), "ABCc44ff") %del 2 (a,b)
-        ,?_assertEqual(M:F([ll], "AaBbCc44ffdsBAF",  4), "ABC44fdsBAF")
-        ,?_assertEqual(M:F([ll], "AaBbCc44ffdsBAF", -4), "ABC44ffdsBAF")
-        ].
+    M = 'uxstring',
+    F = 'delete_types',
+    [?_assertEqual(M:F([ll, lu], "Tom Cat!"), " !")
+    ,?_assertEqual(M:F([ll],     "Tom Cat!"), "T C!")
+    ,?_assertEqual(M:F([po],     "Tom Cat!"), "Tom Cat")
+    ,?_assertEqual(M:F([ll], "AaBbCc44ff", -2), "ABbCc44ff") %skip 2 (A,B)
+    ,?_assertEqual(M:F([ll], "AaBbCc44ff",  2), "ABCc44ff") %del 2 (a,b)
+    ,?_assertEqual(M:F([ll], "AaBbCc44ffdsBAF",  4), "ABC44fdsBAF")
+    ,?_assertEqual(M:F([ll], "AaBbCc44ffdsBAF", -4), "ABC44ffdsBAF")
+    ].
 
 filter_types_test_() ->
-        M = 'uxstring',
-        F = 'filter_types',
-        [?_assertEqual(M:F([ll, lu], "Tom Cat!"), "TomCat")
-        ,?_assertEqual(M:F([ll],     "Tom Cat!"), "omat")
-        ,?_assertEqual(M:F([po],     "Tom Cat!"), "!")
-        ,?_assertEqual(M:F([ll], "AaBbCc44ffds",  3), "abc44ffds")
-        ,?_assertEqual(M:F([ll], "AaBbCc44ffds",  4), "abcffds")
-        ,?_assertEqual(M:F([ll], "AaBbCc44ffds", -2), "abCc44ffds")
-        ,?_assertEqual(M:F([ll], "AaBbCc44ffds", -4), "abc4ffds")
-        ].
+    M = 'uxstring',
+    F = 'filter_types',
+    [?_assertEqual(M:F([ll, lu], "Tom Cat!"), "TomCat")
+    ,?_assertEqual(M:F([ll],     "Tom Cat!"), "omat")
+    ,?_assertEqual(M:F([po],     "Tom Cat!"), "!")
+    ,?_assertEqual(M:F([ll], "AaBbCc44ffds",  3), "abc44ffds")
+    ,?_assertEqual(M:F([ll], "AaBbCc44ffds",  4), "abcffds")
+    ,?_assertEqual(M:F([ll], "AaBbCc44ffds", -2), "abCc44ffds")
+    ,?_assertEqual(M:F([ll], "AaBbCc44ffds", -4), "abc4ffds")
+    ].
+
 char_types_test_() ->
-        M = 'uxstring',
-        F = 'char_types',
-        [?_assertEqual(M:F("Tom Cat!"), [lu,ll,ll,zs,lu,ll,ll,po])
-        %,?_assertEqual(M:F(), )
-        ].
+    M = 'uxstring',
+    F = 'char_types',
+    [?_assertEqual(M:F("Tom Cat!"), [lu,ll,ll,zs,lu,ll,ll,po])
+    %,?_assertEqual(M:F(), )
+    ].
 
 last_types_test_() ->
-        M = 'uxstring',
-        F = 'last_types',
-        [?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -5), "99999")
-        ,?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -6), "D99999")
-        ,?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -7), "FD99999")
-        ,?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -8), "AFD99999")
-        ].
+    M = 'uxstring',
+    F = 'last_types',
+    [?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -5), "99999")
+    ,?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -6), "D99999")
+    ,?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -7), "FD99999")
+    ,?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -8), "AFD99999")
+    ].
 
 first_types_test_() ->
-        M = 'uxstring',
-        F = 'first_types',
-        [?_assertEqual(M:F([ll], "AavbfFDsdfffds", 4), "avbf")
-        ,?_assertEqual(M:F([ll], "AavbfFDsdfffds", 5), "avbfs")
-        ].
+    M = 'uxstring',
+    F = 'first_types',
+    [?_assertEqual(M:F([ll], "AavbfFDsdfffds", 4), "avbf")
+    ,?_assertEqual(M:F([ll], "AavbfFDsdfffds", 5), "avbfs")
+    ].
 
 col_sort_key_test_() ->
-        M = 'uxstring',
-        F = 'col_sort_key',
-        FF = fun nope/1,
-        [?_assertEqual(M:F([[1,2,3], [4,5,6], [0,7], [8,9]], FF), 
-            [1,4,8,0,2,5,7,9,0,3,6])
-        ].
+    M = 'uxstring',
+    F = 'col_sort_key',
+    FF = fun nope/1,
+    [?_assertEqual(M:F([[1,2,3], [4,5,6], [0,7], [8,9]], FF), 
+        [1,4,8,0,2,5,7,9,0,3,6])
+    ].
 
 %% Normalization Conformance Test
 %% http://unicode.org/reports/tr41/tr41-7.html#Tests15
@@ -2001,13 +2018,13 @@ nfc_test(_InFd, 0, StrNum) ->
 nfc_test(InFd, Max, StrNum) ->
     % Add new string.
     case StrNum of
-        100 -> io:format(user, "~n", []);
-        _   -> boo
+    100 -> io:format(user, "~n", []);
+    _   -> boo
     end,
     % Show message
     case StrNum rem 1000 of
-        0 -> io:format(user, "~w strings were tested. ~n", [StrNum]);
-        _ -> next
+    0 -> io:format(user, "~w strings were tested. ~n", [StrNum]);
+    _ -> next
     end,
 
     NFC  = fun 'uxstring':to_nfc/1,
@@ -2016,54 +2033,54 @@ nfc_test(InFd, Max, StrNum) ->
     NFKD = fun 'uxstring':to_nfkd/1,
 
     case file:read_line(InFd) of
-        eof -> ok;
-        {ok, Data} -> 
-            try
-              [LineWithoutComment|_] = uxstring:explode("#", Data),
-              % Convert string from file to list of integers 
-              lists:map(fun (Str) -> 
-                            lists:map(fun hex_to_int/1, string:tokens(Str, " ")) 
-                        end,
-                        uxstring:explode(";", LineWithoutComment))
-            of 
-                Row when length(Row) == 6 ->
-                   % start body
-                   C1 = lists:nth(1, Row),
-                   C2 = lists:nth(2, Row),
-                   C3 = lists:nth(3, Row),
-                   C4 = lists:nth(4, Row),
-                   C5 = lists:nth(5, Row),
-                   % {Test info atom, Result from function, From, To}
-       %NFD
-       ?assertEqual({c3__nfd_c1, C3, C1, C3}, {c3__nfd_c1, NFD(C1), C1, C3}),
-       ?assertEqual({c3__nfd_c2, C3, C2, C3}, {c3__nfd_c2, NFD(C2), C2, C3}),
-       ?assertEqual({c3__nfd_c3, C3, C3, C3}, {c3__nfd_c3, NFD(C3), C3, C3}),
-       ?assertEqual({c3__nfd_c4, C5, C4, C5}, {c3__nfd_c4, NFD(C4), C4, C5}),
-       ?assertEqual({c3__nfd_c5, C5, C5, C5}, {c3__nfd_c5, NFD(C5), C5, C5}),
-       %NFC
-       ?assertEqual({c2__nfc_c1, C2, C1, C2}, {c2__nfc_c1, NFC(C1), C1, C2}),
-       ?assertEqual({c2__nfc_c2, C2, C2, C2}, {c2__nfc_c2, NFC(C2), C2, C2}),
-       ?assertEqual({c2__nfc_c3, C2, C3, C2}, {c2__nfc_c3, NFC(C3), C3, C2}),
-       ?assertEqual({c2__nfc_c4, C4, C4, C4}, {c2__nfc_c4, NFC(C4), C4, C4}),
-       ?assertEqual({c2__nfc_c5, C4, C5, C4}, {c2__nfc_c5, NFC(C5), C5, C4}),
-       %NFKC
-       ?assertEqual({c4__nfkc_c1, C4, C1}, {c4__nfkc_c1, NFKC(C1), C1}),
-       ?assertEqual({c4__nfkc_c2, C4, C2}, {c4__nfkc_c2, NFKC(C2), C2}),
-       ?assertEqual({c4__nfkc_c3, C4, C3}, {c4__nfkc_c3, NFKC(C3), C3}),
-       ?assertEqual({c4__nfkc_c4, C4, C4}, {c4__nfkc_c4, NFKC(C4), C4}),
-       ?assertEqual({c4__nfkc_c5, C4, C5}, {c4__nfkc_c5, NFKC(C5), C5}),
-       %NFKD
-       ?assertEqual({c5__nfkd_c1, C5, C1}, {c5__nfkd_c1, NFKD(C1), C1}),
-       ?assertEqual({c5__nfkd_c2, C5, C2}, {c5__nfkd_c2, NFKD(C2), C2}),
-       ?assertEqual({c5__nfkd_c3, C5, C3}, {c5__nfkd_c3, NFKD(C3), C3}),
-       ?assertEqual({c5__nfkd_c4, C5, C4}, {c5__nfkd_c4, NFKD(C4), C4}),
-       ?assertEqual({c5__nfkd_c5, C5, C5}, {c5__nfkd_c5, NFKD(C5), C5})
-                   % end body
+    eof -> ok;
+    {ok, Data} -> 
+        try
+        [LineWithoutComment|_] = uxstring:explode("#", Data),
+        % Convert string from file to list of integers 
+        lists:map(fun (Str) -> 
+                lists:map(fun hex_to_int/1, string:tokens(Str, " ")) 
+            end,
+            uxstring:explode(";", LineWithoutComment))
+        of 
+        Row when length(Row) == 6 ->
+            % start body
+            C1 = lists:nth(1, Row),
+            C2 = lists:nth(2, Row),
+            C3 = lists:nth(3, Row),
+            C4 = lists:nth(4, Row),
+            C5 = lists:nth(5, Row),
+            % {Test info atom, Result from function, From, To}
+            %NFD
+            ?assertEqual({c3__nfd_c1, C3, C1, C3}, {c3__nfd_c1, NFD(C1), C1, C3}),
+            ?assertEqual({c3__nfd_c2, C3, C2, C3}, {c3__nfd_c2, NFD(C2), C2, C3}),
+            ?assertEqual({c3__nfd_c3, C3, C3, C3}, {c3__nfd_c3, NFD(C3), C3, C3}),
+            ?assertEqual({c3__nfd_c4, C5, C4, C5}, {c3__nfd_c4, NFD(C4), C4, C5}),
+            ?assertEqual({c3__nfd_c5, C5, C5, C5}, {c3__nfd_c5, NFD(C5), C5, C5}),
+            %NFC
+            ?assertEqual({c2__nfc_c1, C2, C1, C2}, {c2__nfc_c1, NFC(C1), C1, C2}),
+            ?assertEqual({c2__nfc_c2, C2, C2, C2}, {c2__nfc_c2, NFC(C2), C2, C2}),
+            ?assertEqual({c2__nfc_c3, C2, C3, C2}, {c2__nfc_c3, NFC(C3), C3, C2}),
+            ?assertEqual({c2__nfc_c4, C4, C4, C4}, {c2__nfc_c4, NFC(C4), C4, C4}),
+            ?assertEqual({c2__nfc_c5, C4, C5, C4}, {c2__nfc_c5, NFC(C5), C5, C4}),
+            %NFKC
+            ?assertEqual({c4__nfkc_c1, C4, C1}, {c4__nfkc_c1, NFKC(C1), C1}),
+            ?assertEqual({c4__nfkc_c2, C4, C2}, {c4__nfkc_c2, NFKC(C2), C2}),
+            ?assertEqual({c4__nfkc_c3, C4, C3}, {c4__nfkc_c3, NFKC(C3), C3}),
+            ?assertEqual({c4__nfkc_c4, C4, C4}, {c4__nfkc_c4, NFKC(C4), C4}),
+            ?assertEqual({c4__nfkc_c5, C4, C5}, {c4__nfkc_c5, NFKC(C5), C5}),
+            %NFKD
+            ?assertEqual({c5__nfkd_c1, C5, C1}, {c5__nfkd_c1, NFKD(C1), C1}),
+            ?assertEqual({c5__nfkd_c2, C5, C2}, {c5__nfkd_c2, NFKD(C2), C2}),
+            ?assertEqual({c5__nfkd_c3, C5, C3}, {c5__nfkd_c3, NFKD(C3), C3}),
+            ?assertEqual({c5__nfkd_c4, C5, C4}, {c5__nfkd_c4, NFKD(C4), C4}),
+            ?assertEqual({c5__nfkd_c5, C5, C5}, {c5__nfkd_c5, NFKD(C5), C5})
+            % end body
 
-            catch error:_ -> next
-            after 
-                nfc_test(InFd, Max - 1, StrNum + 1)
-            end
+        catch error:_ -> next
+        after 
+            nfc_test(InFd, Max - 1, StrNum + 1)
+        end
     end.
 
 nfc_prof(Count) ->
@@ -2073,15 +2090,15 @@ nfc_prof(Count) ->
     ok.
 
 col_append_test_() ->
-        F = fun col_append/2,
-        [?_assertEqual(F("ABC", "DEF"), "CBADEF")
-        ,?_assertEqual(F("123", F("ABC", "DEF")), "321CBADEF")
-        ].
+    F = fun col_append/2,
+    [?_assertEqual(F("ABC", "DEF"), "CBADEF")
+    ,?_assertEqual(F("123", F("ABC", "DEF")), "321CBADEF")
+    ].
 
 col_shifted_equal_test_() ->
     F = fun col_shifted/2,
-        [?_assertEqual(F([10973,98], [10972,98]), F([10972,98], [10973,98]))
-        ].
+    [?_assertEqual(F([10973,98], [10972,98]), F([10972,98], [10973,98]))
+    ].
 
 %---------------------------------------------------------------
 % SLOW TESTS 
@@ -2101,31 +2118,30 @@ col_test(InFd, F, false, StrNum, Max, Res) ->
 col_test(InFd, F, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
     % Add new string.
     case StrNum of
-        100 -> io:format(user, "~n", []);
-        _   -> boo
+    100 -> io:format(user, "~n", []);
+    _   -> boo
     end,
     % Show message
     case StrNum rem 10000 of
-        0 -> io:format(user, "~w strings were tested. ~n", [StrNum]);
-        _ -> boo
+    0 -> io:format(user, "~w strings were tested. ~n", [StrNum]);
+    _ -> boo
     end,
 
     case col_test_read(InFd, StrNum) of
-        {FullStr, Val, NewStrNum} = Result when is_list(Val) -> 
-            case F(Val, OldVal) of % collation compare
-                % error
-                lower -> io:format(user, "Error: ~w ~w ~w ~n", 
-                                         [Val, lower, OldVal]),
-
-                         io:format(user,
-                            " Data1: ~ts Data2: ~ts",
-                            [OldFullStr, FullStr]),
-                        
-                         col_test(InFd, F, Result, NewStrNum, Max - 1, error);
-                % OK (equal or upper). Try next
-                _ -> col_test(InFd, F, Result, NewStrNum, Max - 1, Res)
-            end;
-        _ -> ok
+    {FullStr, Val, NewStrNum} = Result when is_list(Val) -> 
+        case F(Val, OldVal) of % collation compare
+        % error
+        lower -> io:format(user, "Error: ~w ~w ~w ~n", 
+                [Val, lower, OldVal]),
+            io:format(user,
+                " Data1: ~ts Data2: ~ts",
+                [OldFullStr, FullStr]),
+                
+            col_test(InFd, F, Result, NewStrNum, Max - 1, error);
+        % OK (equal or upper). Try next
+        _ -> col_test(InFd, F, Result, NewStrNum, Max - 1, Res)
+        end;
+    _ -> ok
     end.
 
 %% Read line from a testdata file InFd (see CollationTest.html).
@@ -2133,48 +2149,52 @@ col_test(InFd, F, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
 %% Used by col_test/4.
 col_test_read(InFd, StrNum) ->
     case io:get_line(InFd, "") of
-        eof -> ok;
-        Data -> 
-            try % parse Data
-                [Value|_] = uxstring:split(["#", ";", "\n"], Data), 
-                %% Converts "0009 0021" to [16#0009, 16#0021]
-                lists:map(fun uxstring:hex_to_int/1, 
-                          string:tokens(Value, " "))
-            of Res -> {Data, Res, StrNum + 1} % {FullStr, Codepaints}
-            catch                   
-                error:_Reason -> 
-                    col_test_read(InFd, StrNum + 1)
-            end
+    eof -> ok;
+    Data -> 
+        try % parse Data
+            [Value|_] = uxstring:split(["#", ";", "\n"], Data), 
+            %% Converts "0009 0021" to [16#0009, 16#0021]
+            lists:map(fun uxstring:hex_to_int/1, 
+                      string:tokens(Value, " "))
+        of Res -> {Data, Res, StrNum + 1} % {FullStr, Codepaints}
+        catch                   
+        error:_Reason -> 
+            col_test_read(InFd, StrNum + 1)
+        end
     end.
 
 col_prof(File, Fun, Count) ->
     {ok, InFd} = file:open(File, [read]),
     io:setopts(InFd,[{encoding,utf8}]),
     Res = col_test(InFd, Fun, false, 0, Count, ok),
-
     ?assertEqual(Res, ok).
 
 nfc_test_() ->
     {timeout, 600, fun() -> nfc_prof(1000000) end}.
 
 col_non_ignorable_test_() ->
-    {timeout, 600, fun() -> 
-        col_prof(?COLLATION_TEST_DATA_DIRECTORY 
-        		% Slow, with comments.
-%                       ++ "CollationTest_NON_IGNORABLE.txt", 
-        		% Fast version (data from slow version are equal).
-                        ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
-                    fun col_non_ignorable/2, 
-                    1000000) end}.
+    {timeout, 600, 
+        fun() -> 
+            col_prof(
+                ?COLLATION_TEST_DATA_DIRECTORY 
+                    % Slow, with comments.
+%                   ++ "CollationTest_NON_IGNORABLE.txt", 
+                    % Fast version (data from slow version are equal).
+                    ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
+                fun col_non_ignorable/2, 
+                1000000) 
+        end}.
 
 col_shifted_test_() ->
-    {timeout, 600, fun() -> 
-        col_prof(?COLLATION_TEST_DATA_DIRECTORY 
-        		% Slow, with comments.
-%                       ++ "CollationTest_SHIFTED.txt", 
-                        ++ "CollationTest_SHIFTED_SHORT.txt", 
-                    fun col_shifted/2, 
-                    1000000) end}.
+    {timeout, 600, 
+        fun() -> 
+            col_prof(
+                ?COLLATION_TEST_DATA_DIRECTORY 
+                    % Slow, with comments.
+%                   ++ "CollationTest_SHIFTED.txt", 
+                    ++ "CollationTest_SHIFTED_SHORT.txt", 
+                fun col_shifted/2, 
+                1000000) end}.
 
 
 

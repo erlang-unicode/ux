@@ -124,6 +124,8 @@
 % char_type(_) -> false.
 -export([char_type/1, char_types/1]).
 
+
+
 -define(ASSERT(TEST,TRUE,FALSE), case TEST of 
         true  -> TRUE; 
         false -> FALSE

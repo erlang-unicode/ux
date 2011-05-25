@@ -207,4 +207,4 @@ char_block(Ch) when (Ch >= 16#E0000) and (Ch =< 16#E007F) -> tags;
 char_block(Ch) when (Ch >= 16#E0100) and (Ch =< 16#E01EF) -> variation_selectors_supplement; 
 char_block(Ch) when (Ch >= 16#F0000) and (Ch =< 16#FFFFF) -> supplementary_private_use_area_a; 
 char_block(Ch) when (Ch >= 16#100000) and (Ch =< 16#10FFFF) -> supplementary_private_use_area_b; 
-char_block(_) -> false. 
+char_block(_) -> other. 

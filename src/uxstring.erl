@@ -13,8 +13,8 @@
 %%% %CopyrightEnd%
 
 
-% Additional information
-% ======================
+% Additional information (and links)
+% =================================
 
 % Collation
 % ---------

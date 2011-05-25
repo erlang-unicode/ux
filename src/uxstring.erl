@@ -1050,8 +1050,8 @@ ducet(A) -> ducet_r(lists:reverse(A)).
 %% * A combining grave accent after a Capital A would be unchanged
 col_blanked(S1, S2) -> 
     col_compare  (S1, S2, 
-        fun ducet_blanked_r/1, % ducet_r(reversed_in) -> non_reversed_key;
-        fun col_non_ignorable_bin_to_list/1).
+        fun ducet_r/1, % ducet_r(reversed_in) -> non_reversed_key;
+        fun col_blanked_bin_to_list/1).
 
 %% Shifted: Variable collation elements are reset to zero at levels one through
 %% three. In addition, a new fourth-level weight is appended, whose value 
@@ -1110,6 +1110,18 @@ col_shifted_bin_to_list2(Value) ->
     { fun col_shifted_bin_to_list/1, col_set_l4_to_value(Value, 16#FFFF) }.
 
 
+col_blanked_bin_to_list(<<1:8, L1:16, _/binary>>) ->
+    { fun col_blanked_bin_to_list2/1, [0, 0, 0] };
+col_blanked_bin_to_list(Value) ->
+    { fun col_blanked_bin_to_list/1, col_bin_to_list(Value) }.
+
+col_blanked_bin_to_list2(<<_:8, 0:16, _/binary>>) ->
+    { fun col_blanked_bin_to_list2/1, [0, 0, 0] };
+col_blanked_bin_to_list2(<<1:8, _/binary>>) ->
+    { fun col_blanked_bin_to_list2/1, [0, 0, 0] };
+col_blanked_bin_to_list2(Value) ->
+    { fun col_blanked_bin_to_list/1, col_bin_to_list(Value) }.
+
 
 % If it is a tertiary ignorable, then L4 = 0.
 col_shift_trimmed_bin_to_list(<<_:8, 0:48, _/binary>>) ->
@@ -1152,9 +1164,9 @@ col_set_l4_to_value(L1, Val) when is_integer(L1) ->
 %%  uxstring:sort(Data, shifted).
 %%  uxstring:sort(Data, shift_trimmed).
 sort(Lists, Fn) ->
-    lists:map(fun({V, _} = X) -> X end, 
+    lists:map(fun({_, V} = X) -> X end, 
         lists:keysort(1, 
-            lists:map(fun(X) -> { X, col_sort_key(X, Fn) } end, 
+            lists:map(fun(X) -> { col_sort_key(X, Fn), X } end, 
                 Lists ))).
 
 get_sort_fn(non_ignorable) ->
@@ -1187,7 +1199,7 @@ col_sort_key1([[H|T] | ArrTail], Acc, Res) ->
 col_sort_key1([[   ] | ArrTail], Acc, Res) ->
     col_sort_key1(ArrTail,    Acc ,    Res );
 col_sort_key1([] = _InArray, [_|_] = Acc, Res) ->
-    col_sort_key1(lists:reverse(Acc), [], Res);
+    col_sort_key1(lists:reverse(Acc), [], [0|Res]);
 col_sort_key1([] = _InArray, [] = _Acc, Res) -> 
     lists:reverse(Res).
 
@@ -1201,7 +1213,7 @@ col_sort_array_non_ignorable(Str) ->
     col_sort_array(Str, fun ducet_r/1, fun col_non_ignorable_bin_to_list/1).
 
 col_sort_array_blanked(Str) -> 
-    col_sort_array(Str, fun ducet_blanked_r/1, fun col_non_ignorable_bin_to_list/1).
+    col_sort_array(Str, fun ducet_r/1, fun col_blanked_bin_to_list/1).
 
 col_sort_array_shifted(Str) -> 
     col_sort_array(Str, fun ducet_r/1, fun col_shifted_bin_to_list/1).
@@ -1226,9 +1238,6 @@ col_compare (String1, String2, TableFun, ComparatorFun) ->
                  [], % Accumulator for String 2
                  TableFun, % fun uxstring:ducet/1, in chars are REVERSED.
                  ComparatorFun, ComparatorFun).
-
-ducet_blanked_r(" ")   -> [<<0:72>>];
-ducet_blanked_r(Value) -> ducet(Value).
 
 %% MANUAL:
 %% S2.1   Find the longest initial substring S at each point 
@@ -1915,7 +1924,7 @@ col_sort_key_test_() ->
         F = 'col_sort_key',
         FF = fun uxstring:nope/1,
         [?_assertEqual(M:F([[1,2,3], [4,5,6], [0,7], [8,9]], FF), 
-            [1,4,8,2,5,7,9,3,6])
+            [1,4,8,0,2,5,7,9,0,3,6])
         ].
 
 %% Normalization Conformance Test

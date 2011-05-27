@@ -209,7 +209,7 @@ do_gen(InFd, Pid, TopChars, CompList, MapPid) ->
             % Add composition mapping 
             case ((not lists:member(Dec, CompList)) 
               and (false == Compat) 
-              and (false == uxstring:is_comp_excl(Int))) of
+              and (false == uxunidata:is_comp_excl(Int))) of
                 true -> case Dec of % skip one char mapping
                                     [D1,D2] -> Pid ! {comp,
                                                       "comp(~w, ~w) -> ~w; ~n",

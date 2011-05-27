@@ -24,3 +24,37 @@
         col_sort_array_shift_trimmed, % Collation sort array
         blocks          % Blocks from Unicode Character Database
         }).
+
+% Defines Hangul constants
+% Hangul characters can be decompize to LV or LVT forms.
+
+-define(HANGUL_SBASE,  16#AC00).
+-define(HANGUL_LBASE,  16#1100). % 4352 - 4371
+-define(HANGUL_VBASE,  16#1161). % 4449 - 4470
+-define(HANGUL_TBASE,  16#11A7). % 4519 - 4547
+-define(HANGUL_LCOUNT, 19).
+-define(HANGUL_VCOUNT, 21).
+-define(HANGUL_TCOUNT, 28).
+-define(HANGUL_NCOUNT, 588).
+-define(HANGUL_SCOUNT, 11172).
+
+-define(HANGUL_SLAST,  ?HANGUL_SBASE + ?HANGUL_SCOUNT).
+-define(HANGUL_LLAST,  ?HANGUL_LBASE + ?HANGUL_LCOUNT).
+-define(HANGUL_VLAST,  ?HANGUL_VBASE + ?HANGUL_VCOUNT).
+-define(HANGUL_TLAST,  ?HANGUL_TBASE + ?HANGUL_TCOUNT).
+
+% TERMINATOR < T <  V < L
+-define(COL_HANGUL_TERMINATOR, 13000). % 12337 - 68
+
+-define(CHAR_IS_HANGUL_L(Ch), (
+ (Ch>=?HANGUL_LBASE) and (Ch=<?HANGUL_LLAST)
+)).
+
+-define(CHAR_IS_HANGUL_V(Ch), (
+ (Ch>=?HANGUL_VBASE) and (Ch=<?HANGUL_VLAST)
+)).
+
+-define(CHAR_IS_HANGUL_T(Ch), (
+ (Ch>=?HANGUL_TBASE) and (Ch=<?HANGUL_TLAST)
+)).
+

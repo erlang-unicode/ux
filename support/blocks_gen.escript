@@ -18,19 +18,19 @@ do_gen(InFd, {OutFd} = OutFds) ->
 		{ok, []} ->
 			do_gen(InFd, OutFds);
 		{ok, Data} -> 
-            case uxstring:explode(["#"], uxstring:delete_types([cc], Data)) of
+            case ux_string:explode(["#"], ux_string:delete_types([cc], Data)) of
                 []       -> skip;
                 [[]|_]   -> skip;
                 [Chars|_] ->
-                    case uxstring:explode(["..", ";"], Chars) of
+                    case ux_string:explode(["..", ";"], Chars) of
                         [From, To, [_|Desk]] ->
                         io:format(OutFd, "char_block(Ch) when (Ch >= 16#~s) and (Ch =< 16#~s) -> ~s; ~n", 
-                            lists:map(fun(Str) -> uxstring:delete_types([zs], Str) end, [From, To, 
+                            lists:map(fun(Str) -> ux_string:delete_types([zs], Str) end, [From, To, 
                                 [case X of
                                     $  -> $_;
                                     $- -> $_;
                                     _  -> X
-                                 end || X <- uxstring:to_lower(Desk)]
+                                 end || X <- ux_string:to_lower(Desk)]
                             ]));
                         _ -> ok
                     end

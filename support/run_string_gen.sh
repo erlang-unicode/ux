@@ -2,9 +2,10 @@
 cd `dirname $0`
 EBIN="./../ebin"
 IN="./../priv/UNIDATA/"
-OUT="./../src/string/"
+OUT="./../src/unidata/"
 escript string_gen.escript          "$EBIN" "$IN" "$OUT"
 escript comp_exclusions_gen.escript "$EBIN" "$IN" "$OUT"
 escript norm_props_gen.escript      "$EBIN" "$IN" "$OUT"
 escript ducet_gen.escript           "$EBIN" "$IN" "$OUT"
 escript blocks_gen.escript          "$EBIN" "$IN" "$OUT"
+touch ./../src/uxunidata.erl

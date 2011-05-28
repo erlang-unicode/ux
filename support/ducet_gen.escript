@@ -53,15 +53,15 @@ do_gen(InFd, {OutFd} = OutFds, Chars) ->
 		{ok, []} ->
 			do_gen(InFd, OutFds, Chars);
 		{ok, Data} -> 
-            case uxstring:explode(["#"], uxstring:delete_types([cc], Data)) of
+            case ux_string:explode(["#"], ux_string:delete_types([cc], Data)) of
                 []       -> do_gen(InFd, OutFds, Chars);
                 [[]|_]   -> do_gen(InFd, OutFds, Chars);
                 [Row|_] ->
-                    case uxstring:explode($;, Row) of
+                    case ux_string:explode($;, Row) of
                         [Char, Element] ->
-                            OutEl = parseEl(uxstring:delete_types([zs], Element)),
-                            InEl  = %uxstring:to_nfd
-                                (lists:map(fun uxstring:hex_to_int/1, string:tokens(Char, " "))),
+                            OutEl = parseEl(ux_string:delete_types([zs], Element)),
+                            InEl  = %ux_string:to_nfd
+                                (lists:map(fun ux_string:hex_to_int/1, string:tokens(Char, " "))),
 
                             case InEl of
                                 % Hangul HalfWidth hack.
@@ -110,10 +110,10 @@ parseEl([H|Tail], Acc, Buf, Res) ->
     parseEl(Tail, [H|Acc], Buf, Res).
 
 elRes(Acc, Buf) when length(Acc) == 5 ->
-    Hex = uxstring:hex_to_int(lists:reverse(Acc)),
+    Hex = ux_string:hex_to_int(lists:reverse(Acc)),
     <<Buf/binary,Hex:24>>;
 elRes(Acc, Buf) when length(Acc) == 4 ->
-    Hex = uxstring:hex_to_int(lists:reverse(Acc)),
+    Hex = ux_string:hex_to_int(lists:reverse(Acc)),
     <<Buf/binary,Hex:16>>.
 
 
@@ -127,8 +127,8 @@ elRes(Acc, Buf) when length(Acc) == 4 ->
 %%  A combining grave accent after a Capital A would be unchanged
 %blanked(Char, El) ->
 %    <<Flag:8, L1:16, L2:16, L3:16 | L4>> = El,
-%    Type = uxstring:char_type(Char),
-%    Ccc  = uxstring:ccc(Char),
+%    Type = ux_string:char_type(Char),
+%    Ccc  = ux_string:ccc(Char),
 %    case {Type, Ccc} of
 %        {zs, _} -> <<Flag:8, 0:48, L4/binary>>
 %    ehd.

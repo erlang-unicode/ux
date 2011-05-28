@@ -18,12 +18,12 @@ do_gen(InFd, {OutFd} = OutFds) ->
 		{ok, []} ->
 			do_gen(InFd, OutFds);
 		{ok, Data} -> 
-            case uxstring:explode(["#"], uxstring:delete_types([cc], Data)) of
+            case ux_string:explode(["#"], ux_string:delete_types([cc], Data)) of
                 []       -> skip;
                 [[]|_]   -> skip;
                 [Char|_] ->
                     io:format(OutFd, "is_comp_excl(16#~s) -> true; ~n", 
-                        [uxstring:delete_types([zs], Char)])
+                        [ux_string:delete_types([zs], Char)])
             end,
             do_gen(InFd, OutFds);
 		eof -> ok

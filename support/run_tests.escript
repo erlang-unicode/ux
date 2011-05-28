@@ -1,7 +1,7 @@
 #!/usr/bin/env escript
 %% -*- erlang -*-
 %%! -name ux__test@127.0.0.1
-main([Ebin]) ->
+main([Ebin, CoverFlag]) ->
     code:add_path(Ebin),
     code:add_paths(filelib:wildcard("../deps/*/ebin", Ebin)),
     code:add_paths(filelib:wildcard("../deps/*/deps/*/ebin", Ebin)),
@@ -17,11 +17,16 @@ main([Ebin]) ->
                          end,
                          ModuleNames)],
 
+    CoverModules = Modules -- [ux_unidata],
 
     crypto:start(),
-    start_cover(Modules),
-    eunit:test(Modules, [verbose,{report,{eunit_surefire,[{dir,"../_test"}]}}]),
-    analyze_cover(Modules);
+    case CoverFlag of
+    "false" -> 
+        eunit:test(Modules, [verbose,{report,{eunit_surefire,[{dir,"../_test"}]}}]);
+    "true" -> start_cover(CoverModules),
+        eunit:test(Modules, [verbose,{report,{eunit_surefire,[{dir,"../_test"}]}}]),
+        analyze_cover(CoverModules) 
+    end;
 main(_) ->
     io:format("usage: run_tests.escript EBIN_DIR~n"),
     halt(1).
@@ -38,7 +43,7 @@ start_cover(Modules) ->
         true -> ok;
         false ->
             io:format("Warning: the following modules were not"
-                      " cover-compiled:~n   ~p~n", [Compiled])
+                      " cover-compiled:~n   ~p~n", [Modules -- Compiled])
     end.
 
 analyze_cover(Modules) ->

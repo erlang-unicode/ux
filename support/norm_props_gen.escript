@@ -20,7 +20,7 @@ main([Ebin, InDir, OutDir]) ->
     io:format(NfkdQcOutFd, "nfkd_qc(_) -> y. ~n", []),
     ok.
 
-parse_code(Code) -> case uxstring:explode([".."], Code) of
+parse_code(Code) -> case ux_string:explode([".."], Code) of
     [From, To]  -> {From, To};
     [Code]      -> {Code}
     end.
@@ -38,7 +38,7 @@ do_gen(InFd, OutFds) ->
 			do_gen(InFd, OutFds);
 		{ok, Data} -> Str = Data, 
             % Parse ccc
-            case uxstring:explode([";", "#"], uxstring:delete_types([cc, zs], Str)) of
+            case ux_string:explode([";", "#"], ux_string:delete_types([cc, zs], Str)) of
                 [Code, Form, Props, Comment] when ((Form=="NFC_QC") 
                                                or  (Form=="NFD_QC")
                                                or  (Form=="NFKC_QC")

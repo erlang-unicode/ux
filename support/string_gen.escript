@@ -4,8 +4,8 @@
 
 main([Ebin, InDir, OutDir]) -> 
     code:add_path(Ebin),
-TopChars = lists:sort(fun(X1,X2) -> uxstring:freq_dict(X1)>uxstring:freq_dict(X2) end, 
-			lists:filter(fun(X) -> uxstring:freq_dict(X)>0.0001 end, 
+TopChars = lists:sort(fun(X1,X2) -> ux_string:freq_dict(X1)>ux_string:freq_dict(X2) end, 
+			lists:filter(fun(X) -> ux_string:freq_dict(X)>0.0001 end, 
 					lists:seq(1,65353, 1))),
 
 % http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html
@@ -145,11 +145,11 @@ write({CharToLowerFd, CharToUpperFd, IsLowerFd, IsUpperFd,
 
 do_gen_head(_, []) -> ok;
 do_gen_head(Pid, [H|T]) ->
-        Pid ! {char_to_upper, "char_to_upper(~w) -> ~w;~n", [H, uxstring:char_to_upper(H)]},
-        Pid ! {char_to_lower, "char_to_lower(~w) -> ~w;~n", [H, uxstring:char_to_lower(H)]},
-        Pid ! {is_upper, "is_upper(~w) -> ~w;~n", [H, uxstring:is_upper(H)]},
-        Pid ! {is_lower, "is_lower(~w) -> ~w;~n", [H, uxstring:is_lower(H)]},
-        Pid ! {char_type, "char_type(~w) -> ~w;~n", [H, uxstring:char_type(H)]},
+        Pid ! {char_to_upper, "char_to_upper(~w) -> ~w;~n", [H, ux_string:char_to_upper(H)]},
+        Pid ! {char_to_lower, "char_to_lower(~w) -> ~w;~n", [H, ux_string:char_to_lower(H)]},
+        Pid ! {is_upper, "is_upper(~w) -> ~w;~n", [H, ux_string:is_upper(H)]},
+        Pid ! {is_lower, "is_lower(~w) -> ~w;~n", [H, ux_string:is_lower(H)]},
+        Pid ! {char_type, "char_type(~w) -> ~w;~n", [H, ux_string:char_type(H)]},
 
 	do_gen_head(Pid, T).
 
@@ -158,7 +158,7 @@ from_hex([$<|Str]) ->
         from_hex(SubStr);
 
 from_hex(Str) -> 
-        lists:map(fun uxstring:hex_to_int/1,
+        lists:map(fun ux_string:hex_to_int/1,
                     string:tokens(Str, " ")).
 
 do_gen(InFd, Pid, TopChars, CompList, MapPid) ->
@@ -166,7 +166,7 @@ do_gen(InFd, Pid, TopChars, CompList, MapPid) ->
 		{ok, []} ->
 			do_gen(InFd, Pid, TopChars, CompList, MapPid);
 		{ok, Data} ->
-			Tokens = uxstring:explode(";", Data)++[""],
+			Tokens = ux_string:explode(";", Data)++[""],
 			Code = lists:nth(1, Tokens),
 			Uppercase = lists:nth(13, Tokens),
 			Lowercase = lists:nth(14, Tokens),
@@ -174,14 +174,14 @@ do_gen(InFd, Pid, TopChars, CompList, MapPid) ->
 			Abbr = lists:nth(3, Tokens),
 			DecompMap = lists:nth(6, Tokens),
 			Ccc = lists:nth(4, Tokens),
-            Int = uxstring:hex_to_int(Code),
+            Int = ux_string:hex_to_int(Code),
              
             Pid ! {char_comment,
 			"char_comment(~w) -> \"~s\"; ~n", 
 			[Int, Comment]},
 
             % Canonical composition classes
-            case string:to_integer(uxstring:filter_types([nd], Ccc)) of
+            case string:to_integer(ux_string:filter_types([nd], Ccc)) of
             {error, no_integer} -> ok;
             {0, []}      -> ok;
             {CccInt, []} -> MapPid ! {ccc,
@@ -209,7 +209,7 @@ do_gen(InFd, Pid, TopChars, CompList, MapPid) ->
             % Add composition mapping 
             case ((not lists:member(Dec, CompList)) 
               and (false == Compat) 
-              and (false == uxunidata:is_comp_excl(Int))) of
+              and (false == ux_unidata:is_comp_excl(Int))) of
                 true -> case Dec of % skip one char mapping
                                     [D1,D2] -> Pid ! {comp,
                                                       "comp(~w, ~w) -> ~w; ~n",
@@ -232,7 +232,7 @@ do_gen(InFd, Pid, TopChars, CompList, MapPid) ->
 						[] -> skip;
 						_  -> Pid ! {char_to_lower,
 							"char_to_lower(~w) -> ~w; %~s ~n", 
-							[Int, uxstring:hex_to_int(Lowercase), Comment]}
+							[Int, ux_string:hex_to_int(Lowercase), Comment]}
 					end,
 					MapPid ! {is_upper,
 						[Int, true]};
@@ -241,7 +241,7 @@ do_gen(InFd, Pid, TopChars, CompList, MapPid) ->
 						[] -> skip;
 						_ -> Pid ! {char_to_upper,
 							"char_to_upper(~w) -> ~w; %~s ~n", 
-							[Int, uxstring:hex_to_int(Uppercase), Comment]}
+							[Int, ux_string:hex_to_int(Uppercase), Comment]}
 					end,
 					MapPid ! {is_lower,
 						[Int, true]};

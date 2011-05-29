@@ -67,8 +67,8 @@
         sort_array_blanked/1,
         sort_array_shifted/1,
         sort_array_shift_trimmed/1,
-        sort_key/2,
-        sort/2,
+        sort_key/1, sort_key/2,
+        sort/1, sort/2,
         ducet/1
         ]).
 
@@ -269,6 +269,8 @@ set_l4_to_value(L1, Val) when is_integer(L1) ->
 set_l1_to_value_bin(<<Variable:8, _L1:16, T/binary>>, Val) ->
     <<Variable, Val:16, T/binary>>.
 
+sort(Lists) ->
+    sort(Lists, #uca_options{}).
 
 %% Example:
 %%  f().
@@ -278,19 +280,34 @@ set_l1_to_value_bin(<<Variable:8, _L1:16, T/binary>>, Val) ->
 %%  ux_string:sort(Data, blanked).
 %%  ux_string:sort(Data, shifted).
 %%  ux_string:sort(Data, shift_trimmed).
-sort(Lists, Fn) ->
+sort(Lists, Alt) when is_atom(Alt) ->
+    Params = get_options(Alt),
+    Fn = get_comp_fn(Alt),
     lists:map(fun({_SortKey, Str}) -> Str end, 
         lists:keysort(1, 
-            sort_map(Lists, Fn, []))).
+            sort_map(Lists, Params, Fn, [])));
+
+sort(Lists, #uca_options{alternate=Alt} = Params) ->
+    Fn = get_comp_fn(Alt),
+    lists:map(fun({_SortKey, Str}) -> Str end, 
+        lists:keysort(1, 
+            sort_map(Lists, Params, Fn, []))).
 
 %% Lists: an array of strings;
 %% Fn:    an map function.
 %%
 %% This function does:
 %% lists:map(fun(X) -> sort_key(X, Fn) end, Lists).
+%% H is string.
+%% Fn is col_function.
+%% Params is #uca_options{}
 %% @private
-sort_map([H|T], Fn, Res) ->
-    sort_map(T, Fn, [{apply(Fn, [H]), H}|Res]).
+sort_map([H|T], Params, Fn, Res) ->
+    sort_map(T, Params, Fn, [
+        {sort_array_to_key(
+            sort_array(H, Params, fun ducet_r/1, Fn)), H}|Res]);
+sort_map([], Params, Fn, Res) ->
+    lists:reverse(Res).
 
 %% @private
 get_sort_fn(non_ignorable) ->
@@ -311,12 +328,22 @@ get_comp_fn(shifted) ->
 get_comp_fn(shift_trimmed) ->
     fun shift_trimmed_bin_to_list/1.
 
+sort_key(Str) ->
+    sort_key(Str, #uca_options{}).
+
+sort_key(Str, #uca_options{alternate=Alt} = Params) ->
+    Fn = get_comp_fn(Alt),
+    sort_array_to_key(
+        sort_array(Str, Params, fun ducet_r/1, Fn));
 sort_key(Str, Fn) when is_function(Fn) ->
     Array = apply(Fn, [Str]),
     sort_key1(Array, [], []);
 sort_key(Str, FnName) when is_atom(FnName) ->
     Fn = get_sort_fn(FnName), 
     sort_key(Str, Fn).
+
+sort_array_to_key(Array) ->
+    sort_key1(Array, [], []).
  
 
 %% @private
@@ -358,7 +385,7 @@ sort_array_shifted(Str) ->
         fun ducet_r/1, fun shifted_bin_to_list/1).
 
 sort_array_shift_trimmed(Str) -> 
-    sort_array(Str, get_options(shifted_trimmed), 
+    sort_array(Str, get_options(shift_trimmed), 
         fun ducet_r/1, fun shift_trimmed_bin_to_list/1).
 
 %% This function does nothing :)
@@ -456,7 +483,7 @@ mod_weights([<<_:8, L1:16, _/binary>> = H | T],
     true = _DecFlag, _Term, Acc, StrTail, TableFun) 
     when ?IS_L1_OF_DECIMAL(L1) ->
     decimal2(?COL_WEIGHT_TO_DECIMAL(L1), T, 
-        [ set_l1_to_value_bin(H, 1) |Acc], StrTail, TableFun);
+        [set_l1_to_value_bin(H, 1)|Acc], StrTail, TableFun);
 mod_weights([H|T], DecFlag, Term, Acc, StrTail, TableFun) ->
     mod_weights(T, DecFlag, Term, [H|Acc], StrTail, TableFun);
 mod_weights([], _DecFlag, _Term, _Acc, _StrTail, _TableFun) ->
@@ -466,17 +493,19 @@ decimal2(Dec, [<<_:8, 00:16, _/binary>> = H | T], Acc, StrTail, TableFun) ->
     decimal2(Dec, T, [H|Acc], StrTail, TableFun); % skip an ignorable element.
 decimal2(Dec, [<<_:8, L1:16, _/binary>> = H | T], Acc, StrTail, TableFun) 
     when ?IS_L1_OF_DECIMAL(L1) -> % L2 is found. LL*
-    decimal2((Dec * 10) + ?COL_WEIGHT_TO_DECIMAL(L1), T, [H|Acc], StrTail, TableFun); 
-decimal2(Dec,  [   ], Acc, [_|_] = StrTail, TableFun) -> 
+    decimal2((Dec * 10) + ?COL_WEIGHT_TO_DECIMAL(L1), T, 
+        [set_l1_to_value_bin(H, 0)|Acc], StrTail, TableFun); 
+decimal2(Dec,  [], Acc, [_|_] = StrTail, TableFun) -> 
     {Weights, StrTail2} = extract0(StrTail, TableFun), % We need more gold.
     decimal2(Dec, Weights, Acc, StrTail2, TableFun);
 decimal2(Dec, T, Acc, StrTail, _TableFun) -> % L
     {lists:reverse(append(T, decimal_result(Dec, Acc))), StrTail}.
 
-decimal_result(Dec, Acc) ->
+
+decimal_result(Dec, Res) ->
     case Dec div 16#FFFF of
-    0 -> [1|[Dec|Acc]];
-    Rem -> decimal_result(Dec div 16#FFFF, [Rem|Acc])
+    0 -> [1|[Dec|Res]];
+    Div -> decimal_result(Div, [Dec rem 16#FFFF|[16#FFFF|Res]])
     end.
 
 %% L1 was found. 
@@ -872,7 +901,9 @@ weight_strength(2, [L1,L2|_Tail]) ->
 weight_strength(3, [L1,L2,L3|_Tail]) ->
     [L1, L2, L3];
 weight_strength(4, [L1,L2,L3,L4]) ->
-    [L1, L2, L3, L4].
+    [L1, L2, L3, L4];
+weight_strength(_, Val) ->
+    Val.
 
 % Collation end
 
@@ -908,6 +939,89 @@ shifted_equal_test_() ->
     F = fun shifted/2,
     [?_assertEqual(F([10973,98], [10972,98]), F([10972,98], [10973,98]))
     ].
+
+natural_sort_test_() ->
+    [{"Using official test strings from Dave Koelle",
+       ?_assertEqual(["10X Radonius",
+         "20X Radonius",
+         "20X Radonius Prime",
+         "30X Radonius",
+         "40X Radonius",
+         "200X Radonius",
+         "1000X Radonius Maximus",
+         "Allegia 50 Clasteron",
+         "Allegia 51 Clasteron",
+         "Allegia 51B Clasteron",
+         "Allegia 52 Clasteron",
+         "Allegia 60 Clasteron",
+         "Allegia 500 Clasteron",
+         "Alpha 2",
+         "Alpha 2A",
+         "Alpha 2A-900",
+         "Alpha 2A-8000",
+         "Alpha 100",
+         "Alpha 200",
+         "Callisto Morphamax",
+         "Callisto Morphamax 500",
+         "Callisto Morphamax 600",
+         "Callisto Morphamax 700",
+         "Callisto Morphamax 5000",
+         "Callisto Morphamax 7000",
+         "Callisto Morphamax 7000 SE",
+         "Callisto Morphamax 7000 SE2",
+         "QRS-60 Intrinsia Machine",
+         "QRS-60F Intrinsia Machine",
+         "QRS-62 Intrinsia Machine",
+         "QRS-62F Intrinsia Machine",
+         "Xiph Xlater 5",
+         "Xiph Xlater 40",
+         "Xiph Xlater 50",
+         "Xiph Xlater 58",
+         "Xiph Xlater 300",
+         "Xiph Xlater 500",
+         "Xiph Xlater 2000",
+         "Xiph Xlater 5000",
+         "Xiph Xlater 10000"],
+        sort(["1000X Radonius Maximus",
+                "10X Radonius",
+                "200X Radonius",
+                "20X Radonius",
+                "20X Radonius Prime",
+                "30X Radonius",
+                "40X Radonius",
+                "Allegia 50 Clasteron",
+                "Allegia 500 Clasteron",
+                "Allegia 51 Clasteron",
+                "Allegia 51B Clasteron",
+                "Allegia 52 Clasteron",
+                "Allegia 60 Clasteron",
+                "Alpha 100",
+                "Alpha 2",
+                "Alpha 200",
+                "Alpha 2A",
+                "Alpha 2A-8000",
+                "Alpha 2A-900",
+                "Callisto Morphamax",
+                "Callisto Morphamax 500",
+                "Callisto Morphamax 5000",
+                "Callisto Morphamax 600",
+                "Callisto Morphamax 700",
+                "Callisto Morphamax 7000",
+                "Callisto Morphamax 7000 SE",
+                "Callisto Morphamax 7000 SE2",
+                "QRS-60 Intrinsia Machine",
+                "QRS-60F Intrinsia Machine",
+                "QRS-62 Intrinsia Machine",
+                "QRS-62F Intrinsia Machine",
+                "Xiph Xlater 10000",
+                "Xiph Xlater 2000",
+                "Xiph Xlater 300",
+                "Xiph Xlater 40",
+                "Xiph Xlater 5",
+                "Xiph Xlater 50",
+                "Xiph Xlater 500",
+                "Xiph Xlater 5000",
+                "Xiph Xlater 58"], #uca_options{alternate=non_ignorable, natural_sort=true}))}].
 
 %---------------------------------------------------------------
 % SLOW TESTS 

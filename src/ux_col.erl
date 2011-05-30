@@ -69,7 +69,8 @@
         sort_array_shift_trimmed/1,
         sort_key/1, sort_key/2,
         sort/1, sort/2,
-        ducet/1
+        ducet/1,
+        get_options/0, get_options/1, get_options/2
         ]).
 
 
@@ -80,6 +81,8 @@ ccc(V) -> ux_unidata:ccc(V).
 %% In:  not reversed string.
 %% Out: not reversed weight list.
 ducet(A) -> ducet_r(lists:reverse(A)).
+
+get_options() -> #uca_options{}.
 
 get_options(non_ignorable) ->
     #uca_options { 
@@ -104,7 +107,22 @@ get_options(shift_trimmed) ->
         natural_sort = false,
         strength = 4,
         alternate = shift_trimmed 
-    }.
+    };
+get_options([_|_] = Params) ->
+    get_options(Params, #uca_options{}).
+
+get_options([{hangul_terminator, Val}|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ hangul_terminator=Val });
+get_options([{natural_sort, Val}|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ natural_sort=Val });
+get_options([{strength, Val}|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ strength=Val });
+get_options([{alternate, Val}|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ alternate=Val });
+get_options([], Opt = #uca_options{ }) ->
+    Opt.
+    
+
 
 %     %  %%%%%     %
 %     % %     %   % %
@@ -306,7 +324,7 @@ sort_map([H|T], Params, Fn, Res) ->
     sort_map(T, Params, Fn, [
         {sort_array_to_key(
             sort_array(H, Params, fun ducet_r/1, Fn)), H}|Res]);
-sort_map([], Params, Fn, Res) ->
+sort_map([], _Params, _Fn, Res) ->
     lists:reverse(Res).
 
 %% @private
@@ -884,7 +902,7 @@ sort_array(Str, Params, TableFun, CompFun) ->
 
 sort_array1([], _Params, _TableFun, _CompFun, [], Res) ->
     lists:reverse(Res);
-sort_array1(Str, #uca_options{ strength=S  } = P, TableFun, CompFun, [H|T], Res) ->
+sort_array1(Str, #uca_options{strength=S} = P, TableFun, CompFun, [H|T], Res) ->
     {NewCompFun, Val} = apply(CompFun, [H]),
     Val2 = weight_strength(S, Val),
     sort_array1(Str, P, TableFun, NewCompFun, T, [Val2|Res]);

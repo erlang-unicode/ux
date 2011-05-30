@@ -1,12 +1,12 @@
-%% @author author <author@example.com>
-%% @copyright YYYY author.
+%% @author Mochi Media <dev@mochimedia.com>
+%% @copyright 2010 Mochi Media <dev@mochimedia.com>
 
 %% @doc Ensure that the relatively-installed dependencies are on the code
 %%      loading path, and locate resources relative
 %%      to this application's path.
 
 -module(ux_deps).
--author('author <author@example.com>').
+-author("Mochi Media <dev@mochimedia.com>").
 
 -export([ensure/0, ensure/1]).
 -export([get_base_dir/0, get_base_dir/1]).
@@ -82,11 +82,3 @@ local_path(Components, Module) ->
 %%      Equivalent to local_path(Components, ?MODULE).
 local_path(Components) ->
     local_path(Components, ?MODULE).
-
-
-%%
-%% Tests
-%%
--include_lib("eunit/include/eunit.hrl").
--ifdef(TEST).
--endif.

@@ -1,0 +1,9 @@
+%% -*- erlang -*-
+{application, ux,
+ [{description, "ux"},
+  {vsn, "0.1"},
+  {modules, []},
+  {registered, []},
+  {mod, {'ux_app', []}},
+  {env, []},
+  {applications, [kernel, stdlib, crypto]}]}.

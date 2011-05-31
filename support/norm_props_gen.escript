@@ -1,4 +1,5 @@
 #!/usr/bin/env escript
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
 %% -*- erlang -*-
 %%! -name uxgen__test@127.0.0.1
 

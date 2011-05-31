@@ -1,3 +1,5 @@
+; -- Mode: Markdown; -- ; vim: filetype=none tw=76 expandtab shiftwidth=4 tabstop=4
+
 ux_string.erl: String Functions
 ==============================
 

@@ -1,3 +1,4 @@
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
 %%% User Extentions for Erlang 
 %%%
 %%% @package  ux_unidata
@@ -14,13 +15,14 @@
 
 -module(ux_unidata).
 -author('Uvarov Michael <freeakk@gmail.com>').
--include("ux_unidata.hrl").
 
 -export([char_to_upper/1, char_to_lower/1, is_upper/1, is_lower/1,
         char_comment/1, char_type/1, ccc/1, freq_dict/1, 
         nfc_qc/1, nfd_qc/1, nfkc_qc/1, nfkd_qc/1, 
         is_comp_excl/1, is_compat/1, decomp/1, comp/2,
-        ducet_r/1, char_block/1]).
+        ducet_r/1, char_block/1,
+        get_unidata_dir/0, get_ucadata_dir/0]).
+-include("ux_unidata.hrl").
 
 -include("unidata/char_to_upper.hrl").
 %char_to_upper(C) -> C.
@@ -68,4 +70,6 @@
 
 %freq_dict(_) -> 0.
 
+get_unidata_dir() -> code:priv_dir(ux) ++ "/" ++ ?UNIDATA_VERSION ++ "/".
+get_ucadata_dir() -> code:priv_dir(ux) ++ "/" ++ ?UCADATA_VERSION ++ "/".
 

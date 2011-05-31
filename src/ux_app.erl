@@ -1,3 +1,4 @@
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
 %% @author Mochi Media <dev@mochimedia.com>
 %% @copyright ux Mochi Media <dev@mochimedia.com>
 

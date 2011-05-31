@@ -1,3 +1,4 @@
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
 %%% User Extentions for Erlang 
 %%%
 %%% @package  ux_string
@@ -16,10 +17,6 @@
  
 -module(ux_string).
 -author('Uvarov Michael <freeakk@gmail.com>').
-
--include("ux_string.hrl").
--include("ux_unidata.hrl").
--include("ux_char.hrl").
 
 -export([list_to_latin1/1,
         html_special_chars/1,
@@ -46,16 +43,12 @@
         length/1, len/1,
         hex_to_int/1,
 
-        info/1
-        ]).
+        info/1,
+        types/1]).
 
-%% @doc Returns various "character types" which can be used 
-%%      as a default categorization in implementations.
-%%      Types:
-%%      http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category
-%% @end
-% ux_char:type(_) -> false.
--export([types/1]).
+-include("ux_string.hrl").
+-include("ux_unidata.hrl").
+-include("ux_char.hrl").
 
 
 
@@ -71,6 +64,8 @@ end).
 
 
 % Sorry, but -import() is garbage :(
+
+%% Returns Canonical_Combining_Class.
 ccc(V) -> ux_unidata:ccc(V).
 nfc_qc(V) -> ux_unidata:nfc_qc(V).
 nfd_qc(V) -> ux_unidata:nfd_qc(V).
@@ -80,6 +75,13 @@ is_compat(V) -> ux_unidata:is_compat(V).
 comp(V1, V2) -> ux_unidata:comp(V1, V2).
 decomp(V) -> ux_unidata:decomp(V).
 
+
+%% @doc Returns various "character types" which can be used 
+%%      as a default categorization in implementations.
+%%      Types:
+%%      http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category
+%% @end
+%% ux_char:type(_) -> false.
 types(Str) -> lists:map({ux_char, type}, Str).
 
 
@@ -847,7 +849,6 @@ info_char_block(Obj = #unistr_info{str=Str}) ->
 -include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
 
--define(NFTESTDATA, ?UNIDATA_DIRECTORY ++ "NormalizationTest.txt"). 
 
 explode_test_() ->
     M = 'ux_string',
@@ -1082,7 +1083,8 @@ nfc_test(InFd, Max, StrNum) ->
     end.
 
 nfc_prof(Count) ->
-    {ok, InFd} = file:open(?NFTESTDATA, [read]),
+    {ok, InFd} = file:open(ux_unidata:get_unidata_dir() 
+        ++ "NormalizationTest.txt", [read]),
     io:setopts(InFd,[{encoding,utf8}]),
     nfc_test(InFd, Count, 0),
     ok.

@@ -1,3 +1,4 @@
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
 %%% This Module contains functions for a working with Req:parse_post() list.
 -module(ux_par).
 -export([el/2, string/2, atom/2, integer/2]).

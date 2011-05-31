@@ -1,3 +1,4 @@
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
 %%% User Extentions for Erlang 
 %%%
 %%% @package  ux_col

@@ -1,3 +1,4 @@
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
 %%% User Extentions for Erlang 
 %%%
 %%% @package  ux_col
@@ -52,10 +53,6 @@
 
 -module(ux_col).
 -author('Uvarov Michael <freeakk@gmail.com>').
--include("ux_string.hrl").
--include("ux_unidata.hrl").
--include("ux_char.hrl").
--include("ux_col.hrl").
 
 -export([non_ignorable/2,
         blanked/2,
@@ -72,6 +69,11 @@
         ducet/1,
         get_options/0, get_options/1, get_options/2
         ]).
+
+-include("ux_string.hrl").
+-include("ux_unidata.hrl").
+-include("ux_char.hrl").
+-include("ux_col.hrl").
 
 
 ducet_r(V) -> ux_unidata:ducet_r(V).
@@ -1115,7 +1117,7 @@ non_ignorable_test_() ->
     {timeout, 600, 
         fun() -> 
             prof(
-                ?COLLATION_TEST_DATA_DIRECTORY 
+               ux_unidata:get_ucadata_dir() ++ "CollationTest/" 
                     % Slow, with comments.
 %                   ++ "CollationTest_NON_IGNORABLE.txt", 
                     % Fast version (data from slow version are equal).
@@ -1128,7 +1130,7 @@ shifted_test_() ->
     {timeout, 600, 
         fun() -> 
             prof(
-                ?COLLATION_TEST_DATA_DIRECTORY 
+               ux_unidata:get_ucadata_dir() ++ "CollationTest/" 
                     % Slow, with comments.
 %                   ++ "CollationTest_SHIFTED.txt", 
                     ++ "CollationTest_SHIFTED_SHORT.txt", 

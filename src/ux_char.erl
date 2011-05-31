@@ -1,3 +1,4 @@
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
 %%% User Extentions for Erlang 
 %%%
 %%% @package  ux_char
@@ -15,7 +16,6 @@
 
 -module(ux_char).
 -author('Uvarov Michael <freeakk@gmail.com>').
--include("ux_char.hrl").
 
 -export([comment/1, type/1, block/1,
         to_lower/1, to_upper/1, to_ncr/1,
@@ -28,6 +28,7 @@
         is_unified_ideograph/1, 
         is_hangul_precomposed/1 
         ]).
+-include("ux_char.hrl").
 
 to_lower(V) -> ux_unidata:char_to_lower(V).
 to_upper(V) -> ux_unidata:char_to_upper(V).

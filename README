@@ -1,8 +1,8 @@
-== String Functions: uxstring.erl ==
+== ux_string.erl: String Functions ==
 
 PHP-style string functions:
 - explode
-- htmlspecialchars
+- html_special_chars
 - strip_tags
 
 Unicode functions:
@@ -11,4 +11,4 @@ Unicode functions:
 - to_lower
 - to_upper
 
-
+== ux_col.erl: Unicode Collation Algorithm ==

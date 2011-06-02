@@ -12,15 +12,19 @@ PHP-style string functions
 Examples
 --------
 Code:
+
 ```erlang
 ux_string:explode(["==", "++", "|"], "+++-+=|==|==|=+-+++").
 ```
+
 Result:
+
 ```
     [[],"+-+=",[],[],[],[],"=+-","+"]
 ```
 
 Code:
+
 ```erlang
 Str = "Erlang created the field of telephone
 networks analysis. His early work in scrutinizing the use of local, exchange
@@ -30,7 +34,9 @@ Erlang formula, which became a foundational element of present day
 telecommunication network studies."
 ux_string:explode_types([zs, lu], Str).
 ```
+
 Result:
+
 ```
     [[],"rlang","created","the","field","of","telephone",
      "networks","analysis.",[],"is","early","work","in",
@@ -40,20 +46,26 @@ Result:
 ```
 
 Code:
+
 ```erlang
     ux_string:types(Str).
 ```
+
 Result: 
+
 ```
     [lu,ll,ll,ll,ll,ll,zs,ll,ll,ll,ll,ll,ll,ll,zs,ll,ll,ll,zs,
      ll,ll,ll,ll,ll,zs,ll,ll,zs,ll|...]
 ```
 
 Code:
+
 ```erlang
     ux_string:delete_types([ll], Str).
 ```
+
 Result:
+
 ```
     "E       . H        ,          ,                E ,           ."
 ```

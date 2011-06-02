@@ -20,7 +20,7 @@ ux_string:explode(["==", "++", "|"], "+++-+=|==|==|=+-+++").
 Result:
 
 ```
-    [[],"+-+=",[],[],[],[],"=+-","+"]
+[[],"+-+=",[],[],[],[],"=+-","+"]
 ```
 
 Code:
@@ -38,36 +38,36 @@ ux_string:explode_types([zs, lu], Str).
 Result:
 
 ```
-    [[],"rlang","created","the","field","of","telephone",
-     "networks","analysis.",[],"is","early","work","in",
-     "scrutinizing","the","use","of","local,","exchange","and",
-     "trunk","telephone","line","usage","in","a","small",
-     [...]|...]
+[[],"rlang","created","the","field","of","telephone",
+ "networks","analysis.",[],"is","early","work","in",
+ "scrutinizing","the","use","of","local,","exchange","and",
+ "trunk","telephone","line","usage","in","a","small",
+ [...]|...]
 ```
 
 Code:
 
 ```erlang
-    ux_string:types(Str).
+ux_string:types(Str).
 ```
 
 Result: 
 
 ```
-    [lu,ll,ll,ll,ll,ll,zs,ll,ll,ll,ll,ll,ll,ll,zs,ll,ll,ll,zs,
-     ll,ll,ll,ll,ll,zs,ll,ll,zs,ll|...]
+[lu,ll,ll,ll,ll,ll,zs,ll,ll,ll,ll,ll,ll,ll,zs,ll,ll,ll,zs,
+ ll,ll,ll,ll,ll,zs,ll,ll,zs,ll|...]
 ```
 
 Code:
 
 ```erlang
-    ux_string:delete_types([ll], Str).
+ux_string:delete_types([ll], Str).
 ```
 
 Result:
 
 ```
-    "E       . H        ,          ,                E ,           ."
+"E       . H        ,          ,                E ,           ."
 ```
 
 Unicode functions

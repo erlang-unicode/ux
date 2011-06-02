@@ -1138,4 +1138,19 @@ shifted_test_() ->
                 1000000) end}.
 
 
+nat_prof(Seq) ->
+    Lists = [io_lib:format("Abr~w", [X]) || X <- Seq],
+    Params = #uca_options{alternate=non_ignorable, natural_sort=true},
+    {Time, SortedLists} = timer:tc(?MODULE, sort, [Lists, Params]),
+    io:format(user, "~n Sort Time, ~.3gs ", [Time / 1000000]),
+    ?_assertEqual(Lists, SortedLists).
+
+natural_sort_long_test_() ->
+    {timeout, 600,
+        fun() ->
+            nat_prof(lists:seq(1, 10000, 1)),
+            nat_prof(lists:seq(1, 10000000, 1000)),
+            nat_prof(lists:seq(1, 100000000000000, 9999999999)),
+            io:format(user, "~n", [])
+        end}.
 -endif.

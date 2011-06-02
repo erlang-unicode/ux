@@ -70,6 +70,11 @@
 
 %freq_dict(_) -> 0.
 
-get_unidata_dir() -> code:priv_dir(ux) ++ "/" ++ ?UNIDATA_VERSION ++ "/".
-get_ucadata_dir() -> code:priv_dir(ux) ++ "/" ++ ?UCADATA_VERSION ++ "/".
+priv_dir() ->
+    case code:priv_dir(ux) of
+        [_|_] = Res -> Res;
+        _ -> "../priv"
+    end.
+get_unidata_dir() -> priv_dir() ++ "/" ++ ?UNIDATA_VERSION ++ "/".
+get_ucadata_dir() -> priv_dir() ++ "/" ++ ?UCADATA_VERSION ++ "/".
 

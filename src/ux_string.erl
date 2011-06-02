@@ -1015,14 +1015,9 @@ nfc_test(_InFd, 0, StrNum) ->
     io:format(user, "Only ~w strings were tested. Exit.~n", [StrNum]),
     ok;
 nfc_test(InFd, Max, StrNum) ->
-    % Add new string.
-    case StrNum of
-    100 -> io:format(user, "~n", []);
-    _   -> boo
-    end,
     % Show message
     case StrNum rem 1000 of
-    0 -> io:format(user, "~w strings were tested. ~n", [StrNum]);
+    0 -> io:format(user, "~n~w strings were tested. ", [StrNum]);
     _ -> next
     end,
 
@@ -1090,7 +1085,9 @@ nfc_prof(Count) ->
     ok.
 
 nfc_test_() ->
-    {timeout, 600, fun() -> nfc_prof(1000000) end}.
+    {timeout, 600, fun() -> 
+        nfc_prof(1000000),
+        io:format(user, "~n", []) end}.
 
 
 -endif.

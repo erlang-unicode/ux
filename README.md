@@ -70,15 +70,21 @@ Result:
 "E       . H        ,          ,                E ,           ."
 ```
 
-Unicode functions
------------------
+Functions for working with Unicode Normal Forms (UNF)
+-----------------------------------------------------
 * to_nfc/1
 * to_nfd/1
 * to_nfkd/1
 * to_nfkc/1
+* is_nfc/1
+* is_nf
+
+Functions from stdlib for Unicode strings
+-----------------------------------------
 * to_lower/1
 * to_upper/1
-
+* length/1
+* reverse/1
 
 ux_char.erl: Char Functions
 ===========================
@@ -96,13 +102,30 @@ zs
 
 ux_col.erl: Unicode Collation Algorithm
 =======================================
+* compare/2,3
 * sort/1,2
 * sort_key/1,2
 * sort_array/1,2
-* compare/2,3
 
 Examples
 --------
+Code:
+
+```erlang
+ux_col:compare("a", "a").
+ux_col:compare("a", "b").
+ux_col:compare("c", "b").
+```
+
+Result:
+
+```
+equal
+lower
+greater
+```
+
+
 ```erlang
 Options = ux_col:get_options([ 
         {natural_sort, false}, 
@@ -142,5 +165,6 @@ ok
 
 ux_unidata.erl
 ==============
-For internal using only.
+Stores UNIDATA information. For internal using only.
+
 

@@ -43,6 +43,9 @@
 %%%
 %%% 9. ICU
 %%% http://userguide.icu-project.org/collation/concepts
+%%%
+%%% 10. String Sorting (Natural) in Erlang Cookbook.
+%%% http://trapexit.org/String_Sorting_%28Natural%29
 
 %%% FIXED: Combining character contractions. Apparently, two combining marks can 
 %%%        form a contraction. A straight reading of the UCA wouldn't predict 

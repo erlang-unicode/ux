@@ -16,7 +16,9 @@ Code:
 ux_string:explode(["==", "++", "|"], "+++-+=|==|==|=+-+++").
 ```
 Result:
+```
     [[],"+-+=",[],[],[],[],"=+-","+"]
+```
 
 Code:
 ```erlang
@@ -69,12 +71,15 @@ Unicode functions
 ux_char.erl: Char Functions
 ===========================
 Code:
+
 ```erlang
-    ux_char:type($ ).
+ux_char:type($ ).
 ```
+
 Result:
+
 ```
-    zs
+zs
 ```
 
 ux_col.erl: Unicode Collation Algorithm
@@ -103,6 +108,7 @@ ok.
 ```
 
 Result:
+
 ```
 epm
 erlang

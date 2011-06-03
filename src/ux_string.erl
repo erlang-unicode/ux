@@ -1037,13 +1037,8 @@ nfc_test(InFd, Max, StrNum) ->
             end,
             ux_string:explode(";", LineWithoutComment))
         of 
-        Row when length(Row) == 6 ->
+        [C1,C2,C3,C4,C5,_] ->
             % start body
-            C1 = lists:nth(1, Row),
-            C2 = lists:nth(2, Row),
-            C3 = lists:nth(3, Row),
-            C4 = lists:nth(4, Row),
-            C5 = lists:nth(5, Row),
             % {Test info atom, Result from function, From, To}
             %NFD
             ?assertEqual({c3__nfd_c1, C3, C1, C3}, {c3__nfd_c1, NFD(C1), C1, C3}),

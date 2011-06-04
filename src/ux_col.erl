@@ -116,10 +116,16 @@ get_options(shift_trimmed) ->
 get_options([_|_] = Params) ->
     get_options(Params, #uca_options{}).
 
+%% If you want use this library without import *.hrl, you can create 
+%% a #uca_options {} record with this function.
 get_options([{hangul_terminator, Val}|T], Opt = #uca_options{ }) ->
     get_options(T, Opt#uca_options{ hangul_terminator=Val });
 get_options([{natural_sort, Val}|T], Opt = #uca_options{ }) ->
     get_options(T, Opt#uca_options{ natural_sort=Val });
+get_options([{case_sensitive, Val}|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ case_sensitive=Val });
+get_options([{case_first, Val}|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ case_first=Val });
 get_options([{strength, Val}|T], Opt = #uca_options{ }) ->
     get_options(T, Opt#uca_options{ strength=Val });
 get_options([{alternate, Val}|T], Opt = #uca_options{ }) ->
@@ -451,16 +457,66 @@ compare(String1, String2, Params, TableFun, ComparatorFun) ->
     -> {[[integer(), ...], ...], Tail :: string()}.
 extract(Str, #uca_options { 
         hangul_terminator=Term, 
-        natural_sort=DecFlag 
+        natural_sort=DecFlag,
+        case_sensitive=CaseSenFlag,
+        case_first=CaseFirst
     } = _Params, TableFun) ->
     Res = extract0(Str, TableFun),
     {Weights, StrTail} = Res,
-    case mod_weights_proxy(Weights, DecFlag, Term, [], StrTail, TableFun) of
-    false -> Res;
-    Res2 -> Res2
-    end.
+    {Weights2, StrTail2} = 
+        case mod_weights_proxy(Weights, DecFlag, Term, [], 
+            StrTail, TableFun) of
+        false -> Res;
+        Res1  -> Res1 
+        end,
+
+    Weights3 = case CaseFirst of
+        off   -> Weights2;
+        lower -> Weights2;
+        upper -> case_first_hack(Weights2)
+    end,
+
+    Weights4 = case CaseSenFlag of
+        false -> Weights3;
+        true  -> case_sensitive_hack(Weights3)
+        end,
+    
+    {Weights4, StrTail2}.
+
+%% Uppercase to sort before lowercase. Remap L3.
+%% @private
+case_first_hack(Res) ->
+    case_first_hack1(Res, []).
+
+%% @private
+case_first_hack1([<<Var:8, L1L2:32, L3:16, L4/binary>> | In], Out) ->
+    NewL3 = case_invert(L3),
+    case_first_hack1(In, [<<Var:8, L1L2:32, NewL3:16, L4/binary>> | Out]);
+case_first_hack1([] = _In, Out) -> lists:reverse(Out).
+
+%% @private
+case_invert(L3) when L3 >= 2 andalso L3 =< 6 ->
+    L3 + 6;
+case_invert(L3) when L3 >= 8 andalso L3 =< 12 ->
+    L3 - 6;
+case_invert(L3) ->
+    L3.
 
 
+%% Extract L3 in L1.
+%% @private
+case_sensitive_hack(Res) ->
+    case_sensitive_hack1(Res, []).
+
+%% @private
+% Skip primary ignorable element. 
+% L1 ~ (L1 ++ L3)
+case_sensitive_hack1([<<Var:8, L1:16, L2:16, L3:16, L4/binary>> | In], Out) ->
+    case_sensitive_hack1(In, [<<Var:8, L1:16, L2:16, 0:16, L4/binary>> | 
+        [<<Var:8, L3:16, 0:48>> | Out]]);
+case_sensitive_hack1([] = _In, Out) -> lists:reverse(Out).
+
+%% @private
 mod_weights_proxy(Weights, DecFlag, Term, Acc, StrTail, TableFun) ->
     case mod_weights(Weights, DecFlag, Term, Acc, StrTail, TableFun) of
     % There is no any hangul jamo L chars in this string 
@@ -498,10 +554,12 @@ mod_weights_proxy(Weights, DecFlag, Term, Acc, StrTail, TableFun) ->
 % L1 as an argument is first hangul jamo L.
 % L1 as an part of ?IS_L1_OF_HANGUL_L is first level.
 %% @private
+% Hack for Hangul.
 mod_weights([<<_:8, L1:16, _/binary>> = H | T], 
     _DecFlag, Term, Acc, StrTail, TableFun) 
     when ?IS_L1_OF_HANGUL_L(L1) ->
     hangul2(l, T, [H|Acc], StrTail, TableFun, Term);
+% Hack for numbers.
 mod_weights([<<_:8, L1:16, _/binary>> = H | T], 
     true = _DecFlag, _Term, Acc, StrTail, TableFun) 
     when ?IS_L1_OF_DECIMAL(L1) ->

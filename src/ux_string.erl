@@ -41,6 +41,7 @@
 
         to_graphemes/1, reverse/1,
         length/1, len/1,
+        first/2, last/2,
         hex_to_int/1,
 
         info/1,
@@ -151,12 +152,18 @@ last_types(Types, Str, Len) ->
         ?ASSERT(Len>0, -1, 1), 0).
         
 %% @private
-get_types(_, [], _, Result, _, _, _, _) -> Result;
+%% Return list of chars, for which Fun(CharType) return true.
+%% If Len = 0, then return a part of modified string concatinated with
+%% a tail of this string.
+%% If Fun(Char) return true then Len = Len + TrueStep else Len = Len +
+%% FalseStep.
+%% A returned list is reversed.
+get_types(_Types, [] = _Str, _ = _Len, Result, _, _, _, _) -> Result;
 get_types(_,  _, 0, Result, false, _, _, _) -> Result;
 get_types(_,  Tail, 0, Result, true, _, _, _) -> 
     lists:reverse(Tail)++Result;
 get_types(Types, [Char|Tail], 
-    Len, % Strop after Len chars
+    Len, % Stop after Len chars
     Result, % Result array
     RetTail, % Concat tail with Result or not
     Fun, % Check function
@@ -726,6 +733,18 @@ len_graphemes([H|T], Len) ->
     end;
 len_graphemes([   ], Len) -> Len.
 
+%% Return Len chars from the beginning of the string.
+first(Str, Len) ->
+    lists:flatten(
+        lists:sublist(to_graphemes(Str), Len)).
+
+%% Return Len chars from the beginning of the string.
+last(Str, Len) ->
+    lists:flatten(
+        explode_reverse(
+            lists:sublist(
+                to_graphemes_raw(Str, [], []), Len))).
+
 %% Reverses string graphemes 
 reverse(Str) ->
     reverse_flatten(
@@ -912,31 +931,32 @@ strip_tags_test_() ->
     ,?_assertEqual(M:F("<b>a b c</b>"), "a b c")
     ,?_assertEqual(M:F("<b >a b c</b>"), "a b c")
     ,?_assertEqual(M:F("<b>a b c</b >"), "a b c")
-    % Check a long tag
-    ,?_assertEqual(M:F("<H1>A B C</H1>"), "A B C")
-    ,?_assertEqual(M:F("a<img src='i.img' />b"), "ab")
-    % Check allowed tags
-    ,?_assertEqual(M:F("<b>a b c</b>", ["b"]), "<b>a b c</b>")
-    ,?_assertEqual(M:F("<B>a b c</B>", ["b"]), "<B>a b c</B>")
-    ,?_assertEqual(M:F("<code>a b c</code>", ["b"]), "a b c")
-    ,?_assertEqual(M:F("<code>a b c</code>", ["b", "code"]), "<code>a b c</code>")
-    ,?_assertEqual(M:F("<span>a b c</span>", ["b", "span"]), "<span>a b c</span>")
-    % Check a tag with an attribute
-    ,?_assertEqual(M:F("a<img src='i.gif' />b", ["b"]), "ab")
-    ,?_assertEqual(M:F("a<img src='i.gif' />b", ["img"]), "a<img src='i.gif' />b")
-    ,?_assertEqual(M:F("a<br/>b", ["br"]), "a<br/>b")
-    % Check an atom in the list allowed tags 
-    ,?_assertEqual(M:F("a<br/>b", [br]), "a<br/>b")
-    ,?_assertEqual(M:F("a<br/><b>b</b>", [br]), "a<br/>b")
-    % Check a replacement argument
-    ,?_assertEqual(M:F("<b>a b c</b>", [], " "), " a b c ")
-    ,?_assertEqual(M:F("<b>a b c</b>", [], "tag"), "taga b ctag")
-    ,?_assertEqual(M:F("<b>a b c</b>", [test], "tag"), "taga b ctag")
-    % PHP style
-    ,?_assertEqual(M:F("<b>a b c</b>", "<b>"), "<b>a b c</b>")
-    ,?_assertEqual(M:F("<span>a b c</span>", "<b><span>"), "<span>a b c</span>")
-    ,?_assertEqual(M:F("<a><b>test<a", "a"), "<a>test")
-    ,?_assertEqual(M:F("<a ><b>test<a", "<a>"), "<a >test")
+    ,{"Check a long tag."
+        ,[?_assertEqual(M:F("<H1>A B C</H1>"), "A B C")
+         ,?_assertEqual(M:F("a<img src='i.img' />b"), "ab")]}
+    ,{"Check allowed tags."
+        ,[?_assertEqual(M:F("<b>a b c</b>", ["b"]), "<b>a b c</b>")
+         ,?_assertEqual(M:F("<B>a b c</B>", ["b"]), "<B>a b c</B>")
+         ,?_assertEqual(M:F("<code>a b c</code>", ["b"]), "a b c")
+         ,?_assertEqual(M:F("<code>a b c</code>", ["b", "code"]), "<code>a b c</code>")
+         ,?_assertEqual(M:F("<span>a b c</span>", ["b", "span"]), "<span>a b c</span>")
+         ]}
+    ,{"Check a tag with an attribute."
+        ,[?_assertEqual(M:F("a<img src='i.gif' />b", ["b"]), "ab")
+         ,?_assertEqual(M:F("a<img src='i.gif' />b", ["img"]), "a<img src='i.gif' />b")
+         ,?_assertEqual(M:F("a<br/>b", ["br"]), "a<br/>b")]}
+    ,{"Check an atom in the list allowed tags."
+        ,[?_assertEqual(M:F("a<br/>b", [br]), "a<br/>b")
+         ,?_assertEqual(M:F("a<br/><b>b</b>", [br]), "a<br/>b")]}
+    ,{"Check a replacement argument."
+        ,[?_assertEqual(M:F("<b>a b c</b>", [], " "), " a b c ")
+         ,?_assertEqual(M:F("<b>a b c</b>", [], "tag"), "taga b ctag")
+         ,?_assertEqual(M:F("<b>a b c</b>", [test], "tag"), "taga b ctag")]}
+    ,{"PHP format."
+        ,[?_assertEqual(M:F("<b>a b c</b>", "<b>"), "<b>a b c</b>")
+         ,?_assertEqual(M:F("<span>a b c</span>", "<b><span>"), "<span>a b c</span>")
+         ,?_assertEqual(M:F("<a><b>test<a", "a"), "<a>test")
+         ,?_assertEqual(M:F("<a ><b>test<a", "<a>"), "<a >test")]}
     ].
 
 tags_to_list_test_() ->
@@ -953,8 +973,10 @@ delete_types_test_() ->
     [?_assertEqual(M:F([ll, lu], "Tom Cat!"), " !")
     ,?_assertEqual(M:F([ll],     "Tom Cat!"), "T C!")
     ,?_assertEqual(M:F([po],     "Tom Cat!"), "Tom Cat")
-    ,?_assertEqual(M:F([ll], "AaBbCc44ff", -2), "ABbCc44ff") %skip 2 (A,B)
-    ,?_assertEqual(M:F([ll], "AaBbCc44ff",  2), "ABCc44ff") %del 2 (a,b)
+    ,{"Skip 2 chars (A,B).",
+        ?_assertEqual(M:F([ll], "AaBbCc44ff", -2), "ABbCc44ff")}
+    ,{"Delete only 2 chars (A,B).",
+        ?_assertEqual(M:F([ll], "AaBbCc44ff",  2), "ABCc44ff")}
     ,?_assertEqual(M:F([ll], "AaBbCc44ffdsBAF",  4), "ABC44fdsBAF")
     ,?_assertEqual(M:F([ll], "AaBbCc44ffdsBAF", -4), "ABC44ffdsBAF")
     ].
@@ -992,6 +1014,26 @@ first_types_test_() ->
     F = 'first_types',
     [?_assertEqual(M:F([ll], "AavbfFDsdfffds", 4), "avbf")
     ,?_assertEqual(M:F([ll], "AavbfFDsdfffds", 5), "avbfs")
+    ].
+
+to_graphemes_test_() ->
+    M = 'ux_string',
+    F = 'to_graphemes',
+    [{"Simple example", 
+        ?_assertEqual(M:F("Octocat!"), ["O","c","t","o","c","a","t","!"])},
+     {"U+1EE5 LATIN SMALL LETTER U WITH DOT BELOW, U+031B COMBINING HORN, a, b",
+        ?_assertEqual(M:F([16#1EE5, 16#031B, $a, $b]), [[7909,795],"a","b"])}
+    ].
+
+first_test_() ->
+    M = 'ux_string',
+    F = 'first',
+    [?_assertEqual(M:F("Octocat!", 4), "Octo")
+    ].
+last_test_() ->
+    M = 'ux_string',
+    F = 'last',
+    [?_assertEqual(M:F("Octocat!", 4), "cat!")
     ].
 
 %% Normalization Conformance Test
@@ -1080,9 +1122,11 @@ nfc_prof(Count) ->
     ok.
 
 nfc_test_() ->
-    {timeout, 600, fun() -> 
-        nfc_prof(1000000),
-        io:format(user, "~n", []) end}.
+    {timeout, 600, 
+        {"Normalization Conformance Test", 
+            fun() -> 
+                nfc_prof(1000000),
+                io:format(user, "~n", []) end}}.
 
 
 -endif.

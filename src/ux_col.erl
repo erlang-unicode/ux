@@ -1133,6 +1133,7 @@ test(InFd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
 
     case test_read(InFd, StrNum) of
     {FullStr, Val, NewStrNum} = Result when is_list(Val) -> 
+%       io:format(user, "~w strings were tested.  ~w ~w ~n", [StrNum, OldVal, Val]),
         case compare(Val, OldVal, Params) of % collation compare
         % error
         lower -> io:format(user, "Error: ~w ~w ~w ~n", 
@@ -1154,6 +1155,7 @@ test(InFd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
 test_read(InFd, StrNum) ->
     case io:get_line(InFd, "") of
     eof -> ok;
+    {error,Mess} -> throw({error, "Error while reading file", Mess});
     Data -> 
         try % parse Data
             [Value|_] = ux_string:split(["#", ";", "\n"], Data), 
@@ -1163,13 +1165,14 @@ test_read(InFd, StrNum) ->
         of Res -> {Data, Res, StrNum + 1} % {FullStr, Codepaints}
         catch                   
         error:_Reason -> 
+%            io:format(user, "~w: Data=~w ~n", [Reason, Data]),
             test_read(InFd, StrNum + 1)
         end
     end.
 
 prof(File, Params, Count) ->
     {ok, InFd} = file:open(File, [read]),
-    io:setopts(InFd,[{encoding,utf8}]),
+%    io:setopts(InFd,[{encoding,utf8}]),
     Res = test(InFd, Params, false, 0, Count, ok),
     ?assertEqual(Res, ok).
 
@@ -1180,7 +1183,7 @@ non_ignorable_test_() ->
             prof(
                ux_unidata:get_ucadata_dir() ++ "CollationTest/" 
                     % Slow, with comments.
-%                   ++ "CollationTest_NON_IGNORABLE.txt", 
+%                    ++ "CollationTest_NON_IGNORABLE.txt", 
                     % Fast version (data from slow version are equal).
                     ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                 get_options(non_ignorable), 

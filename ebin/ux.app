@@ -2,7 +2,7 @@
              [{description,"ux"},
               {vsn,"0.1"},
               {modules,[ux,ux_app,ux_char,ux_col,ux_deps,ux_math,ux_par,
-                        ux_string,ux_sup,ux_unidata,ux_utils,ux_web]},
+                        ux_string,ux_sup,ux_unidata,ux_utils]},
               {registered,[]},
               {mod,{ux_app,[]}},
               {env,[]},

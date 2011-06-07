@@ -1,7 +1,9 @@
 #!/bin/sh
 cd `dirname $0`
 make
-exec erl -pa $PWD/ebin $PWD/deps/*/ebin \
+# NOTE: mustache templates need \ because they are not awesome.
+exec erl -pa $PWD/ebin edit $PWD/deps/*/ebin -boot start_sasl \
     -sname ux \
-    -boot start_sasl \
-    -s reloader -s ux
+    -s ux \
+    -s reloader
+

@@ -57,5 +57,6 @@
         strength = 4,
         alternate = shifted,
         case_sensitive = false, % move L3 to L1
-        case_first = lower % off | upper | lower
+        case_first = lower, % off | upper | lower
+        sort_key_format = binary % binary | list | uncompressed (list)
         }).

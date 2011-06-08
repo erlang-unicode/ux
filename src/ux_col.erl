@@ -360,39 +360,102 @@ get_comp_fn(shift_trimmed) ->
 sort_key(Str) ->
     sort_key(Str, #uca_options{}).
 
-sort_key(Str, #uca_options{alternate=Alt} = Params) ->
+sort_key(Str, #uca_options{alternate=Alt, sort_key_format=binary} = Params) ->
+    Fn = get_comp_fn(Alt),
+    convert_key_to_bin(
+        sort_array_to_key(
+            sort_array(Str, Params, fun ducet_r/1, Fn)));
+sort_key(Str, #uca_options{alternate=Alt, sort_key_format=list} = Params) ->
     Fn = get_comp_fn(Alt),
     sort_array_to_key(
         sort_array(Str, Params, fun ducet_r/1, Fn));
+sort_key(Str, #uca_options{alternate=Alt, sort_key_format=uncompressed} = Params) ->
+    Fn = get_comp_fn(Alt),
+    sort_array_to_uncompressed_key(
+        sort_array(Str, Params, fun ducet_r/1, Fn));
 sort_key(Str, Fn) when is_function(Fn) ->
     Array = apply(Fn, [Str]),
-    sort_key1(Array, [], []);
+    {_Level, Res} = sort_key1(Array, 1, [], []),
+    lists:reverse(Res);
 sort_key(Str, FnName) when is_atom(FnName) ->
     Fn = get_sort_fn(FnName), 
     sort_key(Str, Fn).
 
 sort_array_to_key(Array) ->
-    sort_key1(Array, [], []).
+    {Level, Res} = sort_key1(Array, 1, [], []),
+    compress_sort_key_r(Res, Level, []).
+
+sort_array_to_uncompressed_key(Array) ->
+    {_Level, Res} = sort_key1(Array, 1, [], []),
+    lists:reverse(Res).
  
 
 %% @private
-%% AT is Array Tail.
-sort_key1([[0]|AT], Acc, Res) ->
-    sort_key1(AT, Acc, Res);
-sort_key1([[H]|AT], Acc, Res) ->
-    sort_key1(AT, Acc, [H|Res]);
-sort_key1([[0|T]|AT], Acc, Res) ->
-    sort_key1(AT, [T|Acc], Res);
-sort_key1([[H|T]|AT], Acc, Res) ->
-    sort_key1(AT, [T|Acc], [H|Res]);
-sort_key1([[]|AT], Acc, Res) ->
-    sort_key1(AT, Acc, Res);
-sort_key1([] = _InArray, [_|_] = Acc, Res) ->
-    sort_key1(lists:reverse(Acc), [], [0|Res]);
-sort_key1([] = _InArray, [] = _Acc, Res) -> 
-    lists:reverse(Res).
+%% @param AT is Array Tail.
+%% @param Level is max level of key (default 1).
+%% @return {MaxLevel, ReversedSortKey}
+sort_key1([[0]|AT], Level, Acc, Res) ->
+    sort_key1(AT, Level, Acc, Res);
+sort_key1([[H]|AT], Level, Acc, Res) ->
+    sort_key1(AT, Level, Acc, [H|Res]);
+sort_key1([[0|T]|AT], Level, Acc, Res) ->
+    sort_key1(AT, Level, [T|Acc], Res);
+sort_key1([[H|T]|AT], Level, Acc, Res) ->
+    sort_key1(AT, Level, [T|Acc], [H|Res]);
+sort_key1([[]|AT], Level, Acc, Res) ->
+    sort_key1(AT, Level, Acc, Res);
+sort_key1([] = _InArray, Level, [_|_] = Acc, Res) ->
+    sort_key1(lists:reverse(Acc), Level + 1, [], [0|Res]);
+sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 
+%% Get reversed sort key and compress it.
+%% @param Key
+%% @param Level (1-4). For example: 3 then 2 then 1 (because Key is reversed!)
+%% @param Res Compressed key
+% Replace H=32 on Level=2
+compress_sort_key_r([32|T], 2, Res) ->
+    compress_sort_key_r2(T, 32, 1, 2, 255, Res);
+% Replace H=2 on Level=3
+compress_sort_key_r([2|T], 3, Res) ->
+    compress_sort_key_r2(T, 2, 1, 3, 255, Res);
+compress_sort_key_r([0|T], Level, Res) ->
+    compress_sort_key_r(T, Level - 1, [0|Res]);
+compress_sort_key_r([H|T], Level, Res) ->
+    compress_sort_key_r(T, Level, [H|Res]);
+compress_sort_key_r([], _Level, Res) -> Res.
 
+%% Read all Val from Key.
+% The maximum count of repeated chars was reached.
+% Max = 255 for L2, L3
+% Max = 65535 for L1, L4
+compress_sort_key_r2([Val|T], Val, Max, Level, Max, Res) ->
+    compress_sort_key_r2(T, Val, 1, Level, Max, [Max|Res]);
+compress_sort_key_r2([Val|T], Val, Count, Level, Max, Res) ->
+    compress_sort_key_r2(T, Val, Count + 1, Level, Max, Res);
+compress_sort_key_r2(Key, Val, Count, Level, _Max, Res) ->
+    compress_sort_key_r(Key, Level, [Val|[Count|Res]]).
+    
+convert_key_to_bin(Key) when is_list(Key) ->
+    convert_key_to_bin(Key, 1, []).
+%% Key is list.
+%% Level (default 1).
+convert_key_to_bin([0|T], Level, Res) ->
+    convert_key_to_bin(T, Level + 1, [0|[0|Res]]);
+convert_key_to_bin([H|T], 2, Res) when H < 256 ->
+    convert_key_to_bin(T, 2, [H|Res]);
+convert_key_to_bin([H|T], 3, Res) when H < 256 ->
+    convert_key_to_bin(T, 3, [H|Res]);
+convert_key_to_bin([H|T], Level, Res) when H =< 16#FFFF ->
+    convert_key_to_bin(T, Level, [(H rem 256) |[(H bsr 8) |Res]]);
+convert_key_to_bin([H|T], Level, Res) 
+    when (H > 16#FFFF) and (H =< 16#FFFFFF) ->
+    convert_key_to_bin(T, Level, 
+        [(H rem 256) 
+            |[((H bsr 8) rem 256)
+                |[(H bsr 16)|Res]]]);
+convert_key_to_bin([], _Level, Res) ->
+    erlang:list_to_binary(lists:reverse(Res)).
+    
 
 % http://unicode.org/reports/tr10/#Variable_Weighting
 sort_array(Str) -> 
@@ -1133,18 +1196,44 @@ test(InFd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
 
     case test_read(InFd, StrNum) of
     {FullStr, Val, NewStrNum} = Result when is_list(Val) -> 
-        case compare(Val, OldVal, Params) of % collation compare
-        % error
-        lower -> io:format(user, "Error: ~w ~w ~w ~n", 
-                [Val, lower, OldVal]),
-            io:format(user,
-                " Data1: ~ts Data2: ~ts",
-                [OldFullStr, FullStr]),
+        % 1. check compare/3.
+        Res2 = case compare(Val, OldVal, Params) of % collation compare
+            % error
+            lower -> io:format(user, "Error (compare): ~w ~w ~w ~n", 
+                    [Val, lower, OldVal]),
+                io:format(user,
+                    " Data1: ~ts Data2: ~ts",
+                    [OldFullStr, FullStr]),
+                    error;
+            % OK (equal or upper). 
+            _ -> Res
+            end,
+
+        % 2. check sort_key/2.
+        Key1 = sort_key(OldVal, Params),
+        Key2 = sort_key(Val, Params),
+        Res3 = if
+                Key1 > Key2 ->
+                io:format(user, "Error (key): ~w ~w ~w ~n", 
+                    [Val, lower, OldVal]),
+                io:format(user,
+                    " Data1: ~ts Data2: ~ts",
+                    [OldFullStr, FullStr]),
+                io:format(user,
+                    " Key1: ~w ~n Key2: ~w~n",
+                    [Key1, Key2]),
                 
-            test(InFd, Params, Result, NewStrNum, Max - 1, error);
-        % OK (equal or upper). Try next
-        _ -> test(InFd, Params, Result, NewStrNum, Max - 1, Res)
-        end;
+                Arr1 = sort_array(OldVal, Params),
+                Arr2 = sort_array(Val, Params),
+                io:format(user,
+                    " Arr1: ~w ~n Arr2: ~w~n",
+                    [Arr1, Arr2]),
+                    error;
+                true -> Res2
+            end,
+                
+            
+        test(InFd, Params, Result, NewStrNum, Max - 1, Res3);
     _ -> ok
     end.
 
@@ -1180,9 +1269,9 @@ non_ignorable_test_() ->
             prof(
                ux_unidata:get_ucadata_dir() ++ "CollationTest/" 
                     % Slow, with comments.
-%                   ++ "CollationTest_NON_IGNORABLE.txt", 
+                   ++ "CollationTest_NON_IGNORABLE.txt", 
                     % Fast version (data from slow version are equal).
-                    ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
+%                    ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
                 get_options(non_ignorable), 
                 1000000) 
         end}.
@@ -1193,8 +1282,8 @@ shifted_test_() ->
             prof(
                ux_unidata:get_ucadata_dir() ++ "CollationTest/" 
                     % Slow, with comments.
-%                   ++ "CollationTest_SHIFTED.txt", 
-                    ++ "CollationTest_SHIFTED_SHORT.txt", 
+                   ++ "CollationTest_SHIFTED.txt", 
+%                    ++ "CollationTest_SHIFTED_SHORT.txt", 
                 get_options(shifted), 
                 1000000) end}.
 

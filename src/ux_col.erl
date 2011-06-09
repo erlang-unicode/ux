@@ -408,46 +408,112 @@ sort_key1([] = _InArray, Level, [_|_] = Acc, Res) ->
     sort_key1(lists:reverse(Acc), Level + 1, [], [0|Res]);
 sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 
+
+-define(COL_LEVEL2_CAPACITY, 500).
+-define(COL_LEVEL2_MIN, 1).
+-define(COL_LEVEL2_MAX, 450).
+-define(COL_LEVEL2_COMMON, 32).
+
+-define(COL_LEVEL3_CAPACITY, 16#FF).
+-define(COL_LEVEL3_MIN, 2).
+-define(COL_LEVEL3_MAX, 16#1F).
+-define(COL_LEVEL3_COMMON, 2).
+
+% Reassign the weights in the collation element table at level n to create
+% a gap of size GAP above COMMON. Typically for secondaries or tertiaries 
+% this is done after the values have been reduced to a byte range by the 
+% above methods. Here is a mapping that moves weights up or down to create 
+% a gap in a byte range.
+% w -> w + 01 - MIN, for MIN <= w < COMMON
+% w -> w + FF - MAX, for COMMON < w <= MAX
+-define(REASSIGN_WEIGHT(W, Min, Max, Common, Capacity),
+    (if
+    ((W) >= (Min)) and ((W) < (Common)) ->
+        (W) + 1 - (Min);
+    (W > Common) and ((W) =< (Max)) ->
+        (W) + Capacity - (Max);
+    true -> Common
+    end)).
+-define(REASSIGN_WEIGHT2(W),
+    ?REASSIGN_WEIGHT(W, ?COL_LEVEL2_MIN, ?COL_LEVEL2_MAX, ?COL_LEVEL2_COMMON, 
+        ?COL_LEVEL2_CAPACITY)).
+-define(REASSIGN_WEIGHT3(W),
+    ?REASSIGN_WEIGHT(W, ?COL_LEVEL3_MIN, ?COL_LEVEL3_MAX, ?COL_LEVEL3_COMMON,
+        ?COL_LEVEL3_CAPACITY)).
+
+-define(COL_LEVEL2_MINTOP, 31).
+-define(COL_LEVEL2_MAXBOTTOM, (?COL_LEVEL2_CAPACITY - ?COL_LEVEL2_MIN
+    - (?COL_LEVEL2_MAX - ?COL_LEVEL2_COMMON + 1))).
+-define(COL_LEVEL2_GAP_SIZE, (?COL_LEVEL2_CAPACITY - ?COL_LEVEL2_MAX 
+   -  ?COL_LEVEL2_MIN)).
+
+-define(COL_LEVEL3_MINTOP, 1).
+-define(COL_LEVEL3_MAXBOTTOM, (?COL_LEVEL3_CAPACITY - ?COL_LEVEL3_MIN
+    - (?COL_LEVEL3_MAX - ?COL_LEVEL3_COMMON + 1))).
+-define(COL_LEVEL3_GAP_SIZE, (?COL_LEVEL3_CAPACITY - ?COL_LEVEL3_MAX
+   -  ?COL_LEVEL3_MIN)).
+
 %% Get reversed sort key and compress it.
 %% @param Key
 %% @param Level (1-4). For example: 3 then 2 then 1 (because Key is reversed!)
 %% @param Res Compressed key
-% Replace H=32 on Level=2
-compress_sort_key_r([32|T], 2, Res) ->
-    compress_sort_key_r2(T, 32, 1, 2, 255, Res);
-% Replace H=2 on Level=3
-compress_sort_key_r([2|T], 3, Res) ->
-    compress_sort_key_r2(T, 2, 1, 3, 255, Res);
 compress_sort_key_r([0|T], Level, Res) ->
     compress_sort_key_r(T, Level - 1, [0|Res]);
+% Replace H=2 on Level=3
+compress_sort_key_r([?COL_LEVEL3_COMMON|T], 3, Res) ->
+    compress_sort_key_l3(T, ?COL_LEVEL3_GAP_SIZE, Res);
+compress_sort_key_r([H|T], Level = 3, Res) ->
+    compress_sort_key_r(T, Level, [?REASSIGN_WEIGHT3(H)|Res]);
+
+compress_sort_key_r([?COL_LEVEL2_COMMON|T], 2, Res) ->
+    compress_sort_key_l2(T, ?COL_LEVEL2_GAP_SIZE, Res);
+compress_sort_key_r([H|T], Level = 2, Res) ->
+    compress_sort_key_r(T, Level, [?REASSIGN_WEIGHT2(H)|Res]);
+
 compress_sort_key_r([H|T], Level, Res) ->
     compress_sort_key_r(T, Level, [H|Res]);
 compress_sort_key_r([], _Level, Res) -> Res.
 
-%% Read all Val from Key.
-% The maximum count of repeated chars was reached.
-% Max = 255 for L2, L3
-% Max = 65535 for L1, L4
-compress_sort_key_r2([Val|T], Val, Max, Level, Max, Res) ->
-    compress_sort_key_r2(T, Val, 1, Level, Max, [Max|Res]);
-compress_sort_key_r2([Val|T], Val, Count, Level, Max, Res) ->
-    compress_sort_key_r2(T, Val, Count + 1, Level, Max, Res);
-compress_sort_key_r2(Key, Val, Count, Level, _Max, Res) ->
-    compress_sort_key_r([H|_] = Key, Level, [Val|[Count|Res]]).
+
+%% Read all W from Key.
+%% If W < COMMON (or there is no W), replace the sequence by a synthetic low
+%% weight equal to (MINTOP + m).
+%% If W > COMMON, replace the sequence by a synthetic high weight equal to
+%% (MAXBOTTOM - m).
+compress_sort_key_l3([?COL_LEVEL3_COMMON|T], M, Res) ->
+    compress_sort_key_l3(T, M - 1, Res);
+compress_sort_key_l3(T, M, [W|_] = Res) 
+    when (W > ?COL_LEVEL3_MAXBOTTOM) ->
+    compress_sort_key_r(T, 3, 
+        [(?COL_LEVEL3_MINTOP + M)|Res]);
+compress_sort_key_l3(T, M, Res) ->
+    compress_sort_key_r(T, 3, 
+        [(?COL_LEVEL3_MAXBOTTOM - M)|Res]).
     
+compress_sort_key_l2([?COL_LEVEL2_COMMON|T], M, Res) ->
+    compress_sort_key_l2(T, M - 1, Res);
+compress_sort_key_l2(T, M, [W|_] = Res) 
+    when (W > ?COL_LEVEL2_MAXBOTTOM) ->
+    compress_sort_key_r(T, 2, 
+        [(?COL_LEVEL2_MINTOP + M)|Res]);
+compress_sort_key_l2(T, M, Res) ->
+    compress_sort_key_r(T, 2, 
+        [(?COL_LEVEL2_MAXBOTTOM - M)|Res]).
+
 convert_key_to_bin(Key) when is_list(Key) ->
     convert_key_to_bin(Key, 1, []).
+
 %% Key is list.
 %% Level (default 1).
 convert_key_to_bin([0|T], Level, Res) ->
     convert_key_to_bin(T, Level + 1, [0|[0|Res]]);
-convert_key_to_bin([H|T], 2, Res) when H < 256 ->
+convert_key_to_bin([H|T], 2, Res) when H < 255 ->
     convert_key_to_bin(T, 2, [H|Res]);
-convert_key_to_bin([H|T], 3, Res) when H < 256 ->
+convert_key_to_bin([H|T], 3, Res) when H < 255 ->
     convert_key_to_bin(T, 3, [H|Res]);
-convert_key_to_bin([H|T], 2, Res) when H > 255 ->
+convert_key_to_bin([H|T], 2, Res) when H > 254 ->
     convert_key_to_bin([(H - 255)|T], 2, [255|Res]);
-convert_key_to_bin([H|T], 3, Res) when H > 255 ->
+convert_key_to_bin([H|T], 3, Res) when H > 254 ->
     convert_key_to_bin([(H - 255)|T], 3, [255|Res]);
 convert_key_to_bin([H|T], Level, Res) when H =< 16#FFFF ->
     convert_key_to_bin(T, Level, [(H rem 256) |[(H bsr 8) |Res]]);
@@ -1067,7 +1133,52 @@ weight_strength(_, Val) ->
 
 -include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
+-define(_assertLower(X,Y), ({
+    lists:flatten(
+        io_lib:format("~w < ~w", [X, Y])),
+    case (X) < (Y) of
+    true ->  ?_assertEqual(1,1);
+    false -> ?_assert(X < Y)
+    end})).
 
+compress_sort_key_test_() ->
+    [{"Check constants for L3", 
+        ?_assertEqual(?COL_LEVEL3_MINTOP + ?COL_LEVEL3_GAP_SIZE,
+            ?COL_LEVEL3_MAXBOTTOM)},
+     {"Check constants for L2", 
+        ?_assertEqual(?COL_LEVEL2_MINTOP + ?COL_LEVEL2_GAP_SIZE,
+            ?COL_LEVEL2_MAXBOTTOM)}].
+
+compress_sort_key3_test_() ->
+    io:format(user, " ?COL_LEVEL3_MIN = ~w ~n", [?COL_LEVEL3_MIN]),
+    io:format(user, " ?COL_LEVEL3_MAX = ~w ~n", [?COL_LEVEL3_MAX]),
+    io:format(user, " ?COL_LEVEL3_GAP_SIZE = ~w ~n", [?COL_LEVEL3_GAP_SIZE]),
+    io:format(user, " ?COL_LEVEL3_MINTOP = ~w ~n", [?COL_LEVEL3_MINTOP]),
+    io:format(user, " ?COL_LEVEL3_MAXBOTTOM = ~w ~n", [?COL_LEVEL3_MAXBOTTOM]),
+
+    FF = fun(A) -> compress_sort_key_r(lists:reverse(A), 3, []) end,
+    [?_assertLower(FF([4]), FF([8])) 
+    ,?_assertLower(FF([2]), FF([8])) 
+    ,?_assertLower(FF([2,2]), FF([2,8])) 
+    ,?_assertLower(FF([2,2]), FF([2,2,2])) 
+    ,?_assertLower(FF([2,2]), FF([2,16#1F])) 
+    ].
+
+compress_sort_key2_test_() ->
+    io:format(user, " ?COL_LEVEL2_MIN = ~w ~n", [?COL_LEVEL2_MIN]),
+    io:format(user, " ?COL_LEVEL2_MAX = ~w ~n", [?COL_LEVEL2_MAX]),
+    io:format(user, " ?COL_LEVEL2_GAP_SIZE = ~w ~n", [?COL_LEVEL2_GAP_SIZE]),
+    io:format(user, " ?COL_LEVEL2_MINTOP = ~w ~n", [?COL_LEVEL2_MINTOP]),
+    io:format(user, " ?COL_LEVEL2_MAXBOTTOM = ~w ~n", [?COL_LEVEL2_MAXBOTTOM]),
+
+    FF = fun(A) -> compress_sort_key_r(lists:reverse(A), 2, []) end,
+    [?_assertLower(FF([32]), FF([34])) 
+    ,?_assertLower(FF([18]), FF([32])) 
+    ,?_assertLower(FF([32,32]), FF([32,34])) 
+    ,?_assertLower(FF([32,32]), FF([32,40])) 
+    ,?_assertLower(FF([32,32]), FF([32,32,32])) 
+    ,?_assertLower(FF([32,32, 32]), FF([32,32,34])) 
+    ].
 
 sort_key_test_() ->
     M = 'ux_col',

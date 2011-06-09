@@ -1231,7 +1231,6 @@ test(InFd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
                     error;
                 true -> Res2
             end,
-                
             
         test(InFd, Params, Result, NewStrNum, Max - 1, Res3);
     _ -> ok
@@ -1243,6 +1242,7 @@ test(InFd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
 test_read(InFd, StrNum) ->
     case io:get_line(InFd, "") of
     eof -> ok;
+    {error,Mess} -> throw({error, "Error while reading file", Mess});
     Data -> 
         try % parse Data
             [Value|_] = ux_string:split(["#", ";", "\n"], Data), 
@@ -1252,13 +1252,14 @@ test_read(InFd, StrNum) ->
         of Res -> {Data, Res, StrNum + 1} % {FullStr, Codepaints}
         catch                   
         error:_Reason -> 
+%            io:format(user, "~w: Data=~w ~n", [Reason, Data]),
             test_read(InFd, StrNum + 1)
         end
     end.
 
 prof(File, Params, Count) ->
     {ok, InFd} = file:open(File, [read]),
-    io:setopts(InFd,[{encoding,utf8}]),
+%    io:setopts(InFd,[{encoding,utf8}]),
     Res = test(InFd, Params, false, 0, Count, ok),
     ?assertEqual(Res, ok).
 

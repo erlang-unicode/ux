@@ -413,11 +413,13 @@ sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 -define(COL_LEVEL2_MIN, 1).
 -define(COL_LEVEL2_MAX, 450).
 -define(COL_LEVEL2_COMMON, 32).
+-define(COL_LEVEL3_BOUND, 50).
 
 -define(COL_LEVEL3_CAPACITY, 16#FF).
 -define(COL_LEVEL3_MIN, 2).
 -define(COL_LEVEL3_MAX, 16#1F).
 -define(COL_LEVEL3_COMMON, 2).
+-define(COL_LEVEL3_BOUND, 2).
 
 % Reassign the weights in the collation element table at level n to create
 % a gap of size GAP above COMMON. Typically for secondaries or tertiaries 
@@ -497,6 +499,23 @@ compress_sort_key_l2(T, M, [W|_] = Res)
     compress_sort_key_r(T, 2, 
         [(?COL_LEVEL2_MINTOP + M)|Res]);
 compress_sort_key_l2(T, M, Res) ->
+    compress_sort_key_r(T, 2, 
+        [(?COL_LEVEL2_MAXBOTTOM - M)|Res]).
+
+%% The last step is a bit too simple, because the synthetic weights must not
+%% collide with other values having long strings of COMMON weights. This 
+%% is done by using a sequence of synthetic weights, absorbing as much length 
+%% into each one as possible. A value BOUND is defined between MINTOP and 
+%% MAXBOTTOM. The exact value for BOUND can be chosen based on the expected 
+%% frequency of synthetic low weights versus high weights for the particular 
+%% collation element table.
+%% If a synthetic low weight would not be less than BOUND, use a sequence 
+%% of low weights of the form (BOUND-1)..(BOUND-1)(MINTOP + remainder) to 
+%% express the length of the sequence.
+%% Similarly, if a synthetic high weight would be less than BOUND, use a 
+%% sequence of high weights of the form (BOUND)..(BOUND)(MAXBOTTOM - 
+%% remainder).
+compress_sort_key_bound2(T, M, Res) ->
     compress_sort_key_r(T, 2, 
         [(?COL_LEVEL2_MAXBOTTOM - M)|Res]).
 
@@ -1135,7 +1154,11 @@ weight_strength(_, Val) ->
 -ifdef(TEST).
 -define(_assertLower(X,Y), ({
     lists:flatten(
-        io_lib:format("~w < ~w", [X, Y])),
+        io_lib:format("~20s < ~20s", lists:map(
+            fun(A) ->
+                lists:flatten(
+                    io_lib:format("~w", [A])) end, 
+            [X, Y]))),
     case (X) < (Y) of
     true ->  ?_assertEqual(1,1);
     false -> ?_assert(X < Y)
@@ -1171,6 +1194,7 @@ compress_sort_key2_test_() ->
     io:format(user, " ?COL_LEVEL2_MINTOP = ~w ~n", [?COL_LEVEL2_MINTOP]),
     io:format(user, " ?COL_LEVEL2_MAXBOTTOM = ~w ~n", [?COL_LEVEL2_MAXBOTTOM]),
 
+    L = lists:duplicate(1000, ?COL_LEVEL2_COMMON),
     FF = fun(A) -> compress_sort_key_r(lists:reverse(A), 2, []) end,
     [?_assertLower(FF([32]), FF([34])) 
     ,?_assertLower(FF([18]), FF([32])) 
@@ -1178,6 +1202,8 @@ compress_sort_key2_test_() ->
     ,?_assertLower(FF([32,32]), FF([32,40])) 
     ,?_assertLower(FF([32,32]), FF([32,32,32])) 
     ,?_assertLower(FF([32,32, 32]), FF([32,32,34])) 
+    ,?_assertLower(FF([32]), FF([34])) 
+    ,?_assertLower(FF(L ++ [2]), FF(L ++ [8])) 
     ].
 
 sort_key_test_() ->

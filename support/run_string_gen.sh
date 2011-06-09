@@ -8,4 +8,4 @@ escript comp_exclusions_gen.escript "$EBIN" "$IN" "$OUT"
 escript norm_props_gen.escript      "$EBIN" "$IN" "$OUT"
 escript ducet_gen.escript           "$EBIN" "$IN" "$OUT"
 escript blocks_gen.escript          "$EBIN" "$IN" "$OUT"
-touch ./../src/uxunidata.erl
+touch ./../src/ux_unidata.erl

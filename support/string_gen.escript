@@ -4,8 +4,8 @@
 
 main([Ebin, InDir, OutDir]) -> 
     code:add_path(Ebin),
-TopChars = lists:sort(fun(X1,X2) -> ux_string:freq_dict(X1)>ux_string:freq_dict(X2) end, 
-			lists:filter(fun(X) -> ux_string:freq_dict(X)>0.0001 end, 
+TopChars = lists:sort(fun(X1,X2) -> ux_unidata:freq_dict(X1)>ux_unidata:freq_dict(X2) end, 
+			lists:filter(fun(X) -> ux_unidata:freq_dict(X)>0.0001 end, 
 					lists:seq(1,65353, 1))),
 
 % http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html
@@ -145,11 +145,11 @@ write({CharToLowerFd, CharToUpperFd, IsLowerFd, IsUpperFd,
 
 do_gen_head(_, []) -> ok;
 do_gen_head(Pid, [H|T]) ->
-        Pid ! {char_to_upper, "char_to_upper(~w) -> ~w;~n", [H, ux_string:char_to_upper(H)]},
-        Pid ! {char_to_lower, "char_to_lower(~w) -> ~w;~n", [H, ux_string:char_to_lower(H)]},
-        Pid ! {is_upper, "is_upper(~w) -> ~w;~n", [H, ux_string:is_upper(H)]},
-        Pid ! {is_lower, "is_lower(~w) -> ~w;~n", [H, ux_string:is_lower(H)]},
-        Pid ! {char_type, "char_type(~w) -> ~w;~n", [H, ux_string:char_type(H)]},
+        Pid ! {char_to_upper, "char_to_upper(~w) -> ~w;~n", [H, ux_unidata:char_to_upper(H)]},
+        Pid ! {char_to_lower, "char_to_lower(~w) -> ~w;~n", [H, ux_unidata:char_to_lower(H)]},
+        Pid ! {is_upper, "is_upper(~w) -> ~w;~n", [H, ux_unidata:is_upper(H)]},
+        Pid ! {is_lower, "is_lower(~w) -> ~w;~n", [H, ux_unidata:is_lower(H)]},
+        Pid ! {char_type, "char_type(~w) -> ~w;~n", [H, ux_unidata:char_type(H)]},
 
 	do_gen_head(Pid, T).
 

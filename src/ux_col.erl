@@ -433,7 +433,7 @@ compress_sort_key_r2([Val|T], Val, Max, Level, Max, Res) ->
 compress_sort_key_r2([Val|T], Val, Count, Level, Max, Res) ->
     compress_sort_key_r2(T, Val, Count + 1, Level, Max, Res);
 compress_sort_key_r2(Key, Val, Count, Level, _Max, Res) ->
-    compress_sort_key_r(Key, Level, [Val|[Count|Res]]).
+    compress_sort_key_r([H|_] = Key, Level, [Val|[Count|Res]]).
     
 convert_key_to_bin(Key) when is_list(Key) ->
     convert_key_to_bin(Key, 1, []).
@@ -445,6 +445,10 @@ convert_key_to_bin([H|T], 2, Res) when H < 256 ->
     convert_key_to_bin(T, 2, [H|Res]);
 convert_key_to_bin([H|T], 3, Res) when H < 256 ->
     convert_key_to_bin(T, 3, [H|Res]);
+convert_key_to_bin([H|T], 2, Res) when H > 255 ->
+    convert_key_to_bin([(H - 255)|T], 2, [255|Res]);
+convert_key_to_bin([H|T], 3, Res) when H > 255 ->
+    convert_key_to_bin([(H - 255)|T], 3, [255|Res]);
 convert_key_to_bin([H|T], Level, Res) when H =< 16#FFFF ->
     convert_key_to_bin(T, Level, [(H rem 256) |[(H bsr 8) |Res]]);
 convert_key_to_bin([H|T], Level, Res) 

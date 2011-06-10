@@ -78,7 +78,7 @@
 -include("ux_char.hrl").
 -include("ux_col.hrl").
 
-
+% ducet_r(reversed_in) -> non_reversed_key;
 ducet_r(V) -> ux_unidata:ducet_r(V).
 ccc(V) -> ux_unidata:ccc(V).
 
@@ -87,34 +87,44 @@ ccc(V) -> ux_unidata:ccc(V).
 %% Out: not reversed weight list.
 ducet(A) -> ducet_r(lists:reverse(A)).
 
-get_options() -> #uca_options{}.
+get_options() -> #uca_options{ 
+        ducet_r_fn = fun ducet_r/1 
+    }.
 
 get_options(non_ignorable) ->
     #uca_options { 
+        ducet_r_fn = fun ducet_r/1,
+
         natural_sort = false,
         strength = 3,
         alternate = non_ignorable
     };
 get_options(blanked) ->
     #uca_options { 
+        ducet_r_fn = fun ducet_r/1,
+
         natural_sort = false,
         strength = 3,
         alternate = blanked
     };
 get_options(shifted) ->
     #uca_options { 
+        ducet_r_fn = fun ducet_r/1,
+
         natural_sort = false,
         strength = 4,
         alternate = shifted
     };
 get_options(shift_trimmed) ->
     #uca_options { 
+        ducet_r_fn = fun ducet_r/1,
+
         natural_sort = false,
         strength = 4,
         alternate = shift_trimmed 
     };
 get_options([_|_] = Params) ->
-    get_options(Params, #uca_options{}).
+    get_options(Params, get_options()).
 
 %% If you want use this library without import *.hrl, you can create 
 %% a #uca_options {} record with this function.
@@ -130,6 +140,15 @@ get_options([{strength, Val}|T], Opt = #uca_options{ }) ->
     get_options(T, Opt#uca_options{ strength=Val });
 get_options([{alternate, Val}|T], Opt = #uca_options{ }) ->
     get_options(T, Opt#uca_options{ alternate=Val });
+get_options([{ducet_r_fn, Val}|T], Opt = #uca_options{ }) 
+    when is_function(Val) ->
+    get_options(T, Opt#uca_options{ ducet_r_fn=Val });
+get_options([{ducet_r, Val}|T], Opt = #uca_options{ }) 
+    when is_function(Val) ->
+    get_options(T, Opt#uca_options{ 
+        ducet_r_fn=fun(A) -> 
+            apply(Val, [lists:reverse(A)])
+            end });
 get_options([], Opt = #uca_options{ }) ->
     Opt.
     
@@ -331,10 +350,10 @@ sort(Lists, #uca_options{alternate=Alt} = Params) ->
 %% Fn is col_function.
 %% Params is #uca_options{}
 %% @private
-sort_map([H|T], Params, Fn, Res) ->
+sort_map([H|T], Params = #uca_options{ducet_r_fn=DucetRFn}, Fn, Res) ->
     sort_map(T, Params, Fn, [
         {sort_array_to_key(
-            sort_array(H, Params, fun ducet_r/1, Fn)), H}|Res]);
+            sort_array(H, Params, DucetRFn, Fn)), H}|Res]);
 sort_map([], _Params, _Fn, Res) ->
     lists:reverse(Res).
 
@@ -358,29 +377,44 @@ get_comp_fn(shift_trimmed) ->
     fun shift_trimmed_bin_to_list/1.
 
 sort_key(Str) ->
-    sort_key(Str, #uca_options{}).
+    sort_key(Str, #uca_options{ducet_r_fn=fun ducet_r/1}).
 
-sort_key(Str, #uca_options{alternate=Alt, sort_key_format=binary} = Params) ->
+% Return key as binary
+sort_key(Str, #uca_options{
+        sort_key_format=binary, 
+        alternate=Alt, 
+        ducet_r_fn=DucetRFn} = Params) ->
     Fn = get_comp_fn(Alt),
     convert_key_to_bin(
         sort_array_to_key(
-            sort_array(Str, Params, fun ducet_r/1, Fn)));
-sort_key(Str, #uca_options{alternate=Alt, sort_key_format=list} = Params) ->
+            sort_array(Str, Params, DucetRFn, Fn)));
+% Return key as a list
+sort_key(Str, #uca_options{
+        sort_key_format=list,
+        alternate=Alt, 
+        ducet_r_fn=DucetRFn} = Params) ->
     Fn = get_comp_fn(Alt),
     sort_array_to_key(
-        sort_array(Str, Params, fun ducet_r/1, Fn));
-sort_key(Str, #uca_options{alternate=Alt, sort_key_format=uncompressed} = Params) ->
+        sort_array(Str, Params, DucetRFn, Fn));
+% Return key as an uncompressed list
+sort_key(Str, #uca_options{
+        sort_key_format=uncompressed,
+        alternate=Alt, 
+        ducet_r_fn=DucetRFn} = Params) ->
     Fn = get_comp_fn(Alt),
     sort_array_to_uncompressed_key(
-        sort_array(Str, Params, fun ducet_r/1, Fn));
+        sort_array(Str, Params, DucetRFn, Fn));
+% For testing. Second parameter is a comp_fun.
 sort_key(Str, Fn) when is_function(Fn) ->
     Array = apply(Fn, [Str]),
     {_Level, Res} = sort_key1(Array, 1, [], []),
     lists:reverse(Res);
+% Pass only comp_fn id.
 sort_key(Str, FnName) when is_atom(FnName) ->
     Fn = get_sort_fn(FnName), 
     sort_key(Str, Fn).
 
+%% Convert a sort array to a sort key.
 sort_array_to_key(Array) ->
     {Level, Res} = sort_key1(Array, 1, [], []),
     compress_sort_key_r(Res, Level, []).
@@ -482,6 +516,8 @@ compress_sort_key_r([], _Level, Res) -> Res.
 %% weight equal to (MINTOP + m).
 %% If W > COMMON, replace the sequence by a synthetic high weight equal to
 %% (MAXBOTTOM - m).
+%%
+%% An input key must be reversed!
 compress_sort_key_l3([?COL_LEVEL3_COMMON|T], M, Res) ->
     compress_sort_key_l3(T, M + 1, Res);
 compress_sort_key_l3(T, M, [W|_] = Res) 
@@ -575,7 +611,7 @@ compress_seq(SeqCnt, Val, Res) when SeqCnt > 1 ->
 convert_key_to_bin(Key) when is_list(Key) ->
     convert_key_to_bin(Key, 1, []).
 
-%% Key is list.
+%% Key is a list.
 %% Level (default 1).
 convert_key_to_bin([0|T], Level, Res) ->
     convert_key_to_bin(T, Level + 1, [0|[0|Res]]);
@@ -601,10 +637,11 @@ convert_key_to_bin([], _Level, Res) ->
 
 % http://unicode.org/reports/tr10/#Variable_Weighting
 sort_array(Str) -> 
-    sort_array(Str, #uca_options {}, fun ducet_r/1, fun bin_to_bin/1).
+    sort_array(Str, #uca_options {ducet_r_fn = fun ducet_r/1}, 
+        fun ducet_r/1, fun bin_to_bin/1).
 
-sort_array(Str, Params = #uca_options { alternate=Alt }) -> 
-    sort_array(Str, Params, fun ducet_r/1, get_comp_fn(Alt)).
+sort_array(Str, Params = #uca_options{alternate=Alt, ducet_r_fn=DucetRFn}) -> 
+    sort_array(Str, Params, DucetRFn, get_comp_fn(Alt)).
 
 sort_array_non_ignorable(Str) -> 
     sort_array(Str, get_options(non_ignorable), 
@@ -628,11 +665,12 @@ bin_to_bin(Val) ->
     { fun bin_to_bin/1, Val }.
 
 compare(String1, String2) ->
-    Params = #uca_options{},
+    Params = #uca_options{ducet_r_fn=fun ducet_r/1},
     #uca_options{ alternate=Alt } = Params, 
     compare(String1, String2, Params, fun ducet_r/1, get_comp_fn(Alt)).
-compare(String1, String2, #uca_options{ alternate=Alt } = Params) ->
-    compare(String1, String2, Params, fun ducet_r/1, get_comp_fn(Alt)).
+compare(String1, String2, #uca_options{ 
+        alternate=Alt, ducet_r_fn=DucetRFn} = Params) ->
+    compare(String1, String2, Params, DucetRFn, get_comp_fn(Alt)).
     
 %% TableFun returns value from DUCET table
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting

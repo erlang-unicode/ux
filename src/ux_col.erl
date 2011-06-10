@@ -413,13 +413,13 @@ sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 -define(COL_LEVEL2_MIN, 1).
 -define(COL_LEVEL2_MAX, 450).
 -define(COL_LEVEL2_COMMON, 32).
--define(COL_LEVEL3_BOUND, 50).
+-define(COL_LEVEL2_BOUND, 50).
 
 -define(COL_LEVEL3_CAPACITY, 16#FF).
 -define(COL_LEVEL3_MIN, 2).
 -define(COL_LEVEL3_MAX, 16#1F).
 -define(COL_LEVEL3_COMMON, 2).
--define(COL_LEVEL3_BOUND, 2).
+-define(COL_LEVEL3_BOUND, 60).
 
 % Reassign the weights in the collation element table at level n to create
 % a gap of size GAP above COMMON. Typically for secondaries or tertiaries 
@@ -463,12 +463,12 @@ compress_sort_key_r([0|T], Level, Res) ->
     compress_sort_key_r(T, Level - 1, [0|Res]);
 % Replace H=2 on Level=3
 compress_sort_key_r([?COL_LEVEL3_COMMON|T], 3, Res) ->
-    compress_sort_key_l3(T, ?COL_LEVEL3_GAP_SIZE, Res);
+    compress_sort_key_l3(T, 1, Res);
 compress_sort_key_r([H|T], Level = 3, Res) ->
     compress_sort_key_r(T, Level, [?REASSIGN_WEIGHT3(H)|Res]);
 
 compress_sort_key_r([?COL_LEVEL2_COMMON|T], 2, Res) ->
-    compress_sort_key_l2(T, ?COL_LEVEL2_GAP_SIZE, Res);
+    compress_sort_key_l2(T, 1, Res);
 compress_sort_key_r([H|T], Level = 2, Res) ->
     compress_sort_key_r(T, Level, [?REASSIGN_WEIGHT2(H)|Res]);
 
@@ -483,41 +483,94 @@ compress_sort_key_r([], _Level, Res) -> Res.
 %% If W > COMMON, replace the sequence by a synthetic high weight equal to
 %% (MAXBOTTOM - m).
 compress_sort_key_l3([?COL_LEVEL3_COMMON|T], M, Res) ->
-    compress_sort_key_l3(T, M - 1, Res);
+    compress_sort_key_l3(T, M + 1, Res);
 compress_sort_key_l3(T, M, [W|_] = Res) 
     when (W > ?COL_LEVEL3_MAXBOTTOM) ->
-    compress_sort_key_r(T, 3, 
-        [(?COL_LEVEL3_MINTOP + M)|Res]);
+    SynHighWeight = ?COL_LEVEL3_MAXBOTTOM - M,
+    if
+% If a synthetic high weight would be less than BOUND, use a 
+% sequence of high weights of the form (BOUND)..(BOUND)(MAXBOTTOM - 
+% remainder).
+        SynHighWeight < ?COL_LEVEL3_BOUND ->
+            HighGapSize = ?COL_LEVEL3_MAXBOTTOM - ?COL_LEVEL3_BOUND - 1,
+            SeqCnt    = M div HighGapSize,
+            Remainder = M rem HighGapSize,
+            
+            compress_sort_key_r(T, 3, 
+                compress_seq(SeqCnt, ?COL_LEVEL3_BOUND,
+                    [(?COL_LEVEL3_MAXBOTTOM - Remainder)|Res]));
+        true -> compress_sort_key_r(T, 3, [SynHighWeight|Res])
+    end;
 compress_sort_key_l3(T, M, Res) ->
-    compress_sort_key_r(T, 3, 
-        [(?COL_LEVEL3_MAXBOTTOM - M)|Res]).
+    SynLowWeight = ?COL_LEVEL3_MINTOP + M,
+    if
+        SynLowWeight < ?COL_LEVEL3_BOUND ->
+            compress_sort_key_r(T, 3, [SynLowWeight|Res]);
+
+% If a synthetic low weight would not be less than BOUND, use a sequence 
+% of low weights of the form (BOUND-1)..(BOUND-1)(MINTOP + remainder) to 
+% express the length of the sequence.
+        true ->
+            LowGapSize = ?COL_LEVEL3_BOUND - ?COL_LEVEL3_MINTOP - 2,
+            SeqCnt    = M div LowGapSize,
+            Remainder = M rem LowGapSize,
+            
+            compress_sort_key_r(T, 3, 
+                compress_seq(SeqCnt, ?COL_LEVEL3_BOUND - 1,
+                    [(?COL_LEVEL3_MINTOP + Remainder)|Res])) 
+    end.
     
+
+%% Read all W from Key.
+%% If W < COMMON (or there is no W), replace the sequence by a synthetic low
+%% weight equal to (MINTOP + m).
+%% If W > COMMON, replace the sequence by a synthetic high weight equal to
+%% (MAXBOTTOM - m).
 compress_sort_key_l2([?COL_LEVEL2_COMMON|T], M, Res) ->
-    compress_sort_key_l2(T, M - 1, Res);
+    compress_sort_key_l2(T, M + 1, Res);
 compress_sort_key_l2(T, M, [W|_] = Res) 
     when (W > ?COL_LEVEL2_MAXBOTTOM) ->
-    compress_sort_key_r(T, 2, 
-        [(?COL_LEVEL2_MINTOP + M)|Res]);
+    SynHighWeight = ?COL_LEVEL2_MAXBOTTOM - M,
+    if
+% If a synthetic high weight would be less than BOUND, use a 
+% sequence of high weights of the form (BOUND)..(BOUND)(MAXBOTTOM - 
+% remainder).
+        SynHighWeight < ?COL_LEVEL2_BOUND ->
+            HighGapSize = ?COL_LEVEL2_MAXBOTTOM - ?COL_LEVEL2_BOUND - 1,
+            SeqCnt    = M div HighGapSize,
+            Remainder = M rem HighGapSize,
+            
+            compress_sort_key_r(T, 3, 
+                compress_seq(SeqCnt, ?COL_LEVEL2_BOUND,
+                    [(?COL_LEVEL2_MAXBOTTOM - Remainder)|Res]));
+        true -> compress_sort_key_r(T, 2, [SynHighWeight|Res])
+    end;
 compress_sort_key_l2(T, M, Res) ->
-    compress_sort_key_r(T, 2, 
-        [(?COL_LEVEL2_MAXBOTTOM - M)|Res]).
+    SynLowWeight = ?COL_LEVEL2_MINTOP + M,
+    if
+        SynLowWeight < ?COL_LEVEL2_BOUND ->
+            compress_sort_key_r(T, 2, [SynLowWeight|Res]);
 
-%% The last step is a bit too simple, because the synthetic weights must not
-%% collide with other values having long strings of COMMON weights. This 
-%% is done by using a sequence of synthetic weights, absorbing as much length 
-%% into each one as possible. A value BOUND is defined between MINTOP and 
-%% MAXBOTTOM. The exact value for BOUND can be chosen based on the expected 
-%% frequency of synthetic low weights versus high weights for the particular 
-%% collation element table.
-%% If a synthetic low weight would not be less than BOUND, use a sequence 
-%% of low weights of the form (BOUND-1)..(BOUND-1)(MINTOP + remainder) to 
-%% express the length of the sequence.
-%% Similarly, if a synthetic high weight would be less than BOUND, use a 
-%% sequence of high weights of the form (BOUND)..(BOUND)(MAXBOTTOM - 
-%% remainder).
-compress_sort_key_bound2(T, M, Res) ->
-    compress_sort_key_r(T, 2, 
-        [(?COL_LEVEL2_MAXBOTTOM - M)|Res]).
+% If a synthetic low weight would not be less than BOUND, use a sequence 
+% of low weights of the form (BOUND-1)..(BOUND-1)(MINTOP + remainder) to 
+% express the length of the sequence.
+        true ->
+            LowGapSize = ?COL_LEVEL2_BOUND - ?COL_LEVEL2_MINTOP - 2,
+            SeqCnt    = M div LowGapSize,
+            Remainder = M rem LowGapSize,
+            
+            compress_sort_key_r(T, 2, 
+                compress_seq(SeqCnt, ?COL_LEVEL2_BOUND - 1,
+                    [(?COL_LEVEL2_MINTOP + Remainder)|Res])) 
+    end.
+    
+%% Used in compress_sort_key_l3, *_l2.
+%% Add Val to the beginning Cnt times.
+%% @private
+compress_seq(1, Val, Res) ->
+    [Val|Res];
+compress_seq(SeqCnt, Val, Res) when SeqCnt > 1 ->
+    compress_seq(SeqCnt - 1, Val, [Val|Res]).
 
 convert_key_to_bin(Key) when is_list(Key) ->
     convert_key_to_bin(Key, 1, []).
@@ -1152,6 +1205,24 @@ weight_strength(_, Val) ->
 
 -include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
+
+compress_info() ->
+    F = fun io_lib:format/2,
+    io:format(user, "Information: ~n~s ~n", [lists:flatten([
+        F(" ?COL_LEVEL2_MIN = ~w ~n", [?COL_LEVEL2_MIN]),
+        F(" ?COL_LEVEL2_MAX = ~w ~n", [?COL_LEVEL2_MAX]),
+        F(" ?COL_LEVEL2_GAP_SIZE = ~w ~n", [?COL_LEVEL2_GAP_SIZE]),
+        F(" ?COL_LEVEL2_MINTOP = ~w ~n", [?COL_LEVEL2_MINTOP]),
+        F(" ?COL_LEVEL2_MAXBOTTOM = ~w ~n", [?COL_LEVEL2_MAXBOTTOM]),
+
+        F(" ?COL_LEVEL3_MIN = ~w ~n", [?COL_LEVEL3_MIN]),
+        F(" ?COL_LEVEL3_MAX = ~w ~n", [?COL_LEVEL3_MAX]),
+        F(" ?COL_LEVEL3_GAP_SIZE = ~w ~n", [?COL_LEVEL3_GAP_SIZE]),
+        F(" ?COL_LEVEL3_MINTOP = ~w ~n", [?COL_LEVEL3_MINTOP]),
+        F(" ?COL_LEVEL3_MAXBOTTOM = ~w ~n", [?COL_LEVEL3_MAXBOTTOM])
+    ])]).
+
+
 -define(_assertLower(X,Y), ({
     lists:flatten(
         io_lib:format("~20s < ~20s", lists:map(
@@ -1164,6 +1235,9 @@ weight_strength(_, Val) ->
     false -> ?_assert(X < Y)
     end})).
 
+compress_show_info_test_() ->
+    {setup, fun compress_info/0, fun ux_utils:noop/1, ?_test(?_assert(true))}.
+
 compress_sort_key_test_() ->
     [{"Check constants for L3", 
         ?_assertEqual(?COL_LEVEL3_MINTOP + ?COL_LEVEL3_GAP_SIZE,
@@ -1173,28 +1247,18 @@ compress_sort_key_test_() ->
             ?COL_LEVEL2_MAXBOTTOM)}].
 
 compress_sort_key3_test_() ->
-    io:format(user, " ?COL_LEVEL3_MIN = ~w ~n", [?COL_LEVEL3_MIN]),
-    io:format(user, " ?COL_LEVEL3_MAX = ~w ~n", [?COL_LEVEL3_MAX]),
-    io:format(user, " ?COL_LEVEL3_GAP_SIZE = ~w ~n", [?COL_LEVEL3_GAP_SIZE]),
-    io:format(user, " ?COL_LEVEL3_MINTOP = ~w ~n", [?COL_LEVEL3_MINTOP]),
-    io:format(user, " ?COL_LEVEL3_MAXBOTTOM = ~w ~n", [?COL_LEVEL3_MAXBOTTOM]),
-
+    L = lists:duplicate(2000, ?COL_LEVEL3_COMMON),
     FF = fun(A) -> compress_sort_key_r(lists:reverse(A), 3, []) end,
     [?_assertLower(FF([4]), FF([8])) 
     ,?_assertLower(FF([2]), FF([8])) 
     ,?_assertLower(FF([2,2]), FF([2,8])) 
     ,?_assertLower(FF([2,2]), FF([2,2,2])) 
     ,?_assertLower(FF([2,2]), FF([2,16#1F])) 
+    ,?_assertLower(FF(L ++ [2]), FF(L ++ [8])) 
     ].
 
 compress_sort_key2_test_() ->
-    io:format(user, " ?COL_LEVEL2_MIN = ~w ~n", [?COL_LEVEL2_MIN]),
-    io:format(user, " ?COL_LEVEL2_MAX = ~w ~n", [?COL_LEVEL2_MAX]),
-    io:format(user, " ?COL_LEVEL2_GAP_SIZE = ~w ~n", [?COL_LEVEL2_GAP_SIZE]),
-    io:format(user, " ?COL_LEVEL2_MINTOP = ~w ~n", [?COL_LEVEL2_MINTOP]),
-    io:format(user, " ?COL_LEVEL2_MAXBOTTOM = ~w ~n", [?COL_LEVEL2_MAXBOTTOM]),
-
-    L = lists:duplicate(1000, ?COL_LEVEL2_COMMON),
+    L = lists:duplicate(2000, ?COL_LEVEL2_COMMON),
     FF = fun(A) -> compress_sort_key_r(lists:reverse(A), 2, []) end,
     [?_assertLower(FF([32]), FF([34])) 
     ,?_assertLower(FF([18]), FF([32])) 
@@ -1203,13 +1267,16 @@ compress_sort_key2_test_() ->
     ,?_assertLower(FF([32,32]), FF([32,32,32])) 
     ,?_assertLower(FF([32,32, 32]), FF([32,32,34])) 
     ,?_assertLower(FF([32]), FF([34])) 
-    ,?_assertLower(FF(L ++ [2]), FF(L ++ [8])) 
+    ,?_assertLower(FF(L ++ [18]), FF(L ++ [32])) 
+    ,?_assertLower(FF(L ++ [32]), FF(L ++ [34])) 
+    ,?_assertLower(FF(L), FF(L ++ [32])) 
+    ,?_assertLower(FF(L), FF(L ++ [34])) 
     ].
 
 sort_key_test_() ->
     M = 'ux_col',
     F = 'sort_key',
-    FF = fun ux_utils:nope/1,
+    FF = fun ux_utils:noop/1,
     [?_assertEqual(M:F([[1,2,3], [4,5,6], [0,7], [8,9]], FF), 
         [1,4,8,0,2,5,7,9,0,3,6])
     ].

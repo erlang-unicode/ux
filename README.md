@@ -1,5 +1,7 @@
 ; -- Mode: Markdown; -- ; vim: filetype=none tw=76 expandtab shiftwidth=4 tabstop=4
 
+[http://freeakk.github.com/ux/doc/index.html Read edoc documentation]
+
 ux_string.erl: String Functions for lists of Unicode characters.
 ==============================
 

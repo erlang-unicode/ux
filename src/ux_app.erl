@@ -1,0 +1,23 @@
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
+%% @author Mochi Media <dev@mochimedia.com>
+%% @copyright ux Mochi Media <dev@mochimedia.com>
+
+%% @doc Callbacks for the web_col application.
+
+-module(ux_app).
+-author("Mochi Media <dev@mochimedia.com>").
+
+-behaviour(application).
+-export([start/2,stop/1]).
+
+
+%% @spec start(_Type, _StartArgs) -> ServerRet
+%% @doc application start callback for web_col.
+start(_Type, _StartArgs) ->
+    ux_deps:ensure(),
+    ux_sup:start_link().
+
+%% @spec stop(_State) -> ServerRet
+%% @doc application stop callback for web_col.
+stop(_State) ->
+    ok.

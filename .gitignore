@@ -1,0 +1,6 @@
+*.swp
+*.beam
+*.trace
+_test
+*.dump
+deps/*

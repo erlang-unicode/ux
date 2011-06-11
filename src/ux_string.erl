@@ -1,20 +1,31 @@
 % vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
-%%% User Extentions for Erlang 
+%%% =====================================================================
+%%% This library is free software; you can redistribute it and/or modify
+%%% it under the terms of the GNU Lesser General Public License as
+%%% published by the Free Software Foundation; either version 2 of the
+%%% License, or (at your option) any later version.
 %%%
-%%% @package  ux_string
-%%% @author   Uvarov Michael <freeakk@gmail.com>
-%%% @license  http://www.fsf.org/copyleft/lgpl.html LGPL
+%%% This library is distributed in the hope that it will be useful, but
+%%% WITHOUT ANY WARRANTY; without even the implied warranty of
+%%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+%%% Lesser General Public License for more details.
 %%%
-%%% @copyright 2010 Uvarov Michael.
-%%% %CopyrightBegin%
-%%%  Copyright 2010 Uvarov Michael  
+%%% You should have received a copy of the GNU Lesser General Public
+%%% License along with this library; if not, write to the Free Software
+%%% Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+%%% USA
 %%%
-%%%  See the enclosed file COPYING for license information (LGPL). If you
-%%%  did not receive this file, see http://www.fsf.org/copyleft/lgpl.html
-%%% %CopyrightEnd%
+%%% $Id$
+%%%
+%%% @copyright 2010-2011 Michael Uvarov
+%%% @author Michael Uvarov <freeakk@gmail.com>
+%%% @see ux
+%%% @end
+%%% =====================================================================
+
+%%% @doc String functions.
 
 
- 
 -module(ux_string).
 -author('Uvarov Michael <freeakk@gmail.com>').
 
@@ -83,7 +94,7 @@ decomp(V) -> ux_unidata:decomp(V).
 %%      http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category
 %% @end
 %% ux_char:type(_) -> false.
-types(Str) -> lists:map({ux_char, type}, Str).
+types(Str) -> lists:map(fun ux_char:type/1, Str).
 
 
 
@@ -97,7 +108,7 @@ delete_types(Types, Str) ->
             not lists:member(ux_char:type(El), Types) 
         end, Str).
 
-%% @doc Stops delete_type/2 after Limit deleted chars. If Limit < 0, then
+%% @doc Stops delete_type/2 after Limit deleted chars. If Limit &lt; 0, then
 %%      stops after -Limit skipped chars.
 %% @end
 -spec delete_types([atom()], string(), integer()) -> string().
@@ -119,7 +130,7 @@ filter_types(Types, Str) ->
             lists:member(ux_char:type(El), Types) 
         end, Str).
 
-%%      stops after -Limit skipped chars.
+%% @doc Stops after -Limit skipped chars.
 %% @end
 -spec filter_types([atom()], string(), integer()) -> string().
 
@@ -132,8 +143,8 @@ filter_types(Types, Str, Limit) when Limit < 0 ->
         get_types(Types, Str, Limit, [], true, 
             fun lists:member/2,  0, 1)).
 
-%% @doc If Len>0, then gets first Len chars of type, which is in Types
-%%      If Len<0, then gets first -Len chars of type, which is NOT in Types
+%% @doc If Len&lt;0, then gets first Len chars of type, which is in Types
+%%      If Len&gt;0, then gets first -Len chars of type, which is NOT in Types
 %% @end
 -spec first_types([atom()], string(), integer()) -> string().
 first_types(Types, Str, Len) -> 
@@ -142,8 +153,8 @@ first_types(Types, Str, Len) ->
             ?ASSERT_IN_ARRAY_LAMBDA(Len>0), 
             ?ASSERT(Len>0, -1, 1), 0)).
 
-%% @doc If Len>0, then gets last Len chars of type, which is in Types
-%%      If Len<0, then gets last -Len chars of type, which is NOT in Types
+%% @doc If Len&lt;0, then gets last Len chars of type, which is in Types
+%%      If Len&gt;0, then gets last -Len chars of type, which is NOT in Types
 %% @end
 -spec last_types([atom()], string(), integer()) -> string().
 last_types(Types, Str, Len) -> 
@@ -203,7 +214,7 @@ split_types(Types, Str) -> delete_empty(explode_types(Types, Str)).
 
 %% @doc Deletes all empty lists from List.
 %%      Example:
-%%      delete_empty([ [], "test", [1] ]) -> ["test", [1]].
+%%      `delete_empty([ [], "test", [1] ]) -> ["test", [1]].'
 %% @end
 -spec delete_empty([T]) -> [T].
 
@@ -251,7 +262,7 @@ explode([], _, _) -> false;
 explode(_, [], _) -> [].
 
 %% @private
-explode_reverse(Res) -> lists:map({lists, reverse}, lists:reverse(Res)). 
+explode_reverse(Res) -> lists:map(fun lists:reverse/1, lists:reverse(Res)). 
 
 %% @doc Simple and fast realization.
 %%      Delimeter is one char.
@@ -314,13 +325,13 @@ explode_check(_, _) ->
 -spec to_lower(string()) -> string().
 
 to_lower(Str) ->
-    lists:map({ux_char, to_lower}, Str).
+    lists:map(fun ux_char:to_lower/1, Str).
 
 %% @doc Converts characters of a string to a uppercase format.
 -spec to_upper(string()) -> string().
 
 to_upper(Str) ->
-    lists:map({ux_char, to_upper}, Str).
+    lists:map(fun ux_char:to_upper/1, Str).
 
 %% @doc Encodes html special chars.
 -spec html_special_chars(string()) -> string().
@@ -346,14 +357,14 @@ hsc([H  | T], Buf) -> hsc(T, [H|Buf]).
 %% @doc Deletes tags from the string.
 %%
 %%      Example: 
-%%      > ux_string:strip_tags("<b>some string</b>").
+%%   ```> ux_string:strip_tags("<b>some string</b>").
 %%      "some string"
 %%      > ux_string:strip_tags("<h1>Head</h1><p>and paragraf</p>", ["h1"]).        
 %%      "<h1>Head</h1>and paragraf"
 %%      ux_string:strip_tags("<h1>Head</h1><p><!-- and paragraf --></p>", ["!--"]).
 %%      "Head<!-- and paragraf -->"
 %%      ux_string:st("a<br />b", [], " ").
-%%      "a b"
+%%      "a b"'''
 %% @end
 -spec strip_tags(string()) -> string().
 -spec strip_tags(string, [string() | atom() | char()]) -> string().
@@ -378,15 +389,15 @@ st(Str, [$<|Allowed], Alt) -> st(Str, tags_to_list(Allowed), Alt);
 st(Str, [], Alt) -> st_cycle(Str, [], 0, lists:reverse(Alt)); 
 st(Str, Allowed, Alt) -> 
     st_cycle_with_allowed(Str, [],
-        lists:map({lists, reverse},
-            lists:map({string, to_lower},
-                lists:map({?MODULE, to_string}, Allowed))), 
+        lists:map(fun lists:reverse/1,
+            lists:map(fun string:to_lower/1,
+                lists:map(fun to_string/1, Allowed))), 
         lists:reverse(Alt)).
 
 %% @doc Drops all tags from the string.
-%%      Cnt is a count of not closed <
+%%   ```Cnt is a count of not closed <
 %%      If we found <, then Cnt++
-%%      If we found >, then Cnt--
+%%      If we found >, then Cnt--'''
 %% @end
 %% @private
 st_cycle([$<| Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt + 1, Alt);
@@ -401,7 +412,7 @@ st_cycle([        ], Buf, _,   _  ) -> lists:reverse(Buf).
 %% @private
 %% If Flag = false, then don't append chars (as name of a tag <name>).
 %% If Flag = true (default), then append chars (as the body of the tag).
-%% Cnt is a level of subtag (<a> Cnt=1 <b> Cnt=2 </b> Cnt=1</a>)
+%% Cnt is a level of subtag (`<a> Cnt=1 <b> Cnt=2 </b> Cnt=1</a>')
 %% Returns: {tag_name, tag_body, string_tail}
 st_get_tag([$>|T], Buf, Tag, _Flag, 1) ->
     {Tag, [$>|Buf], T};
@@ -442,8 +453,8 @@ st_cycle_with_allowed([], Res, _, _) -> lists:reverse(Res).
 
 %% @doc Convert string of tags to list
 %%      Example:
-%%      > tags_to_list("<a><b>").
-%%      ["a", "b"]
+%%   ```> tags_to_list("<a><b>").
+%%      ["a", "b"]'''
 %% @end
 %% @private
 tags_to_list(Str) -> tags_to_list(Str, [], []).
@@ -469,7 +480,7 @@ freq(Str) -> freq_1(Str, dict:new()).
 freq_1([Char|Str], Dict) -> freq_1(Str, dict:update_counter(Char, 1, Dict));
 freq_1([], Dict)         -> Dict.
 
-
+%------------------------------------------------------------------------------
 %    %  %    %  %%%%%%
 %    %  %%   %  %
 %    %  % %  %  %%%%%
@@ -537,10 +548,11 @@ char_to_list(Char, Buf, Res) ->
         char_to_list(Div, [Rem|Buf], Res)
     end.
 
-%% internal_decompose(Str)
+%% @doc internal_decompose(Str)
 %% Canonical  If true bit is on in this byte, then selects the recursive 
 %%            canonical decomposition, otherwise selects
 %%            the recursive compatibility and canonical decomposition.
+%% @end
 %% @private
 get_recursive_decomposition(true, Str) -> 
     get_recursive_decomposition(fun is_compat/1, Str, []);
@@ -556,7 +568,7 @@ get_recursive_decomposition(Canonical, [Char|Tail], Result)
     get_recursive_decomposition(Canonical, Tail,
     [Char|Result]);
 
-% Decompose one char of hangul
+%% @doc Decompose one char of hangul.
 get_recursive_decomposition(Canonical, [Char|Tail], Result)
     when (Char >= ?HANGUL_SBASE) and (Char =< ?HANGUL_SLAST) ->
     SIndex = Char - ?HANGUL_SBASE,
@@ -586,7 +598,7 @@ get_recursive_decomposition(Canonical, [Char|Tail], Result) ->
     end;
 get_recursive_decomposition(_, [], Result) -> Result.
 
-%% Normalize NFD or NFKD
+%% @doc Normalize NFD or NFKD.
 normalize(Str)              -> normalize1(Str, [], []).
 %% @private
 normalize1([], [ ], Result) -> Result;
@@ -602,7 +614,7 @@ normalize1([Char|Tail], Buf, Result) ->
         true -> normalize1(Tail, [{Class, Char} | Buf], Result)
     end.
 
-%% Append chars from Buf to Result in a right order.
+%% @doc Append chars from Buf to Result in a right order.
 %% @private
 normalize2([], Result)  -> Result;
 normalize2(Buf, Result) ->
@@ -611,7 +623,7 @@ normalize2(Buf, Result) ->
     {_, Char} = Value -> normalize2(Buf -- [Value], [Char|Result])
     end.
 
-%% Return char from Buf with max ccc
+%% @doc Return char from Buf with max ccc.
 %% @private
 normalize3([{CharClass, _} = Value | Tail], _, MaxClass) 
     when CharClass > MaxClass -> 
@@ -626,7 +638,7 @@ normalize3([], Value, _) -> Value.
             _ -> 256
         end)).
 
-%% Internal Composition Function
+%% @doc Internal Composition Function.
 %% @private
 get_composition([Char|Tail]) -> 
     lists:reverse(
@@ -635,9 +647,10 @@ get_composition([Char|Tail]) ->
     ).
 
 
-%% Compose hangul characters
+%% @doc Compose hangul characters.
 %% 1. check to see if two current characters are L and V
 %% 2. check to see if two current characters are LV and T
+%% @end
 %% @private
 get_composition([VChar |Tail], LChar, 0, [], Result) 
     when ?CHAR_IS_HANGUL_L(LChar)
@@ -690,7 +703,7 @@ get_composition([], Char, _LastClass, [], Result) ->
 get_composition([], Char, _LastClass, Mods, Result) ->
     comp_append([Char|Result], Mods).
 
-%% Mods ++ Result
+%% @doc Mods ++ Result.
 %% @private
 comp_append(Result, []) -> Result;
 comp_append(Result, [_|_] = Mods) -> comp_append1(Result, lists:reverse(Mods)).
@@ -699,7 +712,7 @@ comp_append1(Result, [H|T]) -> comp_append1([H|Result], T);
 comp_append1(Result, [   ]) -> Result.
 
 
-%% Convert everything from utf-8 into an NCR (Numeric Character Reference)
+%% @doc Convert everything from utf-8 into an NCR (Numeric Character Reference).
 to_ncr(Str) -> to_ncr(lists:reverse(Str), []).
 
 % FIXME: tail recursion
@@ -707,11 +720,11 @@ to_ncr(Str) -> to_ncr(lists:reverse(Str), []).
 to_ncr([Char|Tail], Res) -> to_ncr(Tail, ux_char:to_ncr(Char) ++ Res);
 to_ncr([         ], Res) -> Res.
 
-%% Split unicode string on graphemes http://en.wikipedia.org/wiki/Grapheme
+%% @doc Split unicode string on graphemes http://en.wikipedia.org/wiki/Grapheme
 to_graphemes(Str) ->
     explode_reverse(to_graphemes_raw(Str, [], [])).
 
-%% Returns not reversed result.
+%% @doc Returns not reversed result.
 %% @private
 to_graphemes_raw([H|T], Buf, Res) ->
     case {ccc(H), Buf} of
@@ -722,7 +735,7 @@ to_graphemes_raw([H|T], Buf, Res) ->
 to_graphemes_raw([   ], [ ], Res) -> Res;
 to_graphemes_raw([   ], Buf, Res) -> [Buf|Res].
 
-%% Compute count of graphemes in the string
+%% @doc Compute count of graphemes in the string.
 length(Str) -> len_graphemes(Str, 0).
 len(Str) -> len_graphemes(Str, 0).
 
@@ -733,19 +746,19 @@ len_graphemes([H|T], Len) ->
     end;
 len_graphemes([   ], Len) -> Len.
 
-%% Return Len chars from the beginning of the string.
+%% @doc Return Len chars from the beginning of the string.
 first(Str, Len) ->
     lists:flatten(
         lists:sublist(to_graphemes(Str), Len)).
 
-%% Return Len chars from the beginning of the string.
+%% @doc Return Len chars from the beginning of the string.
 last(Str, Len) ->
     lists:flatten(
         explode_reverse(
             lists:sublist(
                 to_graphemes_raw(Str, [], []), Len))).
 
-%% Reverses string graphemes 
+%% @doc Reverses string graphemes.
 reverse(Str) ->
     reverse_flatten(
         lists:reverse(to_graphemes_raw(Str, [], [])), 
@@ -761,7 +774,7 @@ hex_to_int(Code) ->
     {ok, [Int], []} = io_lib:fread("~16u", Code),
     Int.
 
-
+%------------------------------------------------------------------------------
   %%%   %     % %%%%%%% %%%%%%%
    %    %%    % %       %     %
    %    % %   % %       %     %
@@ -773,6 +786,7 @@ hex_to_int(Code) ->
 %% Collect information about string.
 -spec info(Str::string()) -> #unistr_info {}.
 
+%% @doc Return information about a string.
 info(Rec = #unistr_info {}) ->
     info1([
         fun info_comment/1,
@@ -801,7 +815,7 @@ info1([], Rec) ->
 %% @private
 info_comment(Obj = #unistr_info{str=Str}) ->
     Obj#unistr_info{
-        comment=lists:map({ux_char, comment}, Str)
+        comment=lists:map(fun ux_char:comment/1, Str)
     }.
 
 %% @private
@@ -856,7 +870,7 @@ info_char_block(Obj = #unistr_info{str=Str}) ->
 
 % String Info End.
 
-
+%------------------------------------------------------------------------------
   %%%%%  %%%%%%   %%%%    %%%%%   %%%%
     %    %       %          %    %
     %    %%%%%    %%%%      %     %%%%
@@ -1036,7 +1050,7 @@ last_test_() ->
     [?_assertEqual(M:F("Octocat!", 4), "cat!")
     ].
 
-%% Normalization Conformance Test
+%% @doc Normalization Conformance Test
 %% http://unicode.org/reports/tr41/tr41-7.html#Tests15
 %%
 %%    NFC
@@ -1052,7 +1066,8 @@ last_test_() ->
 %%
 %%    NFKD
 %%      c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4) == NFKD(c5)
-
+%% @end
+%% @private
 nfc_test(_InFd, 0, StrNum) -> 
     io:format(user, "Only ~w strings were tested. Exit.~n", [StrNum]),
     ok;

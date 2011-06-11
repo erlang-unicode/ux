@@ -1,0 +1,290 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Module ux_string</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module ux_string</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>String functions.
+<p>Copyright © 2010-2011 Michael Uvarov</p>
+
+<p><b>Authors:</b> Michael Uvarov (<a href="mailto:freeakk@gmail.com"><tt>freeakk@gmail.com</tt></a>).</p>
+<p><b>See also:</b> <a href="ux.html">ux</a>.</p>
+
+<h2><a name="description">Description</a></h2>String functions.
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#delete_types-2">delete_types/2</a></td><td>Returns a new string which is made from the chars of Str
+       which are not a type from Types list.</td></tr>
+<tr><td valign="top"><a href="#delete_types-3">delete_types/3</a></td><td>Stops delete_type/2 after Limit deleted chars.</td></tr>
+<tr><td valign="top"><a href="#explode-2">explode/2</a></td><td>Splits the string by delimeters.</td></tr>
+<tr><td valign="top"><a href="#explode-3">explode/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#explode_types-2">explode_types/2</a></td><td>Returns a new list of strings which are parts of Str splited
+       by separator chars of a type from Types list.</td></tr>
+<tr><td valign="top"><a href="#filter_types-2">filter_types/2</a></td><td>Returns a new string which is made from the chars of Str
+       which are a type from Types list.</td></tr>
+<tr><td valign="top"><a href="#filter_types-3">filter_types/3</a></td><td>Stops after -Limit skipped chars.</td></tr>
+<tr><td valign="top"><a href="#first-2">first/2</a></td><td>Return Len chars from the beginning of the string.</td></tr>
+<tr><td valign="top"><a href="#first_types-3">first_types/3</a></td><td>If Len&lt;0, then gets first Len chars of type, which is in Types
+       If Len&gt;0, then gets first -Len chars of type, which is NOT in Types.</td></tr>
+<tr><td valign="top"><a href="#freq-1">freq/1</a></td><td>Counts a letter frequency.</td></tr>
+<tr><td valign="top"><a href="#hex_to_int-1">hex_to_int/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#html_special_chars-1">html_special_chars/1</a></td><td>Encodes html special chars.</td></tr>
+<tr><td valign="top"><a href="#info-1">info/1</a></td><td>Return information about a string.</td></tr>
+<tr><td valign="top"><a href="#is_nfc-1">is_nfc/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#is_nfd-1">is_nfd/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#is_nfkc-1">is_nfkc/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#is_nfkd-1">is_nfkd/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#last-2">last/2</a></td><td>Return Len chars from the beginning of the string.</td></tr>
+<tr><td valign="top"><a href="#last_types-3">last_types/3</a></td><td>If Len&lt;0, then gets last Len chars of type, which is in Types
+       If Len&gt;0, then gets last -Len chars of type, which is NOT in Types.</td></tr>
+<tr><td valign="top"><a href="#len-1">len/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#length-1">length/1</a></td><td>Compute count of graphemes in the string.</td></tr>
+<tr><td valign="top"><a href="#list_to_latin1-1">list_to_latin1/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#reverse-1">reverse/1</a></td><td>Reverses string graphemes.</td></tr>
+<tr><td valign="top"><a href="#split-2">split/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#split-3">split/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#split_types-2">split_types/2</a></td><td>Returns a new list of strings which are parts of Str splited
+       by separator chars of a type from Types list.</td></tr>
+<tr><td valign="top"><a href="#strip_tags-1">strip_tags/1</a></td><td>Deletes tags from the string.</td></tr>
+<tr><td valign="top"><a href="#strip_tags-2">strip_tags/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#strip_tags-3">strip_tags/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#to_graphemes-1">to_graphemes/1</a></td><td>Split unicode string on graphemes http://en.wikipedia.org/wiki/Grapheme.</td></tr>
+<tr><td valign="top"><a href="#to_lower-1">to_lower/1</a></td><td>Converts characters of a string to a lowercase format.</td></tr>
+<tr><td valign="top"><a href="#to_ncr-1">to_ncr/1</a></td><td>Convert everything from utf-8 into an NCR (Numeric Character Reference).</td></tr>
+<tr><td valign="top"><a href="#to_nfc-1">to_nfc/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#to_nfd-1">to_nfd/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#to_nfkc-1">to_nfkc/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#to_nfkd-1">to_nfkd/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#to_string-1">to_string/1</a></td><td>Converts something to string (list).</td></tr>
+<tr><td valign="top"><a href="#to_upper-1">to_upper/1</a></td><td>Converts characters of a string to a uppercase format.</td></tr>
+<tr><td valign="top"><a href="#types-1">types/1</a></td><td>Returns various "character types" which can be used
+       as a default categorization in implementations.</td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="delete_types-2">delete_types/2</a></h3>
+<div class="spec">
+<p><tt>delete_types(Types, Str) -&gt; any()</tt></p>
+</div><p>Returns a new string which is made from the chars of Str
+       which are not a type from Types list.</p>
+
+<h3 class="function"><a name="delete_types-3">delete_types/3</a></h3>
+<div class="spec">
+<p><tt>delete_types(Types, Str, Limit) -&gt; any()</tt></p>
+</div><p>Stops delete_type/2 after Limit deleted chars. If Limit &lt; 0, then
+       stops after -Limit skipped chars.</p>
+
+<h3 class="function"><a name="explode-2">explode/2</a></h3>
+<div class="spec">
+<p><tt>explode(Delimeter, Str) -&gt; any()</tt></p>
+</div><p>Splits the string by delimeters.</p>
+
+<h3 class="function"><a name="explode-3">explode/3</a></h3>
+<div class="spec">
+<p><tt>explode(Delimeter, Str, Limit) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="explode_types-2">explode_types/2</a></h3>
+<div class="spec">
+<p><tt>explode_types(Types, Str) -&gt; any()</tt></p>
+</div><p>Returns a new list of strings which are parts of Str splited
+       by separator chars of a type from Types list.</p>
+
+<h3 class="function"><a name="filter_types-2">filter_types/2</a></h3>
+<div class="spec">
+<p><tt>filter_types(Types, Str) -&gt; any()</tt></p>
+</div><p>Returns a new string which is made from the chars of Str
+       which are a type from Types list.</p>
+
+<h3 class="function"><a name="filter_types-3">filter_types/3</a></h3>
+<div class="spec">
+<p><tt>filter_types(Types, Str, Limit) -&gt; any()</tt></p>
+</div><p>Stops after -Limit skipped chars.</p>
+
+<h3 class="function"><a name="first-2">first/2</a></h3>
+<div class="spec">
+<p><tt>first(Str, Len) -&gt; any()</tt></p>
+</div><p>Return Len chars from the beginning of the string.</p>
+
+<h3 class="function"><a name="first_types-3">first_types/3</a></h3>
+<div class="spec">
+<p><tt>first_types(Types, Str, Len) -&gt; any()</tt></p>
+</div><p>If Len&lt;0, then gets first Len chars of type, which is in Types
+       If Len&gt;0, then gets first -Len chars of type, which is NOT in Types</p>
+
+<h3 class="function"><a name="freq-1">freq/1</a></h3>
+<div class="spec">
+<p><tt>freq(Str) -&gt; any()</tt></p>
+</div><p>Counts a letter frequency</p>
+
+<h3 class="function"><a name="hex_to_int-1">hex_to_int/1</a></h3>
+<div class="spec">
+<p><tt>hex_to_int(Code) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="html_special_chars-1">html_special_chars/1</a></h3>
+<div class="spec">
+<p><tt>html_special_chars(Str) -&gt; any()</tt></p>
+</div><p>Encodes html special chars.</p>
+
+<h3 class="function"><a name="info-1">info/1</a></h3>
+<div class="spec">
+<p><tt>info(Rec) -&gt; any()</tt></p>
+</div><p>Return information about a string.</p>
+
+<h3 class="function"><a name="is_nfc-1">is_nfc/1</a></h3>
+<div class="spec">
+<p><tt>is_nfc(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="is_nfd-1">is_nfd/1</a></h3>
+<div class="spec">
+<p><tt>is_nfd(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="is_nfkc-1">is_nfkc/1</a></h3>
+<div class="spec">
+<p><tt>is_nfkc(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="is_nfkd-1">is_nfkd/1</a></h3>
+<div class="spec">
+<p><tt>is_nfkd(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="last-2">last/2</a></h3>
+<div class="spec">
+<p><tt>last(Str, Len) -&gt; any()</tt></p>
+</div><p>Return Len chars from the beginning of the string.</p>
+
+<h3 class="function"><a name="last_types-3">last_types/3</a></h3>
+<div class="spec">
+<p><tt>last_types(Types, Str, Len) -&gt; any()</tt></p>
+</div><p>If Len&lt;0, then gets last Len chars of type, which is in Types
+       If Len&gt;0, then gets last -Len chars of type, which is NOT in Types</p>
+
+<h3 class="function"><a name="len-1">len/1</a></h3>
+<div class="spec">
+<p><tt>len(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="length-1">length/1</a></h3>
+<div class="spec">
+<p><tt>length(Str) -&gt; any()</tt></p>
+</div><p>Compute count of graphemes in the string.</p>
+
+<h3 class="function"><a name="list_to_latin1-1">list_to_latin1/1</a></h3>
+<div class="spec">
+<p><tt>list_to_latin1(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="reverse-1">reverse/1</a></h3>
+<div class="spec">
+<p><tt>reverse(Str) -&gt; any()</tt></p>
+</div><p>Reverses string graphemes.</p>
+
+<h3 class="function"><a name="split-2">split/2</a></h3>
+<div class="spec">
+<p><tt>split(P1, P2) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="split-3">split/3</a></h3>
+<div class="spec">
+<p><tt>split(P1, P2, P3) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="split_types-2">split_types/2</a></h3>
+<div class="spec">
+<p><tt>split_types(Types, Str) -&gt; any()</tt></p>
+</div><p>Returns a new list of strings which are parts of Str splited
+       by separator chars of a type from Types list. Parts can not be
+       empty.</p>
+
+<h3 class="function"><a name="strip_tags-1">strip_tags/1</a></h3>
+<div class="spec">
+<p><tt>strip_tags(Str) -&gt; any()</tt></p>
+</div><p><p>Deletes tags from the string.</p>
+ 
+       Example:
+    <pre>       &gt; ux_string:strip_tags("&lt;b&gt;some string&lt;/b&gt;").
+       "some string"
+       &gt; ux_string:strip_tags("&lt;h1&gt;Head&lt;/h1&gt;&lt;p&gt;and paragraf&lt;/p&gt;", ["h1"]).
+       "&lt;h1&gt;Head&lt;/h1&gt;and paragraf"
+       ux_string:strip_tags("&lt;h1&gt;Head&lt;/h1&gt;&lt;p&gt;&lt;!-- and paragraf --&gt;&lt;/p&gt;", ["!--"]).
+       "Head&lt;!-- and paragraf --&gt;"
+       ux_string:st("a&lt;br /&gt;b", [], " ").
+       "a b"</pre></p>
+
+<h3 class="function"><a name="strip_tags-2">strip_tags/2</a></h3>
+<div class="spec">
+<p><tt>strip_tags(Str, Allowed) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="strip_tags-3">strip_tags/3</a></h3>
+<div class="spec">
+<p><tt>strip_tags(Str, Allowed, Alt) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="to_graphemes-1">to_graphemes/1</a></h3>
+<div class="spec">
+<p><tt>to_graphemes(Str) -&gt; any()</tt></p>
+</div><p>Split unicode string on graphemes http://en.wikipedia.org/wiki/Grapheme</p>
+
+<h3 class="function"><a name="to_lower-1">to_lower/1</a></h3>
+<div class="spec">
+<p><tt>to_lower(Str) -&gt; any()</tt></p>
+</div><p>Converts characters of a string to a lowercase format.</p>
+
+<h3 class="function"><a name="to_ncr-1">to_ncr/1</a></h3>
+<div class="spec">
+<p><tt>to_ncr(Str) -&gt; any()</tt></p>
+</div><p>Convert everything from utf-8 into an NCR (Numeric Character Reference).</p>
+
+<h3 class="function"><a name="to_nfc-1">to_nfc/1</a></h3>
+<div class="spec">
+<p><tt>to_nfc(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="to_nfd-1">to_nfd/1</a></h3>
+<div class="spec">
+<p><tt>to_nfd(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="to_nfkc-1">to_nfkc/1</a></h3>
+<div class="spec">
+<p><tt>to_nfkc(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="to_nfkd-1">to_nfkd/1</a></h3>
+<div class="spec">
+<p><tt>to_nfkd(Str) -&gt; any()</tt></p>
+</div>
+
+<h3 class="function"><a name="to_string-1">to_string/1</a></h3>
+<div class="spec">
+<p><tt>to_string(Str) -&gt; any()</tt></p>
+</div><p>Converts something to string (list).</p>
+
+<h3 class="function"><a name="to_upper-1">to_upper/1</a></h3>
+<div class="spec">
+<p><tt>to_upper(Str) -&gt; any()</tt></p>
+</div><p>Converts characters of a string to a uppercase format.</p>
+
+<h3 class="function"><a name="types-1">types/1</a></h3>
+<div class="spec">
+<p><tt>types(Str) -&gt; any()</tt></p>
+</div><p>Returns various "character types" which can be used
+       as a default categorization in implementations.
+       Types:
+       http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category</p>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc, Jun 11 2011, 16:52:20.</i></p>
+</body>
+</html>

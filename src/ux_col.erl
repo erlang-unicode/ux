@@ -1,58 +1,67 @@
 % vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
-%%% User Extentions for Erlang 
+%%% =====================================================================
+%%% This library is free software; you can redistribute it and/or modify
+%%% it under the terms of the GNU Lesser General Public License as
+%%% published by the Free Software Foundation; either version 2 of the
+%%% License, or (at your option) any later version.
 %%%
-%%% @package  ux_col
-%%% @author   Uvarov Michael <freeakk@gmail.com>
-%%% @license  http://www.fsf.org/copyleft/lgpl.html LGPL
+%%% This library is distributed in the hope that it will be useful, but
+%%% WITHOUT ANY WARRANTY; without even the implied warranty of
+%%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+%%% Lesser General Public License for more details.
 %%%
-%%% @copyright 2010 Uvarov Michael.
-%%% %CopyrightBegin%
-%%%  Copyright 2010 Uvarov Michael  
+%%% You should have received a copy of the GNU Lesser General Public
+%%% License along with this library; if not, write to the Free Software
+%%% Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+%%% USA
 %%%
-%%%  See the enclosed file COPYING for license information (LGPL). If you
-%%%  did not receive this file, see http://www.fsf.org/copyleft/lgpl.html
-%%% %CopyrightEnd%
+%%% $Id$
+%%%
+%%% @copyright 2010-2011 Michael Uvarov
+%%% @author Michael Uvarov <freeakk@gmail.com>
+%%% @see ux
+%%% @end
+%%% =====================================================================
 
-%%% Additional information (and links)
-%%% =================================
+%%% @doc UCA.
 %%%
-%%% Collation
-%%% ---------
-%%% 1. Hangul Collation Requirements 
-%%% http://www.open-std.org/jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm
+%%% == Additional information (and links) ==
+%%%
+%%% 1. [http://www.open-std.org/jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm
+%%%     Hangul Collation Requirements]
 %%% PS: There is the main source of information.
 %%%
-%%% 2. Terminator weight for Hangul
-%%% http://code.activestate.com/lists/perl-unicode/2163/
+%%% 2. [http://code.activestate.com/lists/perl-unicode/2163/ 
+%%%     Terminator weight for Hangul]
 %%%
-%%% 3. Theory vs. practice for Korean text collation
-%%% http://blogs.msdn.com/b/michkap/archive/2005/02/25/380266.aspx
+%%% 3. [http://blogs.msdn.com/b/michkap/archive/2005/02/25/380266.aspx 
+%%%     Theory vs. practice for Korean text collation]
 %%% PS: there is no any practice. They do not the UCA :/
 %%%
-%%% 4. http://en.wikipedia.org/wiki/Unicode_collation_algorithm
+%%% 4. [http://en.wikipedia.org/wiki/Unicode_collation_algorithm Wiki]
 %%%
-%%% 6. Unicode implementer's guide part 3: Conjoining jamo behavior
-%%% http://useless-factor.blogspot.com/2007/08/unicode-implementers-guide-part-3.html
+%%% 6. [http://useless-factor.blogspot.com/2007/08/unicode-implementers-guide-part-3.html
+%%%     Unicode implementer's guide part 3: Conjoining jamo behavior]
 %%%
-%%% 7. Unicode implementer's guide part 5: Collation
-%%% http://useless-factor.blogspot.com/2007/10/unicode-implementers-guide-part-5.html
+%%% 7. [http://useless-factor.blogspot.com/2007/10/unicode-implementers-guide-part-5.html
+%%%     Unicode implementer's guide part 5: Collation]
 %%%
-%%% 8. Unicode collation works now
-%%% http://useless-factor.blogspot.com/2008/05/unicode-collation-works-now.html
+%%% 8. [http://useless-factor.blogspot.com/2008/05/unicode-collation-works-now.html
+%%%     Unicode collation works now]
 %%% PS: I found it so late. :(
 %%%
-%%% 9. ICU
-%%% http://userguide.icu-project.org/collation/concepts
+%%% 9. [http://userguide.icu-project.org/collation/concepts ICU]
 %%%
-%%% 10. String Sorting (Natural) in Erlang Cookbook.
-%%% http://trapexit.org/String_Sorting_%28Natural%29
-
+%%% 10. [http://trapexit.org/String_Sorting_%28Natural%29
+%%%      String Sorting (Natural) in Erlang Cookbook]
+%%% ```
 %%% FIXED: Combining character contractions. Apparently, two combining marks can 
 %%%        form a contraction. A straight reading of the UCA wouldn't predict 
 %%%        this, but not all of the UCA tests pass unless you check for 
 %%%        non-adjacent combining marks being in a contraction together, without 
 %%%        a noncombining mark to start it off.
-%%%
+%%% '''
+%%% @end
 
 -module(ux_col).
 -author('Uvarov Michael <freeakk@gmail.com>').
@@ -83,8 +92,9 @@ ducet_r(V) -> ux_unidata:ducet_r(V).
 ccc(V) -> ux_unidata:ccc(V).
 
 
-%% In:  not reversed string.
-%% Out: not reversed weight list.
+%% @doc In:  not reversed string.
+%%      Out: not reversed weight list.
+%% @end
 ducet(A) -> ducet_r(lists:reverse(A)).
 
 get_options() -> #uca_options{ 
@@ -126,8 +136,9 @@ get_options(shift_trimmed) ->
 get_options([_|_] = Params) ->
     get_options(Params, get_options()).
 
-%% If you want use this library without import *.hrl, you can create 
+%% @doc If you want use this library without import *.hrl, you can create 
 %% a #uca_options {} record with this function.
+%% @end
 get_options([{hangul_terminator, Val}|T], Opt = #uca_options{ }) ->
     get_options(T, Opt#uca_options{ hangul_terminator=Val });
 get_options([{natural_sort, Val}|T], Opt = #uca_options{ }) ->
@@ -153,7 +164,6 @@ get_options([], Opt = #uca_options{ }) ->
     Opt.
     
 
-
 %     %  %%%%%     %
 %     % %     %   % %
 %     % %        %   %
@@ -163,8 +173,9 @@ get_options([], Opt = #uca_options{ }) ->
  %%%%%   %%%%%  %     %
 
 
-% UNICODE COLLATION ALGORITHM
-% see Unicode Technical Standard #10
+%% ----------------------------------------------------------------------------
+%% UNICODE COLLATION ALGORITHM
+%% see Unicode Technical Standard #10
 
 % For hangul:
 % http://www.open-std.org/Jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm
@@ -178,47 +189,54 @@ get_options([], Opt = #uca_options{ }) ->
 % L3 Case
 % L4 Punctuation
 
-%% Variable collation elements are not reset to be ignorable, but
+%% @doc Variable collation elements are not reset to be ignorable, but
 %% get the weights explicitly mentioned in the file.
+%% ```
 %% * SPACE would have the value [.0209.0020.0002]
 %% * Capital A would be unchanged, with the value [.06D9.0020.0008]
-%% * Ignorables are unchanged.
+%% * Ignorables are unchanged.'''
+%% @end
 non_ignorable(S1, S2) ->
     compare(S1, S2,
         get_options(non_ignorable),
         fun ducet_r/1, % ducet_r(reversed_in) -> non_reversed_key;
         fun non_ignorable_bin_to_list/1).
 
-%% Blanked: Variable collation elements and any subsequent ignorables 
+%% @doc Variable collation elements and any subsequent ignorables 
 %% are reset so that their weights at levels one through three are zero. 
 %% For example,
+%% ```
 %% * SPACE would have the value [.0000.0000.0000]
 %% * A combining grave accent after a space would have the value [.0000.0000.0000]
 %% * Capital A would be unchanged, with the value [.06D9.0020.0008]
-%% * A combining grave accent after a Capital A would be unchanged
+%% * A combining grave accent after a Capital A would be unchanged'''
+%% @end
 blanked(S1, S2) ->
     compare(S1, S2,
         get_options(blanked),
         fun ducet_r/1, % ducet_r(reversed_in) -> non_reversed_key;
         fun blanked_bin_to_list/1).
 
-%% Shifted: Variable collation elements are reset to zero at levels one through
+%% @doc Variable collation elements are reset to zero at levels one through
 %% three. In addition, a new fourth-level weight is appended, whose value 
 %% depends on the type, as shown in Table 12.
 %% Any subsequent primary or secondary ignorables following a variable are reset
 %% so that their weights at levels one through four are zero.
+%% ```
 %% * A combining grave accent after a space would have the value 
 %%   [.0000.0000.0000.0000].
-%% * A combining grave accent after a Capital A would be unchanged.
+%% * A combining grave accent after a Capital A would be unchanged.'''
+%% @end
 shifted(S1, S2) ->
     compare(S1, S2,
         get_options(shifted),
         fun ducet_r/1, % ducet_r(reversed_in) -> non_reversed_key;
         fun shifted_bin_to_list/1).
 
-%% Shift-Trimmed: This option is the same as Shifted, except that all trailing 
+%% @doc This option is the same as Shifted, except that all trailing 
 %% FFFFs are trimmed from the sort key. 
 %% This could be used to emulate POSIX behavior.
+%% @end
 shift_trimmed(S1, S2) ->
     compare(S1, S2,
         get_options(shift_trimmed),
@@ -228,9 +246,10 @@ shift_trimmed(S1, S2) ->
 non_ignorable_bin_to_list(Value) ->
         {fun non_ignorable_bin_to_list/1, bin_to_list(Value)}.
 
-%% Convert binary from DUCET to list [L1, L2, L3, L4]
-%% A variable CE is "*" in ducet (1).
-%% A non-varialbe CE is "." in ducet (0).
+%% @doc Convert binary from DUCET to list [L1, L2, L3, L4].
+%%      A variable CE is "*" in ducet (1).
+%%      A non-varialbe CE is "." in ducet (0).
+%% @end
 %% @private
 bin_to_list(<<_Variable:8, L1:16, L2:16, L3:16, L4:16>>) ->
     [L1, L2, L3, L4];
@@ -251,8 +270,10 @@ shifted_bin_to_list(<<1:8, L1:16, _/binary>>) ->
 shifted_bin_to_list(Value) ->
     {fun shifted_bin_to_list/1, set_l4_to_value(Value, 16#FFFF)}.
 
-%% This function is a version of shifted_bin_to_list/1, but its value is
-%% after variable.
+
+%% @doc This function is a version of shifted_bin_to_list/1, but its value is
+%%      after variable.
+%% @end
 %% @private
 % If it is a ignorable, then L4 = 0.
 shifted_bin_to_list2(<<_:8, 0:16, _/binary>>) ->
@@ -289,8 +310,9 @@ shift_trimmed_bin_to_list(<<1:8, L1:16, _/binary>>) ->
 shift_trimmed_bin_to_list(Value) ->
     {fun shift_trimmed_bin_to_list/1, set_l4_to_value(Value, 0)}.
 
-%% This function is a version of shifted_bin_to_list/1, but its value is
-%% after variable.
+%% @doc This function is a version of shifted_bin_to_list/1, but its value is
+%%      after variable.
+%% @end
 %% @private
 % If it is a ignorable, then L4 = 0.
 shift_trimmed_bin_to_list2(<<_:8, 0:16, _/binary>>) ->
@@ -320,14 +342,16 @@ set_l1_to_value_bin(<<Variable:8, _L1:16, T/binary>>, Val) ->
 sort(Lists) ->
     sort(Lists, #uca_options{}).
 
+%% @doc Sort a string list.
 %% Example:
-%%  f().
+%%  ```f().
 %%  RawData = ["death", "de luge", "de-luge", "deluge", "de-luge", "de Luge", "de-Luge", "deLuge", "de-Luge", "demark"].
 %%  Data = lists:map(fun lists:flatten/1, RawData).
 %%  ux_string:sort(Data, non_ignorable).
 %%  ux_string:sort(Data, blanked).
 %%  ux_string:sort(Data, shifted).
-%%  ux_string:sort(Data, shift_trimmed).
+%%  ux_string:sort(Data, shift_trimmed).'''
+%% @end
 sort(Lists, Alt) when is_atom(Alt) ->
     Params = get_options(Alt),
     Fn = get_comp_fn(Alt),
@@ -341,14 +365,15 @@ sort(Lists, #uca_options{alternate=Alt} = Params) ->
         lists:keysort(1, 
             sort_map(Lists, Params, Fn, []))).
 
-%% Lists: an array of strings;
+%% @doc Lists: an array of strings;
 %% Fn:    an map function.
 %%
 %% This function does:
-%% lists:map(fun(X) -> sort_key(X, Fn) end, Lists).
+%% `lists:map(fun(X) -> sort_key(X, Fn) end, Lists).'
 %% H is string.
 %% Fn is col_function.
 %% Params is #uca_options{}
+%% @end
 %% @private
 sort_map([H|T], Params = #uca_options{ducet_r_fn=DucetRFn}, Fn, Res) ->
     sort_map(T, Params, Fn, [
@@ -489,7 +514,7 @@ sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 -define(COL_LEVEL3_GAP_SIZE, (?COL_LEVEL3_CAPACITY - ?COL_LEVEL3_MAX
    -  ?COL_LEVEL3_MIN)).
 
-%% Get reversed sort key and compress it.
+%% @doc Get reversed sort key and compress it.
 %% @param Key
 %% @param Level (1-4). For example: 3 then 2 then 1 (because Key is reversed!)
 %% @param Res Compressed key
@@ -511,13 +536,15 @@ compress_sort_key_r([H|T], Level, Res) ->
 compress_sort_key_r([], _Level, Res) -> Res.
 
 
-%% Read all W from Key.
-%% If W < COMMON (or there is no W), replace the sequence by a synthetic low
+%% @doc Read all W from Key.
+%% ```If W < COMMON (or there is no W), replace the sequence by a synthetic low
 %% weight equal to (MINTOP + m).
 %% If W > COMMON, replace the sequence by a synthetic high weight equal to
-%% (MAXBOTTOM - m).
+%% (MAXBOTTOM - m).'''
 %%
 %% An input key must be reversed!
+%% @end
+%% @private
 compress_sort_key_l3([?COL_LEVEL3_COMMON|T], M, Res) ->
     compress_sort_key_l3(T, M + 1, Res);
 compress_sort_key_l3(T, M, [W|_] = Res) 
@@ -600,8 +627,9 @@ compress_sort_key_l2(T, M, Res) ->
                     [(?COL_LEVEL2_MINTOP + Remainder)|Res])) 
     end.
     
-%% Used in compress_sort_key_l3, *_l2.
-%% Add Val to the beginning Cnt times.
+%% @see compress_sort_key_l3/3
+%% @see compress_sort_key_l2/3
+%% @doc Add Val to the beginning Cnt times.
 %% @private
 compress_seq(1, Val, Res) ->
     [Val|Res];
@@ -611,8 +639,9 @@ compress_seq(SeqCnt, Val, Res) when SeqCnt > 1 ->
 convert_key_to_bin(Key) when is_list(Key) ->
     convert_key_to_bin(Key, 1, []).
 
-%% Key is a list.
-%% Level (default 1).
+%% @doc Key is a list.
+%%      Level (default 1).
+%% @end
 convert_key_to_bin([0|T], Level, Res) ->
     convert_key_to_bin(T, Level + 1, [0|[0|Res]]);
 convert_key_to_bin([H|T], 2, Res) when H < 255 ->
@@ -659,7 +688,7 @@ sort_array_shift_trimmed(Str) ->
     sort_array(Str, get_options(shift_trimmed), 
         fun ducet_r/1, fun shift_trimmed_bin_to_list/1).
 
-%% This function does nothing :)
+%% @doc This function does nothing. :)
 %% @private
 bin_to_bin(Val) ->
     { fun bin_to_bin/1, Val }.
@@ -672,8 +701,10 @@ compare(String1, String2, #uca_options{
         alternate=Alt, ducet_r_fn=DucetRFn} = Params) ->
     compare(String1, String2, Params, DucetRFn, get_comp_fn(Alt)).
     
-%% TableFun returns value from DUCET table
+%% @doc Compare 2 strings.
+%% TableFun returns value from DUCET table.
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
+%% @end
 compare(String1, String2, Params, TableFun, ComparatorFun) ->
     compare1(ux_string:to_nfd(String1), 
         ux_string:to_nfd(String2),
@@ -687,7 +718,7 @@ compare(String1, String2, Params, TableFun, ComparatorFun) ->
         TableFun, % fun ux_string:ducet/1, in chars are REVERSED.
         ComparatorFun, ComparatorFun).
 
-%% MANUAL:
+%% @doc MANUAL:
 %% S2.1   Find the longest initial substring S at each point 
 %%        that has a match in the table.
 %% S2.1.1 If there are any non-starters following S, process each non-starter C.
@@ -695,6 +726,7 @@ compare(String1, String2, Params, TableFun, ComparatorFun) ->
 %% S2.1.3 If there is a match, replace S by S + C, and remove C.
 %%
 %% Returns:  {Not reversed list of weight elements, Tail of the string}.
+%% @end
 %% @private
 -spec extract(string(), #uca_options{}, fun()) 
     -> {[[integer(), ...], ...], Tail :: string()}.
@@ -726,7 +758,7 @@ extract(Str, #uca_options {
     
     {Weights4, StrTail2}.
 
-%% Uppercase to sort before lowercase. Remap L3.
+%% @doc Uppercase to sort before lowercase. Remap L3.
 %% @private
 case_first_hack(Res) ->
     case_first_hack1(Res, []).
@@ -746,7 +778,7 @@ case_invert(L3) ->
     L3.
 
 
-%% Extract L3 in L1.
+%% @doc Copy L3 before L1.
 %% @private
 case_sensitive_hack(Res) ->
     case_sensitive_hack1(Res, []).
@@ -1005,9 +1037,10 @@ extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
     end.
 
     
-%% Used in extract.
-%% Fast realization of:
-%% TIP: append(Head, Tail) == lists:reverse(Head) ++ Tail
+%% @see extract
+%% @doc Fast realization of:
+%% `append(Head, Tail) == lists:reverse(Head) ++ Tail'
+%% @end
 %% @private
 -spec append(InStr :: string(), OutStr :: string()) -> string().
 append(InStr, OutStr) ->
@@ -1019,12 +1052,13 @@ append1([H|T], Str) ->
 append1([], Str) -> Str.
 
 
-%% 7.1.3 Implicit Weights 
+%% @doc 7.1.3 Implicit Weights 
 %% The result of this process consists of collation elements that are sorted in
 %% code point order, that do not collide with any explicit values in the table,
 %% and that can be placed anywhere (for example, at BASE) with respect to the 
 %% explicit collation element mappings. By default, implicit mappings are given
 %% higher weights than all explicit collation elements.
+%% @end
 %% @private
 implicit_weight(CP, BASE) ->
     AAAA = BASE + (CP bsr 15),
@@ -1032,20 +1066,14 @@ implicit_weight(CP, BASE) ->
     [<<0:8, AAAA:16, 16#0020:16, 0002:16, 0:16>>, BBBB]. % reversed
 
 
-%% Compares on L1, collects data for {L2,L3,L4} comparations.
+%% @doc Compares on L1, collects data for {L2,L3,L4} comparations.
 %% Extract chars from the strings.
 %%
 %% ComparatorFun    S2.3 Process collation elements according to the 
 %%                  variable-weight setting, as described in Section 
 %%                  3.6.2, Variable Weighting.
-%% @private
--spec compare1(Str1 :: string(), Str1 :: string(), #uca_options{},
-        Buf1 :: [binary(), ...], Buf2 :: [binary()], char(), 
-        Acc1 :: [[integer(), ...], ...], 
-        Acc2 :: [[integer()]], % Acc = [[L2,L3,L4], ...] 
-        fun(), fun(), fun()) -> lower | greater | equal.
-
-%% compare1 ALGORITHM.
+%%
+%% ```ALGORITHM.
 %% 1. Extract weights from Str1 to Buf1.
 %% 2. Extract weights from Str2 to Buf2.
 %% 3. Extract L1 weight from Buf1 to W1L1.
@@ -1053,8 +1081,15 @@ implicit_weight(CP, BASE) ->
 %% 5a. If W1L1 > W2L1 then Str1 greater Str2.
 %% 5b. If W1L1 < W2L1 then Str1 lower   Str2.
 %% 5c. If W1L1 = W2L1 and strings have non-compared characters then go to a step 1.
-%% 6. Run compare2.
+%% 6. Run compare2.'''
+%% @end
 %% @private
+-spec compare1(Str1 :: string(), Str1 :: string(), #uca_options{},
+        Buf1 :: [binary(), ...], Buf2 :: [binary()], char(), 
+        Acc1 :: [[integer(), ...], ...], 
+        Acc2 :: [[integer()]], % Acc = [[L2,L3,L4], ...] 
+        fun(), fun(), fun()) -> lower | greater | equal.
+
 compare1([_|_] = Str1, StrTail2, Params, [], Buf2, W1L1, Acc1, 
     Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
     {Buf1,     % [<<Flag,L1,L2,...>>, ..]
@@ -1070,7 +1105,7 @@ compare1(StrTail1, [_|_] = Str2, Params, Buf1, [], W1L1, Acc1,
     compare1(StrTail1, StrTail2, Params, Buf1, Buf2, W1L1, Acc1, 
         Acc2, TableFun, ComparatorFun1, ComparatorFun2);
     
-%% Extracts a non-ignorable L1 from the Str1.
+% Extracts a non-ignorable L1 from the Str1.
 compare1(StrTail1, StrTail2, #uca_options{
         strength=S
     } = Params, [CV1Raw|Buf1], Buf2, false, Acc1, 
@@ -1115,13 +1150,13 @@ compare1(StrTail1, StrTail2, #uca_options{
 % features like contractions. For example: "abc" < "abcX" where "X" can
 % be any character(s).
 
-%% String 1 conrains more codepaints, but we cannot throw them.
+% String 1 conrains more codepaints, but we cannot throw them.
 compare1([CP1|StrTail1], [] = _Str2, Params, [] = _Buf1, [] = _Buf2, _, Acc1, 
     Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
     compare1(StrTail1, [], Params, CP1, [], false, Acc1, 
         Acc2, TableFun, ComparatorFun1, ComparatorFun2);
 
-%% String 2 conrains more codepaints, but we cannot throw them.
+% String 2 conrains more codepaints, but we cannot throw them.
 compare1([] = _Str1, [CP2|StrTail2], Params, [] = _Buf1, [] = _Buf2, _, Acc1, 
     Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
     compare1([], StrTail2, Params, [], CP2, true, Acc1, 
@@ -1141,9 +1176,9 @@ compare1([] = _Str1, [] = _Str2, #uca_options{
     compare1([], [], Params, Buf1, [], W1L1New, [Acc|Acc1], 
         Acc2, TableFun, NewFun, ComparatorFun2);
 
-%% L1 was ended :(
-%% Now, Funs are not neeaded.
-%% Acc1 and Acc2 are reversed.
+% L1 was ended :(
+% Now, Funs are not neeaded.
+% Acc1 and Acc2 are reversed.
 compare1([] = _Str1, [] = _Str2, _Params, [] = _Buf1, [] = _Buf2, false, Acc1, 
     Acc2, _TableFun, _ComparatorFun1, _ComparatorFun2) -> 
 %   io:format(user, "~w ~w ~n", [Acc1, Acc2]),
@@ -1155,8 +1190,9 @@ compare1([] = _Str1, [] = _Str2, _Params, [] = _Buf1, [] = _Buf2, false, Acc1,
     ).
 
 
-%%% L2 comparation.
+%% @doc L2 comparation.
 %% Try extract W1LX, but 0 was found => try next weigth in InAcc.
+%% @end
 %% @private
 % skip if higher levels are not defined.
 compare2([[]|InAcc1], InAcc2, W1LX, OutAcc1, OutAcc2) ->
@@ -1200,8 +1236,9 @@ compare2([], [], false, [_|_] = OutAcc1, [_|_] = OutAcc2) ->
 compare2([], [], false, [], []) ->
     equal. % on all levels
 
+%% @doc Produce Sort Array
 %% http://unicode.org/reports/tr10/#Step_2
-%% Produce Sort Array
+%% @end
 %% @private
 sort_array(Str, Params, TableFun, CompFun) ->
     sort_array1(ux_string:to_nfd(Str), Params, TableFun, CompFun, [], []).
@@ -1232,7 +1269,7 @@ weight_strength(_, Val) ->
 % Collation end
 
 
-
+%------------------------------------------------------------------------------
   %%%%%  %%%%%%   %%%%    %%%%%   %%%%
     %    %       %          %    %
     %    %%%%%    %%%%      %     %%%%
@@ -1482,9 +1519,11 @@ test(InFd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
     _ -> ok
     end.
 
-%% Read line from a testdata file InFd (see CollationTest.html).
+%% @doc Read line from a testdata file InFd (see CollationTest.html).
 %% Return list of codepaints.
 %% Used by test/4.
+%% @end
+%% @private
 test_read(InFd, StrNum) ->
     case io:get_line(InFd, "") of
     eof -> ok;

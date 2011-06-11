@@ -1,17 +1,28 @@
 % vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
-%%% User Extentions for Erlang 
+%%% =====================================================================
+%%% This library is free software; you can redistribute it and/or modify
+%%% it under the terms of the GNU Lesser General Public License as
+%%% published by the Free Software Foundation; either version 2 of the
+%%% License, or (at your option) any later version.
 %%%
-%%% @package  ux_char
-%%% @author   Uvarov Michael <freeakk@gmail.com>
-%%% @license  http://www.fsf.org/copyleft/lgpl.html LGPL
+%%% This library is distributed in the hope that it will be useful, but
+%%% WITHOUT ANY WARRANTY; without even the implied warranty of
+%%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+%%% Lesser General Public License for more details.
 %%%
-%%% @copyright 2010 Uvarov Michael.
-%%% %CopyrightBegin%
-%%%  Copyright 2010 Uvarov Michael  
+%%% You should have received a copy of the GNU Lesser General Public
+%%% License along with this library; if not, write to the Free Software
+%%% Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+%%% USA
 %%%
-%%%  See the enclosed file COPYING for license information (LGPL). If you
-%%%  did not receive this file, see http://www.fsf.org/copyleft/lgpl.html
-%%% %CopyrightEnd%
+%%% $Id$
+%%%
+%%% @copyright 2010-2011 Michael Uvarov
+%%% @author Michael Uvarov <freeakk@gmail.com>
+%%% @see ux
+%%% @end
+%%% =====================================================================
+
 
 % CJK_Unified_Ideograph and CJK_Compatibility_Ideographs from 
 % http://www.unicode.org/Public/UNIDATA/Blocks.txt

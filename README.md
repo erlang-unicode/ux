@@ -169,4 +169,3 @@ ux_unidata.erl
 ==============
 Stores UNIDATA information. For internal using only.
 
-

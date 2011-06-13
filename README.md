@@ -2,11 +2,36 @@
 
 [Read edoc documentation](http://freeakk.github.com/ux/doc/index.html)
 
-ux_string.erl: String Functions for lists of Unicode characters.
-==============================
+This library contains helpful functions.
 
-PHP-style string functions
---------------------------
+ux_string.erl: String Functions for lists of Unicode characters.
+================================================================
+
+Functions for working with Unicode Normal Forms (UNF)
+-----------------------------------------------------
+* to_nfc/1
+* to_nfd/1
+* to_nfkd/1
+* to_nfkc/1
+* is_nfc/1
+* is_nfd/1
+* is_nfkc/1
+* is_nfkd/1
+
+Functions from stdlib for Unicode strings
+-----------------------------------------
+* to_lower/1
+* to_upper/1
+
+Functions for processing strings as groups of graphemes
+-------------------------------------------------------
+* length/1
+* reverse/1
+* first/2
+* last/2
+
+"PHP-style" string functions
+----------------------------
 * explode/2,3
 * html_special_chars/1 (htmlspecialchars in php)
 * strip_tags/1,2
@@ -71,22 +96,6 @@ Result:
 ```
 "E       . H        ,          ,                E ,           ."
 ```
-
-Functions for working with Unicode Normal Forms (UNF)
------------------------------------------------------
-* to_nfc/1
-* to_nfd/1
-* to_nfkd/1
-* to_nfkc/1
-* is_nfc/1
-* is_nf
-
-Functions from stdlib for Unicode strings
------------------------------------------
-* to_lower/1
-* to_upper/1
-* length/1
-* reverse/1
 
 ux_char.erl: Char Functions
 ===========================

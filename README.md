@@ -54,6 +54,18 @@ Result:
 Code:
 
 ```erlang
+ux_string:strip_tags("<b>bold text</b>").
+```
+
+Result:
+
+```
+"bold text"
+```
+
+Code:
+
+```erlang
 Str = "Erlang created the field of telephone
 networks analysis. His early work in scrutinizing the use of local, exchange
 and trunk telephone line usage in a small community, to understand the

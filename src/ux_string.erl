@@ -357,14 +357,14 @@ hsc([H  | T], Buf) -> hsc(T, [H|Buf]).
 %% @doc Deletes tags from the string.
 %%
 %%      Example: 
-%%    ``> ux_string:strip_tags("<b>some string</b>").
+%%   ```> ux_string:strip_tags("<b>some string</b>").
 %%      "some string"
 %%      > ux_string:strip_tags("<h1>Head</h1><p>and paragraf</p>", ["h1"]).        
 %%      "<h1>Head</h1>and paragraf"
 %%      ux_string:strip_tags("<h1>Head</h1><p><!-- and paragraf --></p>", ["!--"]).
 %%      "Head<!-- and paragraf -->"
 %%      ux_string:st("a<br />b", [], " ").
-%%      "a b"''
+%%      "a b"'''
 %% @end
 -spec strip_tags(string()) -> string().
 -spec strip_tags(string, [string() | atom() | char()]) -> string().

@@ -720,7 +720,9 @@ to_ncr(Str) -> to_ncr(lists:reverse(Str), []).
 to_ncr([Char|Tail], Res) -> to_ncr(Tail, ux_char:to_ncr(Char) ++ Res);
 to_ncr([         ], Res) -> Res.
 
-%% @doc Split unicode string on graphemes http://en.wikipedia.org/wiki/Grapheme
+%% @doc Split unicode string into
+%% [graphemes](http://en.wikipedia.org/wiki/Grapheme)
+%% @end
 to_graphemes(Str) ->
     explode_reverse(to_graphemes_raw(Str, [], [])).
 

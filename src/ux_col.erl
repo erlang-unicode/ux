@@ -482,7 +482,7 @@ sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 
 -define(COL_LEVEL4_CAPACITY, 16#FFFFFF).
 -define(COL_LEVEL4_MIN, 1).
--define(COL_LEVEL4_MAX, 16#FFFF00).
+-define(COL_LEVEL4_MAX, 16#1FFFFF).
 -define(COL_LEVEL4_COMMON, 16#FFFF).
 -define(COL_LEVEL4_BOUND, 16#100F0).
 
@@ -719,7 +719,7 @@ convert_key_to_bin([H|T], 3, Res) when H > 254 ->
 convert_key_to_bin([H|T], Level, Res) when H =< 16#FFFF ->
     convert_key_to_bin(T, Level, [(H rem 256) |[(H bsr 8) |Res]]);
 convert_key_to_bin([H|T], Level, Res) 
-    when (H > 16#FFFF) and (H =< 16#FFFFFF) ->
+    when (H > 16#FFFF) and (H =< 16#1FFFFF) ->
     convert_key_to_bin(T, Level, 
         [(H rem 256) 
             |[((H bsr 8) rem 256)

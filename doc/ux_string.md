@@ -356,7 +356,32 @@ empty.<a name="strip_tags-1"></a>
 Deletes tags from the string.
 
 Example:
-`> ux_string:strip_tags("<b>some string</b>")."some string"> ux_string:strip_tags("<h1>Head</h1><p>and paragraf</p>", ["h1"])."<h1>Head</h1>and paragraf"ux_string:strip_tags("<h1>Head</h1><p><!-- and paragraf --></p>", ["!--"])."Head<!-- and paragraf -->"ux_string:st("a<br />b", [], " ")."a b"`<a name="strip_tags-2"></a>
+```> ux_string:strip_tags("__some string__").
+"some string"
+> ux_string:strip_tags("
+
+<h1>Head</h1>
+
+
+
+and paragraf", ["h1"]).
+"
+
+<h1>Head</h1>
+
+and paragraf"
+ux_string:strip_tags("
+
+<h1>Head</h1>
+
+
+
+", ["!--"]).
+"Head"
+ux_string:st("a
+<br></br>
+b", [], " ").
+"a b"'''<a name="strip_tags-2"></a>
 
 <h3>strip_tags/2</h3>
 

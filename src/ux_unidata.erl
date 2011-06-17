@@ -43,18 +43,30 @@ char_to_upper(C) -> C.
 char_to_lower(C) -> C.
 
 %% @doc Returns true, if is C is uppercase. 
--spec is_upper(C::char()) -> boolean().
 is_upper(_) -> false.
 %% @doc Returns true, if is C is lowercase.
--spec is_lower(C::char()) -> boolean().
 is_lower(_) -> false.
 
 %% @doc Returns a char type.
--spec char_type(C::char()) -> atom().
 char_type(_) -> other.
 freq_dict(_) -> 0.
 
 -else.
+
+-spec is_upper(C::char()) -> boolean().
+-spec is_lower(C::char()) -> boolean().
+-spec char_type(C::char()) -> atom().
+-spec char_comment(C::char()) -> list().
+-spec ccc(C::char()) -> integer().
+-spec nfc_qc(C::char()) -> y | n | m.
+-spec nfd_qc(C::char()) -> y | n | m.
+-spec nfkc_qc(C::char()) -> y | n | m.
+-spec nfkd_qc(C::char()) -> y | n | m.
+-spec is_compat(C::char()) -> true | false.
+-spec is_comp_excl(C::char()) -> true | false.
+-spec ducet_r(list()) -> list() | atom().
+-spec comp(integer(), integer()) -> integer() | false.
+-spec decomp(integer()) -> list().
 
 -include("unidata/char_to_upper.hrl").
 -include("unidata/char_to_lower.hrl").

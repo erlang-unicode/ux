@@ -491,6 +491,7 @@ freq_1([], Dict)         -> Dict.
 %% UNICODE NORMALIZATION FORMS
 %% Unicode Standard Annex #15
 %% http://unicode.org/reports/tr15/
+-spec is_nf(list(), integer(), atom(), function()) -> yes | no | maybe.
 is_nf([Head|Tail], LastCC, Result, CheckFun) -> 
     case ccc(Head) of
     CC when (LastCC > CC) and (CC =/= 0) -> no;
@@ -507,11 +508,20 @@ is_nf([], _, Result, _) -> Result.
 
 %% Detecting Normalization Forms
 %% http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
-is_nfc(Str)  -> is_nf(Str, 0, yes, fun nfc_qc/1).
-is_nfd(Str)  -> is_nf(Str, 0, yes, fun nfd_qc/1).
-is_nfkc(Str) -> is_nf(Str, 0, yes, fun nfkc_qc/1).
-is_nfkd(Str) -> is_nf(Str, 0, yes, fun nfkd_qc/1).
+-spec is_nfc(list()) -> yes | no | maybe.
+-spec is_nfd(list()) -> yes | no | maybe.
+-spec is_nfkc(list()) -> yes | no | maybe.
+-spec is_nfkd(list()) -> yes | no | maybe.
+is_nfc(Str) when is_list(Str) -> is_nf(Str, 0, yes, fun nfc_qc/1).
+is_nfd(Str) when is_list(Str) -> is_nf(Str, 0, yes, fun nfd_qc/1).
+is_nfkc(Str) when is_list(Str) -> is_nf(Str, 0, yes, fun nfkc_qc/1).
+is_nfkd(Str) when is_list(Str) -> is_nf(Str, 0, yes, fun nfkd_qc/1).
 
+
+-spec to_nfc(list()) -> list().
+-spec to_nfd(list()) -> list().
+-spec to_nfkc(list()) -> list().
+-spec to_nfkd(list()) -> list().
 to_nfc([])   -> [];
 to_nfc(Str)  -> 
     case is_nfc(Str) of
@@ -519,23 +529,26 @@ to_nfc(Str)  ->
     _   -> get_composition(to_nfd(Str))
     end.
 to_nfkc([])  -> [];
-to_nfkc(Str) -> get_composition(
+to_nfkc([_|_] = Str) -> get_composition(
         normalize(get_recursive_decomposition(false, Str))).
 to_nfd([])   -> [];
-to_nfd(Str)  ->  normalize(get_recursive_decomposition(true,  Str)).
+to_nfd([_|_] = Str) -> normalize(get_recursive_decomposition(true,  Str)).
 to_nfkd([])  -> [];
-to_nfkd(Str) ->  normalize(get_recursive_decomposition(false, Str)).
+to_nfkd([_|_] = Str) -> normalize(get_recursive_decomposition(false, Str)).
 
 
+-spec list_to_latin1(list()) -> list().
 list_to_latin1(Str) ->
     lists:reverse(list_to_latin1(Str, [])).
 
+-spec list_to_latin1(list(), list()) -> list().
 list_to_latin1([Char|Str], Res) ->
     list_to_latin1(Str, char_to_list(Char, [], Res));
 list_to_latin1([], Res) -> Res.
 
 % magic
 % Char>255
+-spec char_to_list(integer(), list(), list()) -> list().
 char_to_list(Char, Buf, Res) ->
     case Char bsr 8 of
     0   ->  
@@ -554,15 +567,17 @@ char_to_list(Char, Buf, Res) ->
 %%            the recursive compatibility and canonical decomposition.
 %% @end
 %% @private
+-spec get_recursive_decomposition(atom() | function(), list()) -> list().
 get_recursive_decomposition(true, Str) -> 
     get_recursive_decomposition(fun is_compat/1, Str, []);
 get_recursive_decomposition(false, Str) -> 
     get_recursive_decomposition(fun ux_utils:is_always_false/1, Str, []);
-get_recursive_decomposition(Canonical, Str) -> 
+get_recursive_decomposition(Canonical, Str) when is_function(Canonical) -> 
     get_recursive_decomposition(Canonical, Str, []).
 
 % Skip ASCII
 %% @private
+-spec get_recursive_decomposition(function(), list(), list()) -> list().
 get_recursive_decomposition(Canonical, [Char|Tail], Result) 
     when Char < 128 -> % Cannot be decomposed 
     get_recursive_decomposition(Canonical, Tail,

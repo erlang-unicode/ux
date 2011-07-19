@@ -179,6 +179,7 @@ Functions
 
 Examples
 --------
+Code from erlang shell:
 ```erlang
 1> ux_col:sort_key("a").   
 <<21,163,0,0,32,0,0,2,0,0,255,255>>
@@ -208,6 +209,7 @@ lower
 greater
 ```
 
+Code: 
 
 ```erlang
 Options = ux_col:get_options([ 

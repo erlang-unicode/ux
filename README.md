@@ -167,17 +167,31 @@ zs
 
 ux_col.erl: Unicode Collation Algorithm
 =======================================
-[Unicode Technical Standard #10](http://unicode.org/reports/tr10/)
+See [Unicode Technical Standard #10](http://unicode.org/reports/tr10/).
 
-List of functions:
-----------
+Functions
+---------
 * compare/2,3
 * sort/1,2
 * sort_key/1,2
 * sort_array/1,2
+* get_options/1,2
 
 Examples
 --------
+```erlang
+1> ux_col:sort_key("a").   
+<<21,163,0,0,32,0,0,2,0,0,255,255>>
+
+2> ux_col:sort_key("abc"). 
+<<21,163,21,185,21,209,0,0,34,0,0,4,0,0,255,255,255,255,
+  255,255>>
+
+3> ux_col:sort_key("abcd").
+<<21,163,21,185,21,209,21,228,0,0,35,0,0,5,0,0,255,255,
+  255,255,255,255,255,255>>
+```
+
 Code:
 
 ```erlang

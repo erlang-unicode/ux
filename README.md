@@ -133,39 +133,39 @@ zs
 [List of types](http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category)
 Normative Categories
 --------------------
-Lu  Letter, Uppercase
-Ll  Letter, Lowercase
-Lt  Letter, Titlecase
-Mn  Mark, Non-Spacing
-Mc  Mark, Spacing Combining
-Me  Mark, Enclosing
-Nd  Number, Decimal Digit
-Nl  Number, Letter
-No  Number, Other
-Zs  Separator, Space
-Zl  Separator, Line
-Zp  Separator, Paragraph
-Cc  Other, Control
-Cf  Other, Format
-Cs  Other, Surrogate
-Co  Other, Private Use
-Cn  Other, Not Assigned (no characters in the file have this property)
+* lu  Letter, Uppercase
+* ll  Letter, Lowercase
+* lt  Letter, Titlecase
+* mn  Mark, Non-Spacing
+* mc  Mark, Spacing Combining
+* me  Mark, Enclosing
+* nd  Number, Decimal Digit
+* nl  Number, Letter
+* no  Number, Other
+* zs  Separator, Space
+* zl  Separator, Line
+* zp  Separator, Paragraph
+* cc  Other, Control
+* cf  Other, Format
+* cs  Other, Surrogate
+* co  Other, Private Use
+* cn  Other, Not Assigned (no characters in the file have this property)
 
 Informative Categories
 ----------------------
-Lm  Letter, Modifier
-Lo  Letter, Other
-Pc  Punctuation, Connector
-Pd  Punctuation, Dash
-Ps  Punctuation, Open
-Pe  Punctuation, Close
-Pi  Punctuation, Initial quote (may behave like Ps or Pe depending on usage)
-Pf  Punctuation, Final quote (may behave like Ps or Pe depending on usage)
-Po  Punctuation, Other
-Sm  Symbol, Math
-Sc  Symbol, Currency
-Sk  Symbol, Modifier
-So  Symbol, Other
+* lm  Letter, Modifier
+* lo  Letter, Other
+* pc  Punctuation, Connector
+* pd  Punctuation, Dash
+* ps  Punctuation, Open
+* pe  Punctuation, Close
+* pi  Punctuation, Initial quote (may behave like Ps or Pe depending on usage)
+* pf  Punctuation, Final quote (may behave like Ps or Pe depending on usage)
+* po  Punctuation, Other
+* sm  Symbol, Math
+* sc  Symbol, Currency
+* sk  Symbol, Modifier
+* so  Symbol, Other
 
 ux_col.erl: Unicode Collation Algorithm
 =======================================

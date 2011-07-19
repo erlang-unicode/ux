@@ -8,6 +8,10 @@ This library contains helpful functions.
 ux_string.erl: String Functions for lists of Unicode characters.
 ================================================================
 
+This library provides functions for operations with
+[UNIDATA](http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html).
+UNIDATA contains data about Unicode characters.
+
 Functions for working with Unicode Normal Forms (UNF)
 -----------------------------------------------------
 * to_nfc/1
@@ -26,6 +30,7 @@ Functions from stdlib for Unicode strings
 
 Functions for processing strings as groups of graphemes
 -------------------------------------------------------
+Grapheme is letter with its modifiers.
 * length/1
 * reverse/1
 * first/2
@@ -97,6 +102,8 @@ Result:
 [lu,ll,ll,ll,ll,ll,zs,ll,ll,ll,ll,ll,ll,ll,zs,ll,ll,ll,zs,
  ll,ll,ll,ll,ll,zs,ll,ll,zs,ll|...]
 ```
+Where lu is Letter, Uppercase; ll is Letter, Lowercase. Read more about
+types from description of ``ux_char:type/1``.
 
 Code:
 
@@ -123,9 +130,46 @@ Result:
 ```
 zs
 ```
+[List of types](http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category)
+Normative Categories
+--------------------
+Lu  Letter, Uppercase
+Ll  Letter, Lowercase
+Lt  Letter, Titlecase
+Mn  Mark, Non-Spacing
+Mc  Mark, Spacing Combining
+Me  Mark, Enclosing
+Nd  Number, Decimal Digit
+Nl  Number, Letter
+No  Number, Other
+Zs  Separator, Space
+Zl  Separator, Line
+Zp  Separator, Paragraph
+Cc  Other, Control
+Cf  Other, Format
+Cs  Other, Surrogate
+Co  Other, Private Use
+Cn  Other, Not Assigned (no characters in the file have this property)
+
+Informative Categories
+----------------------
+Lm  Letter, Modifier
+Lo  Letter, Other
+Pc  Punctuation, Connector
+Pd  Punctuation, Dash
+Ps  Punctuation, Open
+Pe  Punctuation, Close
+Pi  Punctuation, Initial quote (may behave like Ps or Pe depending on usage)
+Pf  Punctuation, Final quote (may behave like Ps or Pe depending on usage)
+Po  Punctuation, Other
+Sm  Symbol, Math
+Sc  Symbol, Currency
+Sk  Symbol, Modifier
+So  Symbol, Other
 
 ux_col.erl: Unicode Collation Algorithm
 =======================================
+[Unicode Technical Standard #10](http://unicode.org/reports/tr10/)
 * compare/2,3
 * sort/1,2
 * sort_key/1,2

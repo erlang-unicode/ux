@@ -131,8 +131,8 @@ Result:
 zs
 ```
 [List of types](http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category)
-Normative Categories
---------------------
+---------------
+Normative Categories:
 * lu  Letter, Uppercase
 * ll  Letter, Lowercase
 * lt  Letter, Titlecase
@@ -151,8 +151,7 @@ Normative Categories
 * co  Other, Private Use
 * cn  Other, Not Assigned (no characters in the file have this property)
 
-Informative Categories
-----------------------
+Informative Categories:
 * lm  Letter, Modifier
 * lo  Letter, Other
 * pc  Punctuation, Connector

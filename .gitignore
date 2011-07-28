@@ -4,3 +4,4 @@
 _test
 *.dump
 deps/*
+.eunit

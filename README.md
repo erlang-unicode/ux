@@ -1,6 +1,7 @@
 ; -- Mode: Markdown; -- ; vim: filetype=markdown tw=76 expandtab shiftwidth=4 tabstop=4
 
 [Read edoc documentation](https://github.com/freeakk/ux/master/doc/README.md)
+
 [License LGPLv3](http://http://www.gnu.org/licenses/lgpl-3.0.html)
 
 This library contains helpful functions.
@@ -10,6 +11,7 @@ This library realized only these documents:
 ------------------------------------------
 * [UAX 15](http://www.unicode.org/reports/tr15/)  Unicode Normalization Forms
 * [UTS 10](http://www.unicode.org/reports/tr10/)  Unicode Collation Algorithm
+
 and some parts from:
 --------------------
 * [UAX 44](http://www.unicode.org/reports/tr44/) Unicode Character Database
@@ -18,8 +20,11 @@ and some parts from:
 Structure of the library
 ========================
 `ux_string` uses `ux_char` and `ux_unidata`.
+
 `ux_col` uses `ux_char` and `ux_unidata`.
+
 `ux_char` uses `ux_unidata`.
+
 `ux_unidata` is a huge module with hardcoded UNIDATA database. So, it is
 compiled for a few minutes.
 

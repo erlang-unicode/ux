@@ -101,7 +101,7 @@ types(Str) -> lists:map(fun ux_char:type/1, Str).
 %% @doc Returns a new string which is made from the chars of Str 
 %%      which are not a type from Types list.
 %% @end
--spec delete_types([atom()], string()) -> string().
+-spec delete_types([char_type()], string()) -> string().
 
 delete_types(Types, Str) -> 
     lists:filter(fun(El) -> 
@@ -111,7 +111,7 @@ delete_types(Types, Str) ->
 %% @doc Stops delete_type/2 after Limit deleted chars. If Limit &lt; 0, then
 %%      stops after -Limit skipped chars.
 %% @end
--spec delete_types([atom()], string(), integer()) -> string().
+-spec delete_types([char_type()], string(), integer()) -> string().
 
 delete_types(Types, Str, Limit) when Limit > 0 ->
     lists:reverse(get_types(Types, Str, Limit, [], true, 
@@ -123,7 +123,7 @@ delete_types(Types, Str, Limit) when Limit < 0 ->
 %% @doc Returns a new string which is made from the chars of Str 
 %%      which are a type from Types list.
 % @end
--spec filter_types([atom()], string()) -> string().
+-spec filter_types([char_type()], string()) -> string().
 
 filter_types(Types, Str) -> 
     lists:filter(fun(El) -> 
@@ -132,7 +132,7 @@ filter_types(Types, Str) ->
 
 %% @doc Stops after -Limit skipped chars.
 %% @end
--spec filter_types([atom()], string(), integer()) -> string().
+-spec filter_types([char_type()], string(), integer()) -> string().
 
 filter_types(Types, Str, Limit) when Limit > 0 ->
     lists:reverse(
@@ -146,7 +146,7 @@ filter_types(Types, Str, Limit) when Limit < 0 ->
 %% @doc If Len&lt;0, then gets first Len chars of type, which is in Types
 %%      If Len&gt;0, then gets first -Len chars of type, which is NOT in Types
 %% @end
--spec first_types([atom()], string(), integer()) -> string().
+-spec first_types([char_type()], string(), integer()) -> string().
 first_types(Types, Str, Len) -> 
     lists:reverse(
         get_types(Types, Str, Len, [], false, 
@@ -156,19 +156,20 @@ first_types(Types, Str, Len) ->
 %% @doc If Len&lt;0, then gets last Len chars of type, which is in Types
 %%      If Len&gt;0, then gets last -Len chars of type, which is NOT in Types
 %% @end
--spec last_types([atom()], string(), integer()) -> string().
+-spec last_types([char_type()], string(), integer()) -> string().
 last_types(Types, Str, Len) -> 
     get_types(Types, lists:reverse(Str), Len, [], false, 
         ?ASSERT_IN_ARRAY_LAMBDA(Len>0), 
         ?ASSERT(Len>0, -1, 1), 0).
         
 %% @private
-%% Return list of chars, for which Fun(CharType) return true.
-%% If Len = 0, then return a part of modified string concatinated with
-%% a tail of this string.
-%% If Fun(Char) return true then Len = Len + TrueStep else Len = Len +
-%% FalseStep.
-%% A returned list is reversed.
+%% @doc Return list of chars, for which Fun(CharType) return true.
+%%      If Len = 0, then return a part of modified string concatinated with
+%%      a tail of this string.
+%%      If Fun(Char) return true then Len = Len + TrueStep else Len = Len +
+%%      FalseStep.
+%%      A returned list is reversed.
+%% @end
 get_types(_Types, [] = _Str, _ = _Len, Result, _, _, _, _) -> Result;
 get_types(_,  _, 0, Result, false, _, _, _) -> Result;
 get_types(_,  Tail, 0, Result, true, _, _, _) -> 
@@ -190,14 +191,14 @@ get_types(Types, [Char|Tail],
 %% @doc Returns a new list of strings which are parts of Str splited 
 %%      by separator chars of a type from Types list.
 %% @end
--spec explode_types([atom()], string()) -> string().
+-spec explode_types([char_type()], string()) -> string().
 
 explode_types(Types, Str) -> 
     explode_reverse(explode_types_cycle(Types, Str, [], [])).
 
 %% @private
-explode_types_cycle(_, [], [], Res) -> Res;
-explode_types_cycle(_, [], [_|_] = Buf, Res) -> [Buf|Res];
+explode_types_cycle(_Types, [], [], Res) -> Res;
+explode_types_cycle(_Types, [], [_|_] = Buf, Res) -> [Buf|Res];
 explode_types_cycle(Types, [Char|Str], Buf, Res) -> 
     case lists:member(ux_char:type(Char), Types) of
     true  -> explode_types_cycle(Types, Str, [], [Buf|Res]);
@@ -208,7 +209,7 @@ explode_types_cycle(Types, [Char|Str], Buf, Res) ->
 %%      by separator chars of a type from Types list. Parts can not be
 %%      empty.
 %% @end 
--spec split_types([atom()], string()) -> string().
+-spec split_types([char_type()], string()) -> string().
 
 split_types(Types, Str) -> delete_empty(explode_types(Types, Str)).
 

@@ -158,7 +158,7 @@ get_options([{ducet_r, Val}|T], Opt = #uca_options{ })
     when is_function(Val) ->
     get_options(T, Opt#uca_options{ 
         ducet_r_fn=fun(A) -> 
-            apply(Val, [lists:reverse(A)])
+            Val(lists:reverse(A))
             end });
 get_options([], Opt = #uca_options{ }) ->
     Opt.
@@ -383,6 +383,8 @@ sort_map([], _Params, _Fn, Res) ->
     lists:reverse(Res).
 
 %% @private
+-spec get_sort_fn(atom()) -> function().
+
 get_sort_fn(non_ignorable) ->
     fun sort_array_non_ignorable/1;
 get_sort_fn(blanked) ->
@@ -391,6 +393,8 @@ get_sort_fn(shifted) ->
     fun sort_array_shifted/1;
 get_sort_fn(shift_trimmed) ->
     fun sort_array_shift_trimmed/1.
+
+-spec get_comp_fn(atom()) -> function().
 
 get_comp_fn(non_ignorable) ->
     fun non_ignorable_bin_to_list/1;
@@ -453,6 +457,8 @@ sort_array_to_uncompressed_key(Array) ->
 %% @param AT is Array Tail.
 %% @param Level is max level of key (default 1).
 %% @return {MaxLevel, ReversedSortKey}
+-spec sort_key1(list(), integer(), list(), list()) -> tuple().
+
 sort_key1([[0]|AT], Level, Acc, Res) ->
     sort_key1(AT, Level, Acc, Res);
 sort_key1([[H]|AT], Level, Acc, Res) ->
@@ -482,7 +488,7 @@ sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 
 -define(COL_LEVEL4_CAPACITY, 16#FFFFFF).
 -define(COL_LEVEL4_MIN, 1).
--define(COL_LEVEL4_MAX, 16#FFFF00).
+-define(COL_LEVEL4_MAX, 16#1FFFFF).
 -define(COL_LEVEL4_COMMON, 16#FFFF).
 -define(COL_LEVEL4_BOUND, 16#100F0).
 
@@ -533,6 +539,8 @@ sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 %% @param Key
 %% @param Level (1-4). For example: 3 then 2 then 1 (because Key is reversed!)
 %% @param Res Compressed key
+-spec compress_sort_key_r(list(), integer(), list()) -> list().
+
 compress_sort_key_r([0|T], Level, Res) ->
     compress_sort_key_r(T, Level - 1, [0|Res]);
 % Replace H=2 on Level=3
@@ -565,6 +573,8 @@ compress_sort_key_r([], _Level, Res) -> Res.
 %% An input key must be reversed!
 %% @end
 %% @private
+-spec compress_sort_key_l3(list(), integer(), list()) -> list().
+
 compress_sort_key_l3([?COL_LEVEL3_COMMON|T], M, Res) ->
     compress_sort_key_l3(T, M + 1, Res);
 compress_sort_key_l3(T, M, [W|_] = Res) 
@@ -609,6 +619,8 @@ compress_sort_key_l3(T, M, Res) ->
 %% weight equal to (MINTOP + m).
 %% If W > COMMON, replace the sequence by a synthetic high weight equal to
 %% (MAXBOTTOM - m).
+-spec compress_sort_key_l2(list(), integer(), list()) -> list().
+
 compress_sort_key_l2([?COL_LEVEL2_COMMON|T], M, Res) ->
     compress_sort_key_l2(T, M + 1, Res);
 compress_sort_key_l2(T, M, [W|_] = Res) 
@@ -653,6 +665,8 @@ compress_sort_key_l2(T, M, Res) ->
 %% weight equal to (MINTOP + m).
 %% If W > COMMON, replace the sequence by a synthetic high weight equal to
 %% (MAXBOTTOM - m).
+-spec compress_sort_key_l4(list(), integer(), list()) -> list().
+
 compress_sort_key_l4([?COL_LEVEL4_COMMON|T], M, Res) ->
     compress_sort_key_l4(T, M + 1, Res);
 compress_sort_key_l4(T, M, [W|_] = Res) 
@@ -695,6 +709,8 @@ compress_sort_key_l4(T, M, Res) ->
 %% @see compress_sort_key_l2/3
 %% @doc Add Val to the beginning Cnt times.
 %% @private
+-spec compress_seq(integer(), integer(), list()) -> list().
+
 compress_seq(1, Val, Res) ->
     [Val|Res];
 compress_seq(SeqCnt, Val, Res) when SeqCnt > 1 ->
@@ -706,6 +722,8 @@ convert_key_to_bin(Key) when is_list(Key) ->
 %% @doc Key is a list.
 %%      Level (default 1).
 %% @end
+-spec convert_key_to_bin(list(), integer(), list()) -> binary().
+
 convert_key_to_bin([0|T], Level, Res) ->
     convert_key_to_bin(T, Level + 1, [0|[0|Res]]);
 convert_key_to_bin([H|T], 2, Res) when H < 255 ->
@@ -719,7 +737,7 @@ convert_key_to_bin([H|T], 3, Res) when H > 254 ->
 convert_key_to_bin([H|T], Level, Res) when H =< 16#FFFF ->
     convert_key_to_bin(T, Level, [(H rem 256) |[(H bsr 8) |Res]]);
 convert_key_to_bin([H|T], Level, Res) 
-    when (H > 16#FFFF) and (H =< 16#FFFFFF) ->
+    when (H > 16#FFFF) and (H =< 16#1FFFFF) ->
     convert_key_to_bin(T, Level, 
         [(H rem 256) 
             |[((H bsr 8) rem 256)
@@ -729,26 +747,27 @@ convert_key_to_bin([], _Level, Res) ->
     
 
 % http://unicode.org/reports/tr10/#Variable_Weighting
-sort_array(Str) -> 
+sort_array(Str) when is_list(Str) -> 
     sort_array(Str, #uca_options {ducet_r_fn = fun ducet_r/1}, 
         fun ducet_r/1, fun bin_to_bin/1).
 
-sort_array(Str, Params = #uca_options{alternate=Alt, ducet_r_fn=DucetRFn}) -> 
+sort_array(Str, Params = #uca_options{alternate=Alt, ducet_r_fn=DucetRFn}) 
+    when is_list(Str) -> 
     sort_array(Str, Params, DucetRFn, get_comp_fn(Alt)).
 
-sort_array_non_ignorable(Str) -> 
+sort_array_non_ignorable(Str) when is_list(Str) -> 
     sort_array(Str, get_options(non_ignorable), 
         fun ducet_r/1, fun non_ignorable_bin_to_list/1).
 
-sort_array_blanked(Str) -> 
+sort_array_blanked(Str) when is_list(Str) -> 
     sort_array(Str, get_options(blanked), 
         fun ducet_r/1, fun blanked_bin_to_list/1).
 
-sort_array_shifted(Str) -> 
+sort_array_shifted(Str) when is_list(Str) -> 
     sort_array(Str, get_options(shifted), 
         fun ducet_r/1, fun shifted_bin_to_list/1).
 
-sort_array_shift_trimmed(Str) -> 
+sort_array_shift_trimmed(Str) when is_list(Str) -> 
     sort_array(Str, get_options(shift_trimmed), 
         fun ducet_r/1, fun shift_trimmed_bin_to_list/1).
 
@@ -757,7 +776,9 @@ sort_array_shift_trimmed(Str) ->
 bin_to_bin(Val) ->
     { fun bin_to_bin/1, Val }.
 
-compare(String1, String2) ->
+-spec compare(list(), list()) -> lower | upper | equal.
+
+compare(String1, String2) when is_list(String1), is_list(String2) ->
     Params = #uca_options{ducet_r_fn=fun ducet_r/1},
     #uca_options{ alternate=Alt } = Params, 
     compare(String1, String2, Params, fun ducet_r/1, get_comp_fn(Alt)).
@@ -769,7 +790,11 @@ compare(String1, String2, #uca_options{
 %% TableFun returns value from DUCET table.
 %% ComparatorFun http://unicode.org/reports/tr10/#Variable%20Weighting
 %% @end
-compare(String1, String2, Params, TableFun, ComparatorFun) ->
+-spec compare(list(), list(), record(), function(), function()) 
+    -> lower | upper | equal.
+compare(String1, String2, #uca_options{} = Params, TableFun, ComparatorFun) 
+    when is_function(TableFun), is_function(ComparatorFun),
+    is_list(String1), is_list(String2) ->
     compare1(ux_string:to_nfd(String1), 
         ux_string:to_nfd(String2),
         Params, 
@@ -997,7 +1022,7 @@ extract0([], _) -> % No Any Char
 % try only ideographs and hangul characters.
 % This function runs when ducet() return 'other'. 
 extract0([CP|Tail], { only_derived, TableFun }) ->
-    case apply(TableFun, [[CP]]) of
+    case TableFun([CP]) of
     [_|_] = Value -> % from ducet 
         {Value, Tail};
     _ -> % other, more 
@@ -1006,7 +1031,7 @@ extract0([CP|Tail], { only_derived, TableFun }) ->
 
 % Try extract from ducet.
 extract0([CP|[]], TableFun) -> % Last Char
-    case apply(TableFun, [[CP]]) of 
+    case TableFun([CP]) of
     [_|_] = Value ->
         {Value, []};
     {set_ignorables_to_0, Value} ->
@@ -1053,7 +1078,7 @@ extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
 
             % Try extract weight from ducat. There is one place, where we can 
             % extract. We only get old value from ducat in other places.
-            Bin = apply(TableFun, [NewCPList]),
+            Bin = TableFun(NewCPList),
             case Bin of
             % Bin(CPList) == other, but Bin(CPList+NextChar) may be 
             % have a specified collation weight.
@@ -1175,7 +1200,7 @@ compare1(StrTail1, StrTail2, #uca_options{
     } = Params, [CV1Raw|Buf1], Buf2, false, Acc1, 
     Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
     % This function can reverse argument or set 0.
-    {NewFun, Val} = apply(ComparatorFun1, [CV1Raw]),
+    {NewFun, Val} = ComparatorFun1(CV1Raw),
     case weight_strength(S, Val) of 
     [0|Acc] -> % Find other W1L1
         compare1(StrTail1, StrTail2, Params, Buf1, Buf2, false, [Acc|Acc1], 
@@ -1189,7 +1214,7 @@ compare1(StrTail1, StrTail2, #uca_options{
         strength=S
     } = Params, Buf1, [CV2Raw|Buf2], W1L1, Acc1, 
     Acc2, TableFun, ComparatorFun1, ComparatorFun2) ->
-    {NewFun, Val} = apply(ComparatorFun2, [CV2Raw]),
+    {NewFun, Val} = ComparatorFun2(CV2Raw),
     case weight_strength(S, Val) of 
     [0|Acc] -> % Find other W2L1
         compare1(StrTail1, StrTail2, Params, Buf1, Buf2, W1L1, Acc1, 
@@ -1235,7 +1260,7 @@ compare1([] = _Str1, [] = _Str2, #uca_options{
         strength=S
     } = Params, [W1Raw|Buf1], [] = _Buf2, W1L1, Acc1, 
     Acc2, TableFun, ComparatorFun1, ComparatorFun2) when W1L1 == 0 ->
-    {NewFun, Val} = apply(ComparatorFun1, [W1Raw]),
+    {NewFun, Val} = ComparatorFun1(W1Raw),
     [W1L1New|Acc] = weight_strength(S, Val),
     compare1([], [], Params, Buf1, [], W1L1New, [Acc|Acc1], 
         Acc2, TableFun, NewFun, ComparatorFun2);
@@ -1310,7 +1335,7 @@ sort_array(Str, Params, TableFun, CompFun) ->
 sort_array1([], _Params, _TableFun, _CompFun, [], Res) ->
     lists:reverse(Res);
 sort_array1(Str, #uca_options{strength=S} = P, TableFun, CompFun, [H|T], Res) ->
-    {NewCompFun, Val} = apply(CompFun, [H]),
+    {NewCompFun, Val} = CompFun(H),
     Val2 = weight_strength(S, Val),
     sort_array1(Str, P, TableFun, NewCompFun, T, [Val2|Res]);
 sort_array1([_|_] = Str, P, TableFun, CompFun, [], Res) ->

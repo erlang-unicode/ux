@@ -42,14 +42,23 @@
         ]).
 -include("ux_char.hrl").
 
+-spec to_lower(char()) -> char().
+-spec to_upper(char()) -> char().
+-spec is_lower(char()) -> boolean().
+-spec is_upper(char()) -> boolean().
 to_lower(V) -> ux_unidata:char_to_lower(V).
 to_upper(V) -> ux_unidata:char_to_upper(V).
 is_lower(V) -> ux_unidata:is_lower(V).
 is_upper(V) -> ux_unidata:is_upper(V).
 
+-spec comment(char()) -> string().
 comment(V) -> ux_unidata:char_comment(V).
+
+-spec type(char()) -> char_type().
 type(V) -> ux_unidata:char_type(V).
 
+
+-spec is_acsii(char()) -> boolean().
 is_acsii(Char) when (Char>=0) and (Char=<16#7F) -> true;
 is_acsii(_) -> false.
 
@@ -106,21 +115,21 @@ to_ncr(Char) ->
 
 %% http://unicode.org/reports/tr15/#Hangul
 is_hangul(Char) when
-     ((Char>=16#1100) and (Char=<16#11FF)) % Hangul Jamo
-  or ((Char>=16#A960) and (Char=<16#A97C)) % Hangul Jamo Extended-A
-  or ((Char>=16#D7B0) and (Char=<16#D7C6)) % Hangul Jamo Extended-B
-  or ((Char>=16#D7CB) and (Char=<16#D7FB)) % Hangul Jamo Extended-B
-  or ((Char>=16#3131) and (Char=<16#318E)) % Hangul Compatibility Jamo 
-  or  (Char==17#302E) or  (Char==16#302F)  % Tone marks (used in Middle Korean) 
-  or ((Char>=16#AC00) and (Char=<16#D7A3)) % 11,172 precomposed Hangul syllables
-  or ((Char>=16#3200) and (Char=<16#321E)) % For parenthesised 
-  or ((Char>=16#3260) and (Char=<16#327E)) % and circled 
-  or ((Char>=16#FFDC) and (Char=<16#FFA0)) % For halfwidth 
+    Char>=16#1100, Char=<16#11FF % Hangul Jamo
+  ; Char>=16#A960, Char=<16#A97C % Hangul Jamo Extended-A
+  ; Char>=16#D7B0, Char=<16#D7C6 % Hangul Jamo Extended-B
+  ; Char>=16#D7CB, Char=<16#D7FB % Hangul Jamo Extended-B
+  ; Char>=16#3131, Char=<16#318E % Hangul Compatibility Jamo 
+  ; Char==17#302E; Char==16#302F % Tone marks (used in Middle Korean) 
+  ; Char>=16#AC00, Char=<16#D7A3 % 11,172 precomposed Hangul syllables
+  ; Char>=16#3200, Char=<16#321E % For parenthesised 
+  ; Char>=16#3260, Char=<16#327E % and circled 
+  ; Char>=16#FFDC, Char=<16#FFA0 % For halfwidth 
              -> true;
 is_hangul(_) -> false.
 
 is_hangul_precomposed(Char)
-    when ((Char>=16#AC00) and (Char=<16#D7A3))
+    when Char>=16#AC00, Char=<16#D7A3
         % 11,172 precomposed Hangul syllables
                          -> true;
 is_hangul_precomposed(_) -> false.

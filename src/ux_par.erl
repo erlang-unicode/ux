@@ -1,5 +1,20 @@
 % vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
-%%% @doc This Module contains functions for working with Req:parse_post() list.
+%%% @doc This Module contains functions for working with Req:parse_post() list
+%%%      from the mochiweb library.
+%%%
+%%% Example:
+%%% [Extraction of params from a POST data list](https://github.com/freeakk/web_col).
+%%% ```
+%%% col_params(PostList) ->
+%%%     V = ux_col:get_options([
+%%%         {natural_sort, ux_par:atom("natural_sort", PostList)},
+%%%         {case_sensitive, ux_par:atom("case_sensitive", PostList)},
+%%%         {strength, ux_par:integer("strength", PostList)},
+%%%         {alternate, ux_par:atom("alternate", PostList)},
+%%%         {case_first, ux_par:atom("case_first", PostList)}
+%%%     ]).'
+%%% '''
+%%% @end
 -module(ux_par).
 -export([el/2, string/2, atom/2, integer/2]).
 

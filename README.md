@@ -5,28 +5,48 @@
 
 This library contains helpful functions.
 
-ux_string.erl: String Functions for lists of Unicode characters.
+All actions with Unicode was described in [Unicode Standards](http://www.unicode.org/reports/).
+This library realized only these documents:
+------------------------------------------
+* [UAX 15](http://www.unicode.org/reports/tr15/)  Unicode Normalization Forms
+* [UTS 10](http://www.unicode.org/reports/tr10/)  Unicode Collation Algorithm
+and some parts from:
+--------------------
+* [UAX 44](http://www.unicode.org/reports/tr44/) Unicode Character Database
+
+
+Structure of the library
+========================
+`ux_string` uses `ux_char` and `ux_unidata`.
+`ux_col` uses `ux_char` and `ux_unidata`.
+`ux_char` uses `ux_unidata`.
+`ux_unidata` is a huge module with hardcoded UNIDATA database. So, it is
+compiled for a few minutes.
+
+
+ux\_string.erl: String Functions for lists of Unicode characters.
 ================================================================
 
-This library provides functions for operations with
+This module provides functions for operations with
 [UNIDATA](http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html).
 UNIDATA contains data about Unicode characters.
 
+
 Functions for working with Unicode Normal Forms (UNF)
 -----------------------------------------------------
-* to_nfc/1
-* to_nfd/1
-* to_nfkd/1
-* to_nfkc/1
-* is_nfc/1
-* is_nfd/1
-* is_nfkc/1
-* is_nfkd/1
+* to\_nfc/1
+* to\_nfd/1
+* to\_nfkd/1
+* to\_nfkc/1
+* is\_nfc/1
+* is\_nfd/1
+* is\_nfkc/1
+* is\_nfkd/1
 
 Functions from stdlib for Unicode strings
 -----------------------------------------
-* to_lower/1
-* to_upper/1
+* to\_lower/1
+* to\_upper/1
 
 Functions for processing strings as groups of graphemes
 -------------------------------------------------------
@@ -39,8 +59,8 @@ Grapheme is letter with its modifiers.
 "PHP-style" string functions
 ----------------------------
 * explode/2,3
-* html_special_chars/1 (htmlspecialchars in php)
-* strip_tags/1,2
+* html\_special\_chars/1 (htmlspecialchars in php)
+* strip\_tags/1,2
 
 Examples
 --------
@@ -117,8 +137,8 @@ Result:
 "E       . H        ,          ,                E ,           ."
 ```
 
-ux_char.erl: Char Functions
-===========================
+ux\_char.erl: Char Functions
+============================
 Code:
 
 ```erlang
@@ -165,8 +185,8 @@ zs
     * sk  Symbol, Modifier
     * so  Symbol, Other
 
-ux_col.erl: Unicode Collation Algorithm
-=======================================
+ux\_col.erl: Unicode Collation Algorithm
+========================================
 See [Unicode Technical Standard #10](http://unicode.org/reports/tr10/).
 
 Functions
@@ -248,8 +268,8 @@ ok
 ```
 
 
-ux_unidata.erl
-==============
+ux\_unidata.erl
+===============
 Stores UNIDATA information. For internal using only.
 
 

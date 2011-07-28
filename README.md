@@ -1,6 +1,6 @@
 ; -- Mode: Markdown; -- ; vim: filetype=markdown tw=76 expandtab shiftwidth=4 tabstop=4
 
-[Read edoc documentation](https://github.com/freeakk/ux/master/doc/README.md)
+[Read edoc documentation](https://github.com/freeakk/ux/blob/master/doc/README.md)
 
 [License LGPLv3](http://http://www.gnu.org/licenses/lgpl-3.0.html)
 

@@ -151,6 +151,8 @@ get_options([{strength, Val}|T], Opt = #uca_options{ }) ->
     get_options(T, Opt#uca_options{ strength=Val });
 get_options([{alternate, Val}|T], Opt = #uca_options{ }) ->
     get_options(T, Opt#uca_options{ alternate=Val });
+get_options([{sort_key_format, Val}|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ sort_key_format=Val });
 get_options([{ducet_r_fn, Val}|T], Opt = #uca_options{ }) 
     when is_function(Val) ->
     get_options(T, Opt#uca_options{ ducet_r_fn=Val });
@@ -473,24 +475,34 @@ sort_key1([] = _InArray, Level, [_|_] = Acc, Res) ->
     sort_key1(lists:reverse(Acc), Level + 1, [], [0|Res]);
 sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 
+% CAPACITY is a max value after compression.
+% MIN is a min value before compression.
+% MAX is a max value before compression.
 
+% Before:
+% MIN < COMMON < MAX
+% After:
+% MIN < MAXBOTTOM < GAP_FOR_COMMON_VALUE < MINTOP < CAPACITY
 -define(COL_LEVEL2_CAPACITY, 500).
 -define(COL_LEVEL2_MIN, 1).
 -define(COL_LEVEL2_MAX, 450).
 -define(COL_LEVEL2_COMMON, 32).
 -define(COL_LEVEL2_BOUND, 50).
+-define(COL_LEVEL2_MINTOP, 31).
 
 -define(COL_LEVEL3_CAPACITY, 16#FF).
 -define(COL_LEVEL3_MIN, 2).
 -define(COL_LEVEL3_MAX, 16#1F).
 -define(COL_LEVEL3_COMMON, 2).
 -define(COL_LEVEL3_BOUND, 60).
+-define(COL_LEVEL3_MINTOP, 1).
 
 -define(COL_LEVEL4_CAPACITY, 16#FFFFFF).
 -define(COL_LEVEL4_MIN, 1).
 -define(COL_LEVEL4_MAX, 16#1FFFFF).
 -define(COL_LEVEL4_COMMON, 16#FFFF).
 -define(COL_LEVEL4_BOUND, 16#100F0).
+-define(COL_LEVEL4_MINTOP, 16#FFFE).
 
 % Reassign the weights in the collation element table at level n to create
 % a gap of size GAP above COMMON. Typically for secondaries or tertiaries 
@@ -517,19 +529,16 @@ sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
     ?REASSIGN_WEIGHT(W, ?COL_LEVEL4_MIN, ?COL_LEVEL4_MAX, ?COL_LEVEL4_COMMON,
         ?COL_LEVEL4_CAPACITY)).
 
--define(COL_LEVEL2_MINTOP, 31).
 -define(COL_LEVEL2_MAXBOTTOM, (?COL_LEVEL2_CAPACITY - ?COL_LEVEL2_MIN
     - (?COL_LEVEL2_MAX - ?COL_LEVEL2_COMMON + 1))).
 -define(COL_LEVEL2_GAP_SIZE, (?COL_LEVEL2_CAPACITY - ?COL_LEVEL2_MAX 
    -  ?COL_LEVEL2_MIN)).
 
--define(COL_LEVEL3_MINTOP, 1).
 -define(COL_LEVEL3_MAXBOTTOM, (?COL_LEVEL3_CAPACITY - ?COL_LEVEL3_MIN
     - (?COL_LEVEL3_MAX - ?COL_LEVEL3_COMMON + 1))).
 -define(COL_LEVEL3_GAP_SIZE, (?COL_LEVEL3_CAPACITY - ?COL_LEVEL3_MAX
    -  ?COL_LEVEL3_MIN)).
 
--define(COL_LEVEL4_MINTOP, 1).
 -define(COL_LEVEL4_MAXBOTTOM, (?COL_LEVEL4_CAPACITY - ?COL_LEVEL4_MIN
     - (?COL_LEVEL4_MAX - ?COL_LEVEL4_COMMON + 1))).
 -define(COL_LEVEL4_GAP_SIZE, (?COL_LEVEL4_CAPACITY - ?COL_LEVEL4_MAX
@@ -544,17 +553,19 @@ sort_key1([] = _InArray, Level, [] = _Acc, Res) -> {Level, Res}.
 compress_sort_key_r([0|T], Level, Res) ->
     compress_sort_key_r(T, Level - 1, [0|Res]);
 % Replace H=2 on Level=3
-compress_sort_key_r([?COL_LEVEL3_COMMON|T], 3, Res) ->
+compress_sort_key_r([?COL_LEVEL3_COMMON|T], _Level = 3, Res) ->
     compress_sort_key_l3(T, 1, Res);
 compress_sort_key_r([H|T], Level = 3, Res) ->
     compress_sort_key_r(T, Level, [?REASSIGN_WEIGHT3(H)|Res]);
 
-compress_sort_key_r([?COL_LEVEL2_COMMON|T], 2, Res) ->
+% Replace on Level=2
+compress_sort_key_r([?COL_LEVEL2_COMMON|T], _Level = 2, Res) ->
     compress_sort_key_l2(T, 1, Res);
 compress_sort_key_r([H|T], Level = 2, Res) ->
     compress_sort_key_r(T, Level, [?REASSIGN_WEIGHT2(H)|Res]);
 
-compress_sort_key_r([?COL_LEVEL4_COMMON|T], 2, Res) ->
+% Replace on Level=4
+compress_sort_key_r([?COL_LEVEL4_COMMON|T], _Level = 4, Res) ->
     compress_sort_key_l4(T, 1, Res);
 compress_sort_key_r([H|T], Level = 4, Res) ->
     compress_sort_key_r(T, Level, [?REASSIGN_WEIGHT4(H)|Res]);
@@ -724,7 +735,7 @@ convert_key_to_bin(Key) when is_list(Key) ->
 %% @end
 -spec convert_key_to_bin(list(), integer(), list()) -> binary().
 
-convert_key_to_bin([0|T], Level, Res) ->
+convert_key_to_bin([0|T], Level, Res) when Level < 4 ->
     convert_key_to_bin(T, Level + 1, [0|[0|Res]]);
 convert_key_to_bin([H|T], 2, Res) when H < 255 ->
     convert_key_to_bin(T, 2, [H|Res]);
@@ -734,11 +745,10 @@ convert_key_to_bin([H|T], 2, Res) when H > 254 ->
     convert_key_to_bin([(H - 255)|T], 2, [255|Res]);
 convert_key_to_bin([H|T], 3, Res) when H > 254 ->
     convert_key_to_bin([(H - 255)|T], 3, [255|Res]);
-convert_key_to_bin([H|T], Level, Res) when H =< 16#FFFF ->
-    convert_key_to_bin(T, Level, [(H rem 256) |[(H bsr 8) |Res]]);
-convert_key_to_bin([H|T], Level, Res) 
-    when (H > 16#FFFF) and (H =< 16#1FFFFF) ->
-    convert_key_to_bin(T, Level, 
+convert_key_to_bin([H|T], 1, Res) when H =< 16#FFFF ->
+    convert_key_to_bin(T, 1, [(H rem 256) |[(H bsr 8) |Res]]);
+convert_key_to_bin([H|T], 4, Res) when H =< 16#FFFFFF ->
+    convert_key_to_bin(T, 4, 
         [(H rem 256) 
             |[((H bsr 8) rem 256)
                 |[(H bsr 16)|Res]]]);
@@ -1369,7 +1379,13 @@ compress_info() ->
         F(" ?COL_LEVEL3_MAX = ~w ~n", [?COL_LEVEL3_MAX]),
         F(" ?COL_LEVEL3_GAP_SIZE = ~w ~n", [?COL_LEVEL3_GAP_SIZE]),
         F(" ?COL_LEVEL3_MINTOP = ~w ~n", [?COL_LEVEL3_MINTOP]),
-        F(" ?COL_LEVEL3_MAXBOTTOM = ~w ~n", [?COL_LEVEL3_MAXBOTTOM])
+        F(" ?COL_LEVEL3_MAXBOTTOM = ~w ~n", [?COL_LEVEL3_MAXBOTTOM]),
+
+        F(" ?COL_LEVEL4_MIN = ~w ~n", [?COL_LEVEL4_MIN]),
+        F(" ?COL_LEVEL4_MAX = ~w ~n", [?COL_LEVEL4_MAX]),
+        F(" ?COL_LEVEL4_GAP_SIZE = ~w ~n", [?COL_LEVEL4_GAP_SIZE]),
+        F(" ?COL_LEVEL4_MINTOP = ~w ~n", [?COL_LEVEL4_MINTOP]),
+        F(" ?COL_LEVEL4_MAXBOTTOM = ~w ~n", [?COL_LEVEL4_MAXBOTTOM])
     ])]).
 
 

@@ -944,7 +944,7 @@ decimal2(Dec,  [], Acc, [_|_] = StrTail, TableFun) ->
     {Weights, StrTail2} = extract0(StrTail, TableFun), % We need more gold.
     decimal2(Dec, Weights, Acc, StrTail2, TableFun);
 decimal2(Dec, T, Acc, StrTail, _TableFun) -> % L
-    {lists:reverse(append(T, decimal_result(Dec, Acc))), StrTail}.
+    {lists:reverse(lists:reverse(T, decimal_result(Dec, Acc))), StrTail}.
 
 
 decimal_result(Dec, Res) ->
@@ -988,7 +988,7 @@ hangul2(_Mod, [   ], _Acc, [] = _StrTail, _TableFun, _Term) -> % L
 
 %% @private
 hangul_result(T, Acc, StrTail, Term) ->
-    {lists:reverse(append(T, [Term|Acc])), StrTail}.
+    {lists:reverse(lists:reverse(T, [Term|Acc])), StrTail}.
 
 
 %% @private
@@ -1119,26 +1119,12 @@ extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
         OldVal ==  false -> % and (CPList == [_]) 
             % http://unicode.org/reports/tr10/#Unassigned_And_Other
             extract0(
-                append(CPList, 
-                    append(Skipped, Str)), 
+                lists:reverse(CPList, 
+                    lists:reverse(Skipped, Str)), 
                 {only_derived, TableFun}); % Or *timed out*
-        OldVal =/= false -> {OldVal, append(Skipped, Str)}
+        OldVal =/= false -> {OldVal, lists:reverse(Skipped, Str)}
     end.
 
-    
-%% @see extract
-%% @doc Fast realization of:
-%% `append(Head, Tail) == lists:reverse(Head) ++ Tail'
-%% @end
-%% @private
--spec append(InStr :: string(), OutStr :: string()) -> string().
-append(InStr, OutStr) ->
-%   io:format("App: ~w ~w ~n", [InStr, OutStr]),
-    append1(InStr, OutStr).
-%% @private
-append1([H|T], Str) ->
-    append1(T, [H|Str]);
-append1([], Str) -> Str.
 
 
 %% @doc 7.1.3 Implicit Weights 
@@ -1446,7 +1432,7 @@ sort_key_test_() ->
     ].
 
 append_test_() ->
-    F = fun append/2,
+    F = fun lists:reverse/2,
     [?_assertEqual(F("ABC", "DEF"), "CBADEF")
     ,?_assertEqual(F("123", F("ABC", "DEF")), "321CBADEF")
     ].

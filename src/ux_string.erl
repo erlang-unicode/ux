@@ -343,16 +343,15 @@ html_special_chars(Str) -> hsc(Str).
 %% @private
 -spec hsc(string()) -> string().
 
-hsc([ ]) -> [];
-hsc(Str) -> hsc(lists:reverse(Str), []).
+hsc(Str) -> hsc(Str, []).
 
 %% @private
-hsc([      ], Buf) -> Buf;
-hsc([$" | T], Buf) -> hsc(T, lists:append("&quot;", Buf));
-hsc([$' | T], Buf) -> hsc(T, lists:append("&#39;", Buf));
-hsc([$& | T], Buf) -> hsc(T, lists:append("&amp;", Buf));
-hsc([$< | T], Buf) -> hsc(T, lists:append("&lt;", Buf));
-hsc([$> | T], Buf) -> hsc(T, lists:append("&gt;", Buf));
+hsc([      ], Buf) -> lists:reverse(Buf);
+hsc([$" | T], Buf) -> hsc(T, lists:reverse("&quot;", Buf));
+hsc([$' | T], Buf) -> hsc(T, lists:reverse("&#39;", Buf));
+hsc([$& | T], Buf) -> hsc(T, lists:reverse("&amp;", Buf));
+hsc([$< | T], Buf) -> hsc(T, lists:reverse("&lt;", Buf));
+hsc([$> | T], Buf) -> hsc(T, lists:reverse("&gt;", Buf));
 hsc([H  | T], Buf) -> hsc(T, [H|Buf]).
 
 %% @doc Deletes tags from the string.

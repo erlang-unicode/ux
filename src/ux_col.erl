@@ -156,6 +156,26 @@ get_options([{sort_key_format, Val}|T], Opt = #uca_options{ }) ->
 get_options([{ducet_r_fn, Val}|T], Opt = #uca_options{ }) 
     when is_function(Val) ->
     get_options(T, Opt#uca_options{ ducet_r_fn=Val });
+
+% I don't like enter {sort_key_format, list}. So, get atom:
+% alternate
+get_options([shifted|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ alternate=shifted });
+get_options([shift_trimmed|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ alternate=shift_trimmed });
+get_options([non_ignorable|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ alternate=non_ignorable });
+get_options([blanked|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ alternate=blanked });
+% sort_key_format
+get_options([binary|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ sort_key_format=binary });
+get_options([list|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ sort_key_format=list });
+get_options([uncompressed|T], Opt = #uca_options{ }) ->
+    get_options(T, Opt#uca_options{ sort_key_format=uncompressed });
+
+
 get_options([{ducet_r, Val}|T], Opt = #uca_options{ }) 
     when is_function(Val) ->
     get_options(T, Opt#uca_options{ 

@@ -60,14 +60,37 @@
  W - ?COL_DECIMAL_START 
 )).
 
+-type uca_alternate() ::
+      shifted
+    | shift_trimmed
+    | non_ignorable
+    | blanked
+    .
+
+
+-type uca_case_first() ::
+      lower
+    | upper
+    | off
+    .
+
+-type uca_strength() ::
+     1 | 2 | 3 | 4.
+
+-type uca_sort_key_format() ::
+      binary
+    | list % comressed list of weights
+    | uncompressed % uncompressed list of weights
+    .
+
 % Records
 -record(uca_options, {
-        hangul_terminator = ?COL_HANGUL_TERMINATOR,
-        natural_sort = true,
-        strength = 4,
-        alternate = shifted,
-        case_sensitive = false, % move L3 to L1
-        case_first = lower, % off | upper | lower
-        sort_key_format = binary, % binary | list | uncompressed (list)
-        ducet_r_fn % Ducet Function: fun(RevervedString) -> WeightList.
+        hangul_terminator = ?COL_HANGUL_TERMINATOR :: integer(),
+        natural_sort = true :: boolean(),
+        strength = 4 :: uca_strength(),
+        alternate = shifted :: uca_alternate(),
+        case_sensitive = false, % move L3 to L1 if true
+        case_first = lower :: uca_case_first(), 
+        sort_key_format = binary :: uca_sort_key_format(), 
+        ducet_r_fn :: fun() % Ducet Function: fun(RevervedString) -> WeightList.
         }).

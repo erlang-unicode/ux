@@ -53,11 +53,11 @@
         to_graphemes/1, reverse/1,
         length/1, len/1,
         first/2, last/2,
-        hex_to_int/1,
 
         info/1,
         types/1]).
 
+-include("ux.hrl").
 -include("ux_string.hrl").
 -include("ux_unidata.hrl").
 -include("ux_char.hrl").
@@ -78,14 +78,14 @@ end).
 % Sorry, but -import() is garbage :(
 
 %% Returns Canonical_Combining_Class.
-ccc(V) -> ux_unidata:ccc(V).
-nfc_qc(V) -> ux_unidata:nfc_qc(V).
-nfd_qc(V) -> ux_unidata:nfd_qc(V).
-nfkc_qc(V) -> ux_unidata:nfkc_qc(V).
-nfkd_qc(V) -> ux_unidata:nfkd_qc(V).
-is_compat(V) -> ux_unidata:is_compat(V).
-comp(V1, V2) -> ux_unidata:comp(V1, V2).
-decomp(V) -> ux_unidata:decomp(V).
+ccc(V) -> ?UNIDATA:ccc(V).
+nfc_qc(V) -> ?UNIDATA:nfc_qc(V).
+nfd_qc(V) -> ?UNIDATA:nfd_qc(V).
+nfkc_qc(V) -> ?UNIDATA:nfkc_qc(V).
+nfkd_qc(V) -> ?UNIDATA:nfkd_qc(V).
+is_compat(V) -> ?UNIDATA:is_compat(V).
+comp(V1, V2) -> ?UNIDATA:comp(V1, V2).
+decomp(V) -> ?UNIDATA:decomp(V).
 
 
 %% @doc Returns various "character types" which can be used 
@@ -787,9 +787,6 @@ reverse_flatten(T, [HH|TT],  Res) ->
     reverse_flatten(T, TT, [HH|Res]);
 reverse_flatten(_, [], Res) ->
     Res.
-hex_to_int(Code) ->
-    {ok, [Int], []} = io_lib:fread("~16u", Code),
-    Int.
 
 %------------------------------------------------------------------------------
   %%%   %     % %%%%%%% %%%%%%%
@@ -1067,6 +1064,7 @@ last_test_() ->
     [?_assertEqual(M:F("Octocat!", 4), "cat!")
     ].
 
+-ifdef(SLOW_TESTS).
 %% @doc Normalization Conformance Test
 %% http://unicode.org/reports/tr41/tr41-7.html#Tests15
 %%
@@ -1107,7 +1105,8 @@ nfc_test(InFd, Max, StrNum) ->
         [LineWithoutComment|_] = ux_string:explode("#", Data),
         % Convert string from file to list of integers 
         lists:map(fun (Str) -> 
-                lists:map(fun hex_to_int/1, string:tokens(Str, " ")) 
+                lists:map(fun ux_unidata_parser:hex_to_int/1, 
+                    string:tokens(Str, " ")) 
             end,
             ux_string:explode(";", LineWithoutComment))
         of 
@@ -1147,10 +1146,11 @@ nfc_test(InFd, Max, StrNum) ->
     end.
 
 nfc_prof(Count) ->
-    {ok, InFd} = file:open(ux_unidata:get_unidata_dir() 
+    {ok, InFd} = file:open(?UNIDATA:get_unidata_dir() 
         ++ "NormalizationTest.txt", [read]),
     io:setopts(InFd,[{encoding,utf8}]),
     nfc_test(InFd, Count, 0),
+    file:close(InFd),
     ok.
 
 nfc_test_() ->
@@ -1161,4 +1161,5 @@ nfc_test_() ->
                 io:format(user, "~n", []) end}}.
 
 
--endif.
+-endif. % SLOW_TESTS
+-endif. % TEST

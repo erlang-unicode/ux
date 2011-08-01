@@ -41,21 +41,22 @@
         is_hangul_precomposed/1 
         ]).
 -include("ux_char.hrl").
+-include("ux_unidata.hrl").
 
 -spec to_lower(char()) -> char().
 -spec to_upper(char()) -> char().
 -spec is_lower(char()) -> boolean().
 -spec is_upper(char()) -> boolean().
-to_lower(V) -> ux_unidata:char_to_lower(V).
-to_upper(V) -> ux_unidata:char_to_upper(V).
-is_lower(V) -> ux_unidata:is_lower(V).
-is_upper(V) -> ux_unidata:is_upper(V).
+to_lower(V) -> ?UNIDATA:char_to_lower(V).
+to_upper(V) -> ?UNIDATA:char_to_upper(V).
+is_lower(V) -> ?UNIDATA:is_lower(V).
+is_upper(V) -> ?UNIDATA:is_upper(V).
 
 -spec comment(char()) -> string().
-comment(V) -> ux_unidata:char_comment(V).
+comment(V) -> ?UNIDATA:char_comment(V).
 
 -spec type(char()) -> char_type().
-type(V) -> ux_unidata:char_type(V).
+type(V) -> ?UNIDATA:char_type(V).
 
 
 -spec is_acsii(char()) -> boolean().
@@ -152,5 +153,5 @@ is_unified_ideograph(Ch) when
     ?CHAR_IS_UNIFIED_IDEOGRAPH(Ch) -> true;
 is_unified_ideograph(_) -> false.
 
-block(V) -> ux_unidata:char_block(V).
+block(V) -> ?UNIDATA:char_block(V).
 

@@ -27,3 +27,4 @@
 -define(UNIDATA_VERSION,   "UNIDATA").
 -define(UCADATA_VERSION,   "UCA").
 
+-define(UNIDATA, ux_unidata).

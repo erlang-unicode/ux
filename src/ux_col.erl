@@ -82,14 +82,16 @@
         get_options/0, get_options/1, get_options/2
         ]).
 
+-include("ux.hrl").
 -include("ux_string.hrl").
 -include("ux_unidata.hrl").
 -include("ux_char.hrl").
 -include("ux_col.hrl").
 
+
 % ducet_r(reversed_in) -> non_reversed_key;
-ducet_r(V) -> ux_unidata:ducet_r(V).
-ccc(V) -> ux_unidata:ccc(V).
+ducet_r(V) -> ?UNIDATA:ducet_r(V).
+ccc(V) -> ?UNIDATA:ccc(V).
 
 
 %% @doc In:  not reversed string.
@@ -1562,6 +1564,7 @@ natural_sort_test_() ->
                 "Xiph Xlater 58"], 
         get_options([{natural_sort, true}, {alternate, non_ignorable}])))}].
 
+-ifdef(SLOW_TESTS).
 %---------------------------------------------------------------
 % SLOW TESTS 
 %---------------------------------------------------------------
@@ -1644,7 +1647,7 @@ test_read(InFd, StrNum) ->
         try % parse Data
             [Value|_] = ux_string:split(["#", ";", "\n"], Data), 
             %% Converts "0009 0021" to [16#0009, 16#0021]
-            lists:map(fun ux_string:hex_to_int/1, 
+            lists:map(fun ux_unidata_parser:hex_to_int/1, 
                       string:tokens(Value, " "))
         of Res -> {Data, Res, StrNum + 1} % {FullStr, Codepaints}
         catch                   
@@ -1658,6 +1661,7 @@ prof(File, Params, Count) ->
     {ok, InFd} = file:open(File, [read]),
 %    io:setopts(InFd,[{encoding,utf8}]),
     Res = test(InFd, Params, false, 0, Count, ok),
+    file:close(InFd),
     ?assertEqual(Res, ok).
 
 
@@ -1665,7 +1669,7 @@ non_ignorable_test_() ->
     {timeout, 600, 
         fun() -> 
             prof(
-               ux_unidata:get_ucadata_dir() ++ "CollationTest/" 
+               ?UNIDATA:get_ucadata_dir() ++ "CollationTest/" 
                     % Slow, with comments.
 %                  ++ "CollationTest_NON_IGNORABLE.txt", 
                     % Fast version (data from slow version are equal).
@@ -1678,7 +1682,7 @@ shifted_test_() ->
     {timeout, 600, 
         fun() -> 
             prof(
-               ux_unidata:get_ucadata_dir() ++ "CollationTest/" 
+               ?UNIDATA:get_ucadata_dir() ++ "CollationTest/" 
                     % Slow, with comments.
 %                   ++ "CollationTest_SHIFTED.txt", 
                     ++ "CollationTest_SHIFTED_SHORT.txt", 
@@ -1701,4 +1705,5 @@ natural_sort_long_test_() ->
             nat_prof(lists:seq(1, 100000000000000, 9999999999)),
             io:format(user, "~n", [])
         end}.
--endif.
+-endif. % SLOW_TESTS
+-endif. % TEST

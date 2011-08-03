@@ -64,18 +64,11 @@ do_gen(InFd, {OutFd} = OutFds, Chars) ->
                             InEl  = %ux_string:to_nfd
                                 (lists:map(fun ux_string:hex_to_int/1, string:tokens(Char, " "))),
 
-                            case InEl of
-                                % Hangul HalfWidth hack.
-                                [Ch] when 
-                                 (Ch>=16#FFA1) and (Ch=<16#FFAF)  
-                                  -> InEl2 = InEl, OutEl2 = hangul_halfwidth_fix(OutEl);
-                                _ -> InEl2 = InEl, OutEl2 = OutEl 
-                            end,
 
-                            case lists:member(InEl2, Chars) of
+                            case lists:member(InEl, Chars) of
                                 false -> io:format(OutFd, "ducet_r(~w) -> ~w; ~n", 
-                                             [lists:reverse(InEl2), OutEl2]),
-                                         do_gen(InFd, OutFds, [InEl2|Chars]);
+                                             [lists:reverse(InEl), OutEl]),
+                                         do_gen(InFd, OutFds, [InEl|Chars]);
                                 true  -> do_gen(InFd, OutFds, Chars)
                             end;
                         _ -> do_gen(InFd, OutFds, Chars)
@@ -84,13 +77,6 @@ do_gen(InFd, {OutFd} = OutFds, Chars) ->
 		eof -> Chars 
 	end.
 	
-% FIXME
-hangul_halfwidth_fix([<<HBin:32,TBin/binary>> | T]) ->
-    HBin2 = HBin , % - 296,
-    [<<HBin2:32,TBin/binary>> | T];
-hangul_halfwidth_fix(Res) ->
-    Res.
-
 %% Parses "[.0000.0000.0000.0000]" to [<<0/8,0/32,0/32,0/32,0/32>>]
 parseEl(El) -> lists:reverse(parseEl(El, [], false, [])).
 

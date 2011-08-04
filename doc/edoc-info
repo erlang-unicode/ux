@@ -1,3 +1,7 @@
 {application,ux}.
 {packages,[]}.
-{modules,[ux_char,ux_col,ux_math,ux_par,ux_string,ux_utils]}.
+{modules,[ux_char,ux_col,ux_math,ux_par,ux_string,ux_unidata_filelist,
+          ux_unidata_parser,ux_unidata_parser_allkeys,
+          ux_unidata_parser_blocks,ux_unidata_parser_comp_exclusions,
+          ux_unidata_parser_norm_props,ux_unidata_parser_unidata,
+          ux_unidata_server,ux_unidata_store,ux_unidata_store_sup,ux_utils]}.

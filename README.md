@@ -25,8 +25,7 @@ Structure of the library
 
 `ux_char` uses `ux_unidata`.
 
-`ux_unidata` is a huge module with hardcoded UNIDATA database. So, it is
-compiled for a few minutes.
+`ux_unidata` is for an internal data access.
 
 
 ux\_string.erl: String Functions for lists of Unicode characters.
@@ -277,4 +276,26 @@ ux\_unidata.erl
 ===============
 Stores UNIDATA information. For internal using only.
 
+Data loading
+============
 
+```erlang 
+ux_unidata_filelist:set_source(Level, ParserType, ImportedDataTypes,
+FromFile).
+```
+
+For example:
+
+```erlang
+ux_unidata_filelist:set_source(process, blocks, all, code:priv_dir(ux) ++ "/UNIDATA/Blocks.txt"}).
+```
+
+loads data about Unicode blocks from `priv/UNIDATA/Blocks.txt`.
+
+So, different processes can use their own unidata dictionaries.
+
+Level is `process`, `application` or `node`.
+
+Parsers located into ux_unidata_parser_* modules.
+
+Default unidata loads when ux application starts.

@@ -1,11 +1,7 @@
-%% @author Mochi Media <dev@mochimedia.com>
-%% @copyright 2010 Mochi Media <dev@mochimedia.com>
-
 %% @doc Supervisor for the ux application.
 %% @private
 
 -module(ux_sup).
--author("Mochi Media <dev@mochimedia.com>").
 
 -behaviour(supervisor).
 

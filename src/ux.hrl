@@ -1,0 +1,1 @@
+-define(SLOW_TESTS, true).

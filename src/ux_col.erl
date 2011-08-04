@@ -1167,7 +1167,7 @@ extract1([CP2|Tail] = Str, TableFun, CPList, Ccc1, Skipped, OldVal) ->
 %% higher weights than all explicit collation elements.
 %% @end
 %% @private
-implicit_weight(CP, BASE) ->
+implicit_weight(CP, BASE) when is_integer(CP) and is_integer(BASE) ->
     AAAA = BASE + (CP bsr 15),
     BBBB = (CP band 16#7FFF) bor 16#8000,
     [<<0:8, AAAA:16, 16#0020:16, 0002:16, 0:16>>, BBBB]. % reversed
@@ -1385,8 +1385,8 @@ weight_strength(_, Val) ->
     %    %%%%%%   %%%%      %     %%%%
 
 
--include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
 
 compress_info() ->
     F = fun io_lib:format/2,
@@ -1647,8 +1647,10 @@ test_read(InFd, StrNum) ->
         try % parse Data
             [Value|_] = ux_string:split(["#", ";", "\n"], Data), 
             %% Converts "0009 0021" to [16#0009, 16#0021]
-            lists:map(fun ux_unidata_parser:hex_to_int/1, 
-                      string:tokens(Value, " "))
+            Parsed = lists:map(fun ux_unidata_parser:hex_to_int/1, 
+                      string:tokens(Value, " ")),
+            %% Delete false values.
+            [X || X <- Parsed, X] 
         of Res -> {Data, Res, StrNum + 1} % {FullStr, Codepaints}
         catch                   
         error:_Reason -> 

@@ -893,8 +893,8 @@ info_char_block(Obj = #unistr_info{str=Str}) ->
     %    %%%%%%   %%%%      %     %%%%
 
 
--include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
 
 
 explode_test_() ->
@@ -1136,9 +1136,9 @@ nfc_test(InFd, Max, StrNum) ->
             ?assertEqual({c5__nfkd_c2, C5, C2}, {c5__nfkd_c2, NFKD(C2), C2}),
             ?assertEqual({c5__nfkd_c3, C5, C3}, {c5__nfkd_c3, NFKD(C3), C3}),
             ?assertEqual({c5__nfkd_c4, C5, C4}, {c5__nfkd_c4, NFKD(C4), C4}),
-            ?assertEqual({c5__nfkd_c5, C5, C5}, {c5__nfkd_c5, NFKD(C5), C5})
+            ?assertEqual({c5__nfkd_c5, C5, C5}, {c5__nfkd_c5, NFKD(C5), C5});
             % end body
-
+        _ -> next
         catch error:_ -> next
         after 
             nfc_test(InFd, Max - 1, StrNum + 1)

@@ -888,7 +888,9 @@ case_first_hack(Res) ->
 case_first_hack1([<<Var:8, L1L2:32, L3:16, L4/binary>> | In], Out) ->
     NewL3 = case_invert(L3),
     case_first_hack1(In, [<<Var:8, L1L2:32, NewL3:16, L4/binary>> | Out]);
-case_first_hack1([] = _In, Out) -> lists:reverse(Out).
+case_first_hack1([] = _In, Out) -> lists:reverse(Out);
+case_first_hack1([Int | In], Out) when is_integer(Int) ->
+    case_first_hack1(In, [Int | Out]).
 
 %% @private
 case_invert(L3) when L3 >= 2 andalso L3 =< 6 ->

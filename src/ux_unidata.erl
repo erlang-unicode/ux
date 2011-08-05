@@ -20,10 +20,14 @@
 %%% @copyright 2010-2011 Michael Uvarov
 %%% @author Michael Uvarov <freeakk@gmail.com>
 %%% @see ux
-%%% @end
 %%% =====================================================================
 
 %%% @doc Functions for extraction UNIDATA.
+%%%      UNIDATA is a part of The Unicode Character Database (UCD).
+%%%      For character properties, casing behavior, default line-, word-,
+%%%      cluster-breaking behavior, etc.
+%%%      http://unicode.org/ucd/
+%%% @end
 %%% @private
 
 

@@ -13,4 +13,4 @@
               {registered,[]},
               {mod,{ux_app,[]}},
               {env,[]},
-              {applications,[kernel,stdlib,crypto]}]}.
+              {applications,[kernel,stdlib]}]}.

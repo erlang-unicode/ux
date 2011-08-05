@@ -912,7 +912,9 @@ case_sensitive_hack(Res) ->
 case_sensitive_hack1([<<Var:8, L1:16, L2:16, L3:16, L4/binary>> | In], Out) ->
     case_sensitive_hack1(In, [<<Var:8, L1:16, L2:16, 0:16, L4/binary>> | 
         [<<Var:8, L3:16, 0:48>> | Out]]);
-case_sensitive_hack1([] = _In, Out) -> lists:reverse(Out).
+case_sensitive_hack1([] = _In, Out) -> lists:reverse(Out);
+case_sensitive_hack1([Int | In], Out) when is_integer(Int) ->
+    case_first_hack1(In, [Int | Out]).
 
 %% @private
 mod_weights_proxy(Weights, DecFlag, Term, Acc, StrTail, TableFun) ->
@@ -1482,9 +1484,52 @@ shifted_equal_test_() ->
     [?_assertEqual(F([10973,98], [10972,98]), F([10972,98], [10973,98]))
     ].
 
+natural_sort_and_upper_test_() ->
+    [].
+
 natural_sort_test_() ->
-    [{"Using official test strings from Dave Koelle",
-       ?_assertEqual(["10X Radonius",
+    Unsorted = ["1000X Radonius Maximus",
+                "10X Radonius",
+                "200X Radonius",
+                "20X Radonius",
+                "20X Radonius Prime",
+                "30X Radonius",
+                "40X Radonius",
+                "Allegia 50 Clasteron",
+                "Allegia 500 Clasteron",
+                "Allegia 51 Clasteron",
+                "Allegia 51B Clasteron",
+                "Allegia 52 Clasteron",
+                "Allegia 60 Clasteron",
+                "Alpha 100",
+                "Alpha 2",
+                "Alpha 200",
+                "Alpha 2A",
+                "Alpha 2A-8000",
+                "Alpha 2A-900",
+                "Callisto Morphamax",
+                "Callisto Morphamax 500",
+                "Callisto Morphamax 5000",
+                "Callisto Morphamax 600",
+                "Callisto Morphamax 700",
+                "Callisto Morphamax 7000",
+                "Callisto Morphamax 7000 SE",
+                "Callisto Morphamax 7000 SE2",
+                "QRS-60 Intrinsia Machine",
+                "QRS-60F Intrinsia Machine",
+                "QRS-62 Intrinsia Machine",
+                "QRS-62F Intrinsia Machine",
+                "Xiph Xlater 10000",
+                "Xiph Xlater 2000",
+                "Xiph Xlater 300",
+                "Xiph Xlater 40",
+                "Xiph Xlater 5",
+                "Xiph Xlater 50",
+                "Xiph Xlater 500",
+                "Xiph Xlater 5000",
+                "Xiph Xlater 58"],
+
+    Sorted = ["10X Radonius",
          "20X Radonius",
          "20X Radonius Prime",
          "30X Radonius",
@@ -1524,47 +1569,23 @@ natural_sort_test_() ->
          "Xiph Xlater 2000",
          "Xiph Xlater 5000",
          "Xiph Xlater 10000"],
-        sort(["1000X Radonius Maximus",
-                "10X Radonius",
-                "200X Radonius",
-                "20X Radonius",
-                "20X Radonius Prime",
-                "30X Radonius",
-                "40X Radonius",
-                "Allegia 50 Clasteron",
-                "Allegia 500 Clasteron",
-                "Allegia 51 Clasteron",
-                "Allegia 51B Clasteron",
-                "Allegia 52 Clasteron",
-                "Allegia 60 Clasteron",
-                "Alpha 100",
-                "Alpha 2",
-                "Alpha 200",
-                "Alpha 2A",
-                "Alpha 2A-8000",
-                "Alpha 2A-900",
-                "Callisto Morphamax",
-                "Callisto Morphamax 500",
-                "Callisto Morphamax 5000",
-                "Callisto Morphamax 600",
-                "Callisto Morphamax 700",
-                "Callisto Morphamax 7000",
-                "Callisto Morphamax 7000 SE",
-                "Callisto Morphamax 7000 SE2",
-                "QRS-60 Intrinsia Machine",
-                "QRS-60F Intrinsia Machine",
-                "QRS-62 Intrinsia Machine",
-                "QRS-62F Intrinsia Machine",
-                "Xiph Xlater 10000",
-                "Xiph Xlater 2000",
-                "Xiph Xlater 300",
-                "Xiph Xlater 40",
-                "Xiph Xlater 5",
-                "Xiph Xlater 50",
-                "Xiph Xlater 500",
-                "Xiph Xlater 5000",
-                "Xiph Xlater 58"], 
-        get_options([{natural_sort, true}, {alternate, non_ignorable}])))}].
+
+    [{"Using official test strings from Dave Koelle",
+       ?_assertEqual(Sorted,
+        sort(Unsorted, 
+            get_options([
+                {natural_sort, true}, 
+                {alternate, non_ignorable}])))},
+
+       {"Case and natural sort hacks together.",
+        ?_assert((fun() ->
+            sort(Unsorted, 
+                get_options([
+                    {natural_sort, true}, 
+                    {alternate, non_ignorable},
+                    {case_first, upper}])),
+            true
+            end)())}].
 
 -ifdef(SLOW_TESTS).
 %---------------------------------------------------------------

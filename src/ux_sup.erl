@@ -27,7 +27,7 @@ init([]) ->
         permanent, 2000, worker, [ux_unidata_filelist]},
     DefaultsWorker = {ux_unidata_server, 
         {ux_unidata_server, start_link, []},
-        permanent, 2000, worker, [ux_unidata_server]},
+        permanent, 10000, worker, [ux_unidata_server]},
     Strategy = {one_for_one, 10, 10},
     {ok, {Strategy, [StoreSup, FileListWorker, DefaultsWorker]}}.
 

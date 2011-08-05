@@ -207,7 +207,7 @@ table_list(ServerPid) ->
     TableList.
 
 get_funs(ServerPid, Types) ->
-    gen_server:call(ServerPid, {get_funs, Types}).
+    gen_server:call(ServerPid, {get_funs, Types}, 30000).
 
 
 

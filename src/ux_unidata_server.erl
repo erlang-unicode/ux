@@ -94,18 +94,21 @@ handle_call({get_default, Key}, _From, LoopData) ->
         put(Ref, Key),
         Reply = WaiterPid,
         {reply, Reply, LoopData};
-    Reply -> 
+    Reply when is_function(Reply) -> 
+        Reply(test_default),
         {reply, Reply, LoopData}
     end;
 handle_call({set_default, Key}, _From, LoopData) ->
     Reply = ux_unidata_filelist:set_source(process, Key),
     {reply, Reply, LoopData}.
 
-%% If cannot load data from a default sources, then return undefined.
+%% If cannot load data from default sources, then return undefined.
 get_default(Key) ->
     Reply = gen_server:call(?MODULE, {get_default, Key}, 60000),
     case Reply of
-    Fun when is_function(Fun) -> Fun;
+    Fun when is_function(Fun) -> 
+        put(Key, Fun), % Registrate in the dict of the local process.
+        Fun;
     WaiterPid when is_pid(WaiterPid) ->
         wait_respond(WaiterPid)
     end.

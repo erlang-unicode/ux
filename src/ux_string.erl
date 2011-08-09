@@ -94,7 +94,9 @@ decomp(V) -> ?UNIDATA:decomp(V).
 %%      http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category
 %% @end
 %% ux_char:type(_) -> false.
-types(Str) -> lists:map(fun ux_char:type/1, Str).
+types(Str) -> 
+    Fun = ux_char:type(skip_check),
+    lists:map(Fun, Str).
 
 
 
@@ -104,8 +106,9 @@ types(Str) -> lists:map(fun ux_char:type/1, Str).
 -spec delete_types([char_type()], string()) -> string().
 
 delete_types(Types, Str) -> 
+    Fun = ux_char:type(skip_check),
     lists:filter(fun(El) -> 
-            not lists:member(ux_char:type(El), Types) 
+            not lists:member(Fun(El), Types) 
         end, Str).
 
 %% @doc Stops delete_type/2 after Limit deleted chars. If Limit &lt; 0, then
@@ -126,8 +129,9 @@ delete_types(Types, Str, Limit) when Limit < 0 ->
 -spec filter_types([char_type()], string()) -> string().
 
 filter_types(Types, Str) -> 
+    Fun = ux_char:type(skip_check),
     lists:filter(fun(El) -> 
-            lists:member(ux_char:type(El), Types) 
+            lists:member(Fun(El), Types) 
         end, Str).
 
 %% @doc Stops after -Limit skipped chars.
@@ -326,13 +330,15 @@ explode_check(_, _) ->
 -spec to_lower(string()) -> string().
 
 to_lower(Str) ->
-    lists:map(fun ux_char:to_lower/1, Str).
+    Fun = ux_char:to_lower(skip_check),
+    lists:map(Fun, Str).
 
 %% @doc Converts characters of a string to a uppercase format.
 -spec to_upper(string()) -> string().
 
 to_upper(Str) ->
-    lists:map(fun ux_char:to_upper/1, Str).
+    Fun = ux_char:to_upper(skip_check),
+    lists:map(Fun, Str).
 
 %% @doc Encodes html special chars.
 -spec html_special_chars(string()) -> string().
@@ -388,9 +394,10 @@ st(Str, [], []) -> st(Str);
 st(Str, [$<|Allowed], Alt) -> st(Str, tags_to_list(Allowed), Alt);
 st(Str, [], Alt) -> st_cycle(Str, [], 0, lists:reverse(Alt)); 
 st(Str, Allowed, Alt) -> 
+    Fun = ux_char:to_lower(skip_check),
     st_cycle_with_allowed(Str, [],
         lists:map(fun lists:reverse/1,
-            lists:map(fun string:to_lower/1,
+            lists:map(Fun,
                 lists:map(fun to_string/1, Allowed))), 
         lists:reverse(Alt)).
 
@@ -512,10 +519,10 @@ is_nf([], _, Result, _) -> Result.
 -spec is_nfd(list()) -> yes | no | maybe.
 -spec is_nfkc(list()) -> yes | no | maybe.
 -spec is_nfkd(list()) -> yes | no | maybe.
-is_nfc(Str) when is_list(Str) -> is_nf(Str, 0, yes, fun nfc_qc/1).
-is_nfd(Str) when is_list(Str) -> is_nf(Str, 0, yes, fun nfd_qc/1).
-is_nfkc(Str) when is_list(Str) -> is_nf(Str, 0, yes, fun nfkc_qc/1).
-is_nfkd(Str) when is_list(Str) -> is_nf(Str, 0, yes, fun nfkd_qc/1).
+is_nfc(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfc_qc(skip_check)).
+is_nfd(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfd_qc(skip_check)).
+is_nfkc(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfkc_qc(skip_check)).
+is_nfkd(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfkd_qc(skip_check)).
 
 
 -spec to_nfc(list()) -> list().
@@ -569,7 +576,7 @@ char_to_list(Char, Buf, Res) ->
 %% @private
 -spec get_recursive_decomposition(atom() | function(), list()) -> list().
 get_recursive_decomposition(true, Str) -> 
-    get_recursive_decomposition(fun is_compat/1, Str, []);
+    get_recursive_decomposition(is_compat(skip_check), Str, []);
 get_recursive_decomposition(false, Str) -> 
     get_recursive_decomposition(fun ux_utils:is_always_false/1, Str, []);
 get_recursive_decomposition(Canonical, Str) when is_function(Canonical) -> 

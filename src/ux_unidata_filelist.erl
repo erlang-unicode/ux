@@ -86,15 +86,39 @@ set_source(Level, Parser, Types, FileName) ->
     Key = {Parser, Types, FileName},
     Funs = lists:map(fun({Type, Ets, Fun}) ->
         % Set upgrade trigger.
-        {{Parser, Type}, fun(Val) ->
-            case ets:info(Ets) of
-            undefined -> 
-                set_source(Level, Parser, [Type], FileName),
-                NewFun = get_source(Parser, Type),
-                NewFun(Val);
-            _ -> Fun(Val)
+        {{Parser, Type}, 
+            fun
+            %% Run check only once.
+            %% For fast realizations of filters.
+            (skip_check) ->
+                case ets:info(Ets) of
+                undefined -> 
+                    set_source(process, Parser, [Type], FileName),
+                   NewFun = get_source(Parser, Type);
+                _ -> Fun
+                end;
+
+            %% For ux_unidata_server. Check ETS before return value.
+            (test_default) ->
+                case ets:info(Ets) of
+                undefined -> 
+                    set_source(node, Parser, [Type], FileName),
+                   NewFun = get_source(Parser, Type),
+                    true;
+                _ -> true
+                end;
+
+            %% Check an ETS table and run function.
+            (Val) ->
+                case ets:info(Ets) of
+                undefined -> 
+                    set_source(Level, Parser, [Type], FileName),
+                    NewFun = get_source(Parser, Type),
+                    NewFun(Val);
+                    _ -> Fun(Val)
+                end
             end
-        end}
+}
         
         end, get_funs(Key, ClientPid)),
 
@@ -122,15 +146,24 @@ get_source(Parser, Type) ->
 get_source({Parser, Type} = Value) ->
     case get_source_from(process, Value) of
     undefined -> 
+        error_logger:info_msg(
+            "~w: sourse ~w is undefined. ~n", 
+            [?MODULE, Value]),
         Key = {Parser, all, ux_unidata:get_source_file(Parser)},
         % Example:
         % ux_unidata_store:start_link({unidata, [ccc], code:priv_dir(ux) ++ "/UNIDATA/UnicodeData.txt"},self()).
         {ok, ServerPid} = ux_unidata_store:start_link(Key, self()),
         Funs = lists:map(fun({Type, Ets, Fun}) ->
-                {{Parser, Type}, fun(Val) -> Fun(Val) end}
+                {{Parser, Type}, fun
+                    (skip_check) -> Fun;
+                    (Val) -> Fun(Val) end}
             end, ux_unidata_store:get_funs(ServerPid, all)),
         set_proc_dict(Funs),
-        get_source_from(process, Value);
+        Res = get_source_from(process, Value),
+        error_logger:info_msg(
+            "~w: return sourse ~w. ~n", 
+            [?MODULE, Value]),
+        Res;
     Fun -> Fun
     end.
 -else.

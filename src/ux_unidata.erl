@@ -39,7 +39,7 @@
         char_comment/1, char_type/1, ccc/1, 
         nfc_qc/1, nfd_qc/1, nfkc_qc/1, nfkd_qc/1, 
         is_comp_excl/1, is_compat/1, decomp/1, comp/2,
-        ducet_r/1, char_block/1]).
+        ducet/1, char_block/1]).
 -include("ux_unidata.hrl").
 
 -spec get_source_file(Parser::atom()) -> string().
@@ -65,7 +65,7 @@ get_source_file(unidata) ->
 -spec nfkd_qc(C::char()) -> y | n | m.
 -spec is_compat(C::char()) -> true | false.
 -spec is_comp_excl(C::char()) -> true | false.
--spec ducet_r(list()) -> list() | atom().
+-spec ducet(list()) -> list() | atom().
 -spec comp(integer(), integer()) -> integer() | false.
 -spec decomp(integer()) -> list().
 
@@ -85,7 +85,7 @@ nfkc_qc(C) -> func(norm_props, nfkc_qc, C).
 nfkd_qc(C) -> func(norm_props, nfkd_qc, C).
 is_compat(C) -> func(unidata, is_compat, C).
 is_comp_excl(C) -> func(comp_exclusions, is_exclusion, C).
-ducet_r(L) -> func(allkeys, ducet_r, L).
+ducet(L) -> func(allkeys, ducet, L).
 comp(C1, C2) -> func(unidata, comp, {C1, C2}).
 decomp(C) -> func(unidata, decomp, C).
 char_block(C) -> func(blocks, block, C).

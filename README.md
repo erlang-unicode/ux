@@ -21,7 +21,7 @@ Structure of the library
 ========================
 `ux_string` uses `ux_char` and `ux_unidata`.
 
-`ux_col` uses `ux_char` and `ux_unidata`.
+`ux_uca` uses `ux_char` and `ux_unidata`.
 
 `ux_char` uses `ux_unidata`.
 
@@ -189,7 +189,7 @@ zs
     * sk  Symbol, Modifier
     * so  Symbol, Other
 
-ux\_col.erl: Unicode Collation Algorithm
+ux\_uca.erl: Unicode Collation Algorithm
 ========================================
 See [Unicode Technical Standard #10](http://unicode.org/reports/tr10/).
 
@@ -199,20 +199,19 @@ Functions
 * sort/1,2
 * sort_key/1,2
 * sort_array/1,2
-* get_options/1,2
 
 Examples
 --------
 Code from erlang shell:
 ```erlang
-1> ux_col:sort_key("a").   
+1> ux_uca:sort_key("a").   
 <<21,163,0,0,32,0,0,2,0,0,255,255>>
 
-2> ux_col:sort_key("abc"). 
+2> ux_uca:sort_key("abc"). 
 <<21,163,21,185,21,209,0,0,34,0,0,4,0,0,255,255,255,255,
   255,255>>
 
-3> ux_col:sort_key("abcd").
+3> ux_uca:sort_key("abcd").
 <<21,163,21,185,21,209,21,228,0,0,35,0,0,5,0,0,255,255,
   255,255,255,255,255,255>>
 ```
@@ -220,9 +219,9 @@ Code from erlang shell:
 Code:
 
 ```erlang
-ux_col:compare("a", "a").
-ux_col:compare("a", "b").
-ux_col:compare("c", "b").
+ux_uca:compare("a", "a").
+ux_uca:compare("a", "b").
+ux_uca:compare("c", "b").
 ```
 
 Result:
@@ -236,16 +235,16 @@ greater
 Code: 
 
 ```erlang
-Options = ux_col:get_options([ 
+Options = ux_uca_options:get_options([ 
         {natural_sort, false}, 
         {strength, 3}, 
         {alternate, shifted} 
     ]),
 InStrings = ["erlang", "esl", "nitrogen", "epm", "mochiweb", "rebar", "eunit"],
-OutStrings = ux_col:sort(InStrings, Options),
+OutStrings = ux_uca:sort(Options, InStrings),
 [io:format("~ts~n", [S]) || S <- OutStrings],
 
-SortKeys = [{Str, ux_col:sort_key(Str, Options)} || Str <- OutStrings],
+SortKeys = [{Str, ux_uca:sort_key(Options, Str)} || Str <- OutStrings],
 [io:format("~ts ~w~n", [S, K]) || {S, K} <- SortKeys],
 
 ok.

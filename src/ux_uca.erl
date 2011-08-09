@@ -69,6 +69,10 @@ sort_key(S) ->
     
 %% @param C#sort_key_format{}
 %% @param S::string()
+sort_key(C=#uca_options{
+        sort_key_format='binary', 
+        case_sensitive=true}, S) ->
+    ux_uca_sort_key_binary_cs:sort_key(C, S);
 sort_key(C=#uca_options{sort_key_format=F}, S) ->
     case F of
     'binary' ->

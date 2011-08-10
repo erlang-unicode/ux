@@ -19,7 +19,6 @@
 %%%
 %%% @copyright 2010-2011 Michael Uvarov
 %%% @author Michael Uvarov <freeakk@gmail.com>
-%%% @see ux
 %%% =====================================================================
 
 %%% @doc Functions for extraction UNIDATA.

@@ -12,10 +12,19 @@ The ux application
 
 <table width="100%" border="0" summary="list of modules">
 <tr><td><a href="ux_char.md" class="module">ux_char</a></td></tr>
-<tr><td><a href="ux_col.md" class="module">ux_col</a></td></tr>
 <tr><td><a href="ux_math.md" class="module">ux_math</a></td></tr>
 <tr><td><a href="ux_par.md" class="module">ux_par</a></td></tr>
 <tr><td><a href="ux_string.md" class="module">ux_string</a></td></tr>
+<tr><td><a href="ux_uca.md" class="module">ux_uca</a></td></tr>
+<tr><td><a href="ux_uca_alt.md" class="module">ux_uca_alt</a></td></tr>
+<tr><td><a href="ux_uca_compress.md" class="module">ux_uca_compress</a></td></tr>
+<tr><td><a href="ux_uca_extract.md" class="module">ux_uca_extract</a></td></tr>
+<tr><td><a href="ux_uca_options.md" class="module">ux_uca_options</a></td></tr>
+<tr><td><a href="ux_uca_sort_key_binary.md" class="module">ux_uca_sort_key_binary</a></td></tr>
+<tr><td><a href="ux_uca_sort_key_binary_cs.md" class="module">ux_uca_sort_key_binary_cs</a></td></tr>
+<tr><td><a href="ux_uca_sort_key_list.md" class="module">ux_uca_sort_key_list</a></td></tr>
+<tr><td><a href="ux_uca_sort_key_uncompressed.md" class="module">ux_uca_sort_key_uncompressed</a></td></tr>
+<tr><td><a href="ux_uca_tests.md" class="module">ux_uca_tests</a></td></tr>
 <tr><td><a href="ux_unidata_filelist.md" class="module">ux_unidata_filelist</a></td></tr>
 <tr><td><a href="ux_unidata_parser.md" class="module">ux_unidata_parser</a></td></tr>
 <tr><td><a href="ux_unidata_parser_allkeys.md" class="module">ux_unidata_parser_allkeys</a></td></tr>

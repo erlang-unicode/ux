@@ -4,13 +4,22 @@ Module ux_uca_options
 
 <h1>Module ux_uca_options</h1>
 
+* [Description](#description)
 * [Function Index](#index)
 * [Function Details](#functions)
 
 
+This library contains functions for manipulating with
+a configuration of sorting.
 
 
 
+<h2><a name="description">Description</a></h2>
+
+        You can use it as:
+`C = ux_uca_options:get_options(shifted).`
+And then:
+`ux_uca:sort(C, ["string1", "string2", "string3").`
 
 <h2><a name="index">Function Index</a></h2>
 

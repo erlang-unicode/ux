@@ -1,3 +1,11 @@
+%%% @doc This library contains functions for manipulating with
+%%%      a configuration of sorting.
+%%%      You can use it as:
+%%%      `C = ux_uca_options:get_options(shifted).'
+%%%      And then:
+%%%      `ux_uca:sort(C, ["string1", "string2", "string3").'
+%%% @end
+
 -module(ux_uca_options).
 -export([get_options/0, get_options/1, get_options/2]).
 -include("ux_uca.hrl").

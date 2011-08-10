@@ -1,3 +1,133 @@
+% vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
+%%% =====================================================================
+%%% This library is free software; you can redistribute it and/or modify
+%%% it under the terms of the GNU Lesser General Public License as
+%%% published by the Free Software Foundation; either version 2 of the
+%%% License, or (at your option) any later version.
+%%%
+%%% This library is distributed in the hope that it will be useful, but
+%%% WITHOUT ANY WARRANTY; without even the implied warranty of
+%%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+%%% Lesser General Public License for more details.
+%%%
+%%% You should have received a copy of the GNU Lesser General Public
+%%% License along with this library; if not, write to the Free Software
+%%% Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+%%% USA
+%%%
+%%% $Id$
+%%%
+%%% @copyright 2010-2011 Michael Uvarov
+%%% @author Michael Uvarov <freeakk@gmail.com>
+%%%
+%%% @doc UNICODE COLLATION ALGORITHM
+%%%      see Unicode Technical Standard #10
+%%%
+%%% == Additional information (and links) ==
+%%%
+%%% 1. [http://www.open-std.org/jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm
+%%%     Hangul Collation Requirements]
+%%% PS: There is the main source of information.
+%%%
+%%% 2. [http://code.activestate.com/lists/perl-unicode/2163/ 
+%%%     Terminator weight for Hangul]
+%%%
+%%% 3. [http://blogs.msdn.com/b/michkap/archive/2005/02/25/380266.aspx 
+%%%     Theory vs. practice for Korean text collation]
+%%% PS: there is no any practice. They do not the UCA :/
+%%%
+%%% 4. [http://en.wikipedia.org/wiki/Unicode_collation_algorithm Wiki]
+%%%
+%%% 6. [http://useless-factor.blogspot.com/2007/08/unicode-implementers-guide-part-3.html
+%%%     Unicode implementer's guide part 3: Conjoining jamo behavior]
+%%%
+%%% 7. [http://useless-factor.blogspot.com/2007/10/unicode-implementers-guide-part-5.html
+%%%     Unicode implementer's guide part 5: Collation]
+%%%
+%%% 8. [http://useless-factor.blogspot.com/2008/05/unicode-collation-works-now.html
+%%%     Unicode collation works now]
+%%% PS: I found it so late. :(
+%%%
+%%% 9. [http://userguide.icu-project.org/collation/concepts ICU]
+%%%
+%%% 10. [http://trapexit.org/String_Sorting_%28Natural%29
+%%%      String Sorting (Natural) in Erlang Cookbook]
+%%%
+%%%   
+%%% For hangul:
+%%% http://www.open-std.org/Jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm
+%%% http://www.unicode.org/reports/tr10/#Hangul_Collation
+%%% http://en.wikipedia.org/wiki/KSX1001
+%%%
+%%%
+%%% Levels: http://unicode.org/reports/tr10/#Multi_Level_Comparison
+%%% ```
+%%% * L1 Base characters
+%%% * L2 Accents
+%%% * L3 Case
+%%% * L4 Punctuation'''
+%%%
+%%% Example using levels:
+%%% ```
+%%% C = ux_uca_options:get_options([{strength, 3}]).
+%%% ux_uca:sort_key(C, "Get L1-L3 weights"). '''
+%%%
+%%%
+%%% == Common configurations ==
+%%% 
+%%% === Non-ignorable ===
+%%% Variable collation elements are not reset to be ignorable, but
+%%% get the weights explicitly mentioned in the file.
+%%% ```
+%%% * SPACE would have the value [.0209.0020.0002]
+%%% * Capital A would be unchanged, with the value [.06D9.0020.0008]
+%%% * Ignorables are unchanged.'''
+%%% 
+%%% Example:
+%%% ```
+%%% C = ux_uca_options:get_options(non_ignorable).
+%%% ux_uca:sort_key(C, "Non-ignorable collation sort key"). '''
+%%% 
+%%%
+%%% === Blanked ===
+%%% Variable collation elements and any subsequent ignorables 
+%%% are reset so that their weights at levels one through three are zero. 
+%%% For example,
+%%% ```
+%%% * SPACE would have the value [.0000.0000.0000]
+%%% * A combining grave accent after a space would have the value
+%%%   [.0000.0000.0000]
+%%% * Capital A would be unchanged, with the value [.06D9.0020.0008]
+%%% * A combining grave accent after a Capital A would be unchanged'''
+%%%
+%%% Example:
+%%% ```
+%%% C = ux_uca_options:get_options(non_ignorable).
+%%% ux_uca:sort_key(C, "Blanked collation sort key"). '''
+%%%
+%%%
+%%% === Shifted === 
+%%% Variable collation elements are reset to zero at levels one through
+%%% three. In addition, a new fourth-level weight is appended, whose value 
+%%% depends on the type, as shown in Table 12.
+%%% Any subsequent primary or secondary ignorables following a variable are reset
+%%% so that their weights at levels one through four are zero.
+%%% ```
+%%% * A combining grave accent after a space would have the value 
+%%%   [.0000.0000.0000.0000].
+%%% * A combining grave accent after a Capital A would be unchanged.'''
+%%% 
+%%%
+%%% === Shift-trimmed === 
+%%% This option is the same as Shifted, except that all trailing 
+%%% FFFFs are trimmed from the sort key. 
+%%% This could be used to emulate POSIX behavior.
+%%% 
+%%% @end
+
+
+
+
 -module(ux_uca).
 -author('Uvarov Michael <freeakk@gmail.com>').
 
@@ -19,18 +149,27 @@
 -include("ux_uca.hrl").
 -include("ux_uca_common.hrl").
 
+-type uca_compare_result() ::
+      lower
+    | greater
+    | equal
+    .
 
+-type uca_generator() :: fun().
+
+
+-spec compare(string(), string()) -> uca_compare_result().
 compare(S1, S2) ->
     C = get_options(),
     compare(C, S1, S2).
 
--spec compare(#uca_options{}, string(), string()) -> boolean().
+-spec compare(#uca_options{}, string(), string()) -> uca_compare_result().
 compare(C=#uca_options{}, S1, S2) ->
     G1 = generator(C, S1),
     G2 = generator(C, S2),
     do_compare(G1, G2).
 
--spec do_compare(fun(), fun()) -> lower | greater | equal.
+-spec do_compare(uca_generator(), uca_generator()) -> uca_compare_result().
 do_compare(G1, G2) ->
     case {G1(), G2()} of
     {stop, stop} -> equal;
@@ -88,7 +227,7 @@ sort_key(C=#uca_options{sort_key_format=F}, S) ->
 %% Generator
 %% 
 
--spec generator(#uca_options{}, string()) -> fun().
+-spec generator(#uca_options{}, string()) -> uca_generator().
 %generator(#uca_options{}, []) -> stop;
 generator(C=#uca_options{}, S) ->
     D = get_ducet(),
@@ -153,12 +292,15 @@ do_generator2(S, [[WH|WR]|WT], R) ->
     {WH, F}.
     
 
+-spec sort([string()]) -> [string()].
+%% @doc Sort a list of strings.
 sort(Strings) ->
     C = get_options(),
     sort(C, Strings).
 
-%% @doc Sort a string list.
-sort(C, Strings) ->
+-spec sort(#uca_options{}, [string()]) -> [string()].
+%% @doc Sort a list of strings.
+sort(C=#uca_options{}, Strings) ->
     
     % Step 1: produce array of sort keys
     F = fun(S) -> 

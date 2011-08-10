@@ -44,7 +44,6 @@
 
 
 % for utf-8
-
         freq/1, 
         is_nfc/1, is_nfd/1, is_nfkc/1, is_nfkd/1,
         to_nfc/1, to_nfd/1, to_nfkc/1, to_nfkd/1,
@@ -478,7 +477,7 @@ tags_to_list([], Res, _) -> Res.
 %% @private
 not_in_array(X,Y) -> not lists:member(X,Y).
 
-%% @doc Counts a letter frequency
+%% @doc Counts a letter frequency.
 -spec freq(string()) -> dict(). 
 
 freq(Str) -> freq_1(Str, dict:new()).

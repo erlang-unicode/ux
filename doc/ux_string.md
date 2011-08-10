@@ -162,7 +162,7 @@ If Len>0, then gets first -Len chars of type, which is NOT in Types<a name="freq
 
 
 
-Counts a letter frequency<a name="html_special_chars-1"></a>
+Counts a letter frequency.<a name="html_special_chars-1"></a>
 
 <h3>html_special_chars/1</h3>
 

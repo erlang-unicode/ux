@@ -70,10 +70,10 @@ PS: I found it so late. :(
 
 
 
-For hangul:   
-http://www.open-std.org/Jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm   
-http://www.unicode.org/reports/tr10/#Hangul_Collation   
-http://en.wikipedia.org/wiki/KSX1001
+For hangul collation:
+11. [Hangul Collation Requirements](http://www.open-std.org/Jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm)
+12. [UTR 10](http://www.unicode.org/reports/tr10/#Hangul_Collation)
+13. [KSX1001 on Wiki](http://en.wikipedia.org/wiki/KSX1001)
 
 
 
@@ -81,11 +81,16 @@ http://en.wikipedia.org/wiki/KSX1001
 <h3><a name="Levels">Levels</a></h3>
 
 
+
+   
 http://unicode.org/reports/tr10/#Multi_Level_Comparison
-<pre>   * L1 Base characters
-* L2 Accents
-* L3 Case
-* L4 Punctuation</pre>
+
+
+
+* L1 Base characters   
+* L2 Accents   
+* L3 Case   
+* L4 Punctuation
 
 Example using levels:
 <pre>   C = ux_uca_options:get_options([{strength, 3}]).
@@ -124,14 +129,19 @@ ux_uca:sort_key(C, "Non-ignorable collation sort key").</pre>
 <h4><a name="Blanked">Blanked</a></h4>
 
 
-Variable collation elements and any subsequent ignorables
-are reset so that their weights at levels one through three are zero.
+
+   
+Variable collation elements and any subsequent ignorables   
+are reset so that their weights at levels one through three are zero.   
 For example,
-<pre>   * SPACE would have the value [.0000.0000.0000]
-* A combining grave accent after a space would have the value
-[.0000.0000.0000]
-* Capital A would be unchanged, with the value [.06D9.0020.0008]
-* A combining grave accent after a Capital A would be unchanged</pre>
+
+
+
+* SPACE would have the value [.0000.0000.0000]   
+* A combining grave accent after a space would have the value     
+[.0000.0000.0000]   
+* Capital A would be unchanged, with the value [.06D9.0020.0008]   
+* A combining grave accent after a Capital A would be unchanged
 
 Example:
 <pre>   C = ux_uca_options:get_options(non_ignorable).
@@ -143,14 +153,23 @@ ux_uca:sort_key(C, "Blanked collation sort key").</pre>
 <h4><a name="Shifted">Shifted</a></h4>
 
 
-Variable collation elements are reset to zero at levels one through
-three. In addition, a new fourth-level weight is appended, whose value
-depends on the type, as shown in Table 12.
-Any subsequent primary or secondary ignorables following a variable are reset
+
+   
+Variable collation elements are reset to zero at levels one through   
+three. In addition, a new fourth-level weight is appended, whose value   
+depends on the type, as shown in Table 12.   
+Any subsequent primary or secondary ignorables following a variable are reset   
 so that their weights at levels one through four are zero.
-<pre>   * A combining grave accent after a space would have the value
-[.0000.0000.0000.0000].
-* A combining grave accent after a Capital A would be unchanged.</pre>
+
+
+
+* A combining grave accent after a space would have the value     
+[.0000.0000.0000.0000].   
+* A combining grave accent after a Capital A would be unchanged.
+
+Example:
+<pre>   C = ux_uca_options:get_options(shifted).
+ux_uca:sort_key(C, "Shifted collation sort key").</pre>
 
 
 
@@ -158,16 +177,24 @@ so that their weights at levels one through four are zero.
 <h4><a name="Shift-trimmed">Shift-trimmed</a></h4>
 
 
-This option is the same as Shifted, except that all trailing
-FFFFs are trimmed from the sort key.
+
+   
+This option is the same as Shifted, except that all trailing   
+FFFFs are trimmed from the sort key.   
 This could be used to emulate POSIX behavior.
+
+Example:
+<pre>   C = ux_uca_options:get_options(shift_trimmed).
+ux_uca:sort_key(C, "Shift-trimmed collation sort key").</pre>
+
 
 
 <h2><a name="index">Function Index</a></h2>
 
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#compare-2">compare/2</a></td><td></td></tr><tr><td valign="top"><a href="#compare-3">compare/3</a></td><td></td></tr><tr><td valign="top"><a href="#sort-1">sort/1</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort-2">sort/2</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort_array-1">sort_array/1</a></td><td></td></tr><tr><td valign="top"><a href="#sort_array-2">sort_array/2</a></td><td></td></tr><tr><td valign="top"><a href="#sort_key-1">sort_key/1</a></td><td></td></tr><tr><td valign="top"><a href="#sort_key-2">sort_key/2</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#compare-2">compare/2</a></td><td>Compare two strings and return: lower, greater or equal.</td></tr><tr><td valign="top"><a href="#compare-3">compare/3</a></td><td></td></tr><tr><td valign="top"><a href="#sort-1">sort/1</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort-2">sort/2</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort_array-1">sort_array/1</a></td><td>Convert the unicode string to the
+<a href="http://unicode.org/reports/tr10/#Step_2" target="_top">collation element array</a></td></tr><tr><td valign="top"><a href="#sort_array-2">sort_array/2</a></td><td></td></tr><tr><td valign="top"><a href="#sort_key-1">sort_key/1</a></td><td>Convert the unicode string to the sort key.</td></tr><tr><td valign="top"><a href="#sort_key-2">sort_key/2</a></td><td></td></tr></table>
 
 
 
@@ -185,7 +212,9 @@ This could be used to emulate POSIX behavior.
 
 `compare(S1, S2) -> any()`
 
-<a name="compare-3"></a>
+
+
+Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
 <h3>compare/3</h3>
 
@@ -229,7 +258,10 @@ Sort a list of strings.<a name="sort_array-1"></a>
 
 `sort_array(S) -> any()`
 
-<a name="sort_array-2"></a>
+
+
+Convert the unicode string to the
+[collation element array](http://unicode.org/reports/tr10/#Step_2)<a name="sort_array-2"></a>
 
 <h3>sort_array/2</h3>
 
@@ -249,7 +281,9 @@ Sort a list of strings.<a name="sort_array-1"></a>
 
 `sort_key(S) -> any()`
 
-<a name="sort_key-2"></a>
+
+
+Convert the unicode string to the sort key.<a name="sort_key-2"></a>
 
 <h3>sort_key/2</h3>
 

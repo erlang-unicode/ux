@@ -76,7 +76,12 @@ http://www.unicode.org/reports/tr10/#Hangul_Collation
 http://en.wikipedia.org/wiki/KSX1001
 
 
-Levels: http://unicode.org/reports/tr10/#Multi_Level_Comparison
+
+
+<h3><a name="Levels">Levels</a></h3>
+
+
+http://unicode.org/reports/tr10/#Multi_Level_Comparison
 <pre>   * L1 Base characters
 * L2 Accents
 * L3 Case
@@ -98,11 +103,16 @@ ux_uca:sort_key(C, "Get L1-L3 weights").</pre>
 <h4><a name="Non-ignorable">Non-ignorable</a></h4>
 
 
-Variable collation elements are not reset to be ignorable, but
+
+   
+Variable collation elements are not reset to be ignorable, but   
 get the weights explicitly mentioned in the file.
-<pre>   * SPACE would have the value [.0209.0020.0002]
-* Capital A would be unchanged, with the value [.06D9.0020.0008]
-* Ignorables are unchanged.</pre>
+
+
+
+* SPACE would have the value [.0209.0020.0002]   
+* Capital A would be unchanged, with the value [.06D9.0020.0008]   
+* Ignorables are unchanged.
 
 Example:
 <pre>   C = ux_uca_options:get_options(non_ignorable).

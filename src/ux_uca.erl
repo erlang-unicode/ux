@@ -60,7 +60,8 @@
 %%% http://en.wikipedia.org/wiki/KSX1001
 %%%
 %%%
-%%% Levels: http://unicode.org/reports/tr10/#Multi_Level_Comparison
+%%% == Levels== 
+%%% http://unicode.org/reports/tr10/#Multi_Level_Comparison
 %%% ```
 %%% * L1 Base characters
 %%% * L2 Accents
@@ -78,10 +79,10 @@
 %%% === Non-ignorable ===
 %%% Variable collation elements are not reset to be ignorable, but
 %%% get the weights explicitly mentioned in the file.
-%%% ```
+%%%
 %%% * SPACE would have the value [.0209.0020.0002]
 %%% * Capital A would be unchanged, with the value [.06D9.0020.0008]
-%%% * Ignorables are unchanged.'''
+%%% * Ignorables are unchanged.
 %%% 
 %%% Example:
 %%% ```

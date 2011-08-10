@@ -1,6 +1,6 @@
--module(ux_uca_alt).
 %%% Convert bin weight to [int].
 %%% @private
+-module(ux_uca_alt).
 -export([get_alternate_function/2]).
 -include("ux_uca.hrl").
 

@@ -1,4 +1,3 @@
 {application,ux}.
 {packages,[]}.
-{modules,[ux_char,ux_math,ux_par,ux_string,ux_uca,ux_uca_alt,ux_uca_options,
-          ux_utils]}.
+{modules,[ux_char,ux_math,ux_par,ux_string,ux_uca,ux_uca_options,ux_utils]}.

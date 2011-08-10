@@ -20,6 +20,5 @@ The ux application
 <tr><td><a href="ux_uca_options.md" class="module">ux_uca_options</a></td></tr>
 <tr><td><a href="ux_unidata_parser.md" class="module">ux_unidata_parser</a></td></tr>
 <tr><td><a href="ux_unidata_parser_allkeys.md" class="module">ux_unidata_parser_allkeys</a></td></tr>
-<tr><td><a href="ux_unidata_parser_unidata.md" class="module">ux_unidata_parser_unidata</a></td></tr>
 <tr><td><a href="ux_utils.md" class="module">ux_utils</a></td></tr></table>
 

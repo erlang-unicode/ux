@@ -1,6 +1,7 @@
 -module(ux_unidata_parser).
 %%% @doc This module converts UNIDATA from txt files to ETS.
 %%%      This module is used by fun ux_unidata_store:init/1.
+%%% @end
 %%% @private
 
 -export([run/1, check/1, get_functions/2]).

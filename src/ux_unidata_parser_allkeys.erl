@@ -4,6 +4,7 @@
     ]).
 %%% Example:
 %%% ux_unidata_filelist:get_pid({allkeys, [ducet], code:priv_dir(ux) ++ "/UNIDATA/allkeys.txt"}).
+%%% @private
 
 types() -> [ducet].
 

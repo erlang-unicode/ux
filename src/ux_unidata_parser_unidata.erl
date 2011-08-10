@@ -1,8 +1,8 @@
--module(ux_unidata_parser_unidata).
--export([parse/1, types/0, get_function/2]).
 %%% Example:
 %%% ux_unidata_filelist:get_pid({unidata, [ccc], code:priv_dir(ux) ++ "/UNIDATA/UnicodeData.txt"}).
 %%% @private
+-module(ux_unidata_parser_unidata).
+-export([parse/1, types/0, get_function/2]).
 
 types() ->
     [to_upper

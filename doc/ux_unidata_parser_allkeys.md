@@ -16,7 +16,7 @@ Module ux_unidata_parser_allkeys
 
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#after_parse-1">after_parse/1</a></td><td></td></tr><tr><td valign="top"><a href="#get_function-2">get_function/2</a></td><td></td></tr><tr><td valign="top"><a href="#parse-1">parse/1</a></td><td></td></tr><tr><td valign="top"><a href="#types-0">types/0</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#after_parse-1">after_parse/1</a></td><td></td></tr><tr><td valign="top"><a href="#get_function-2">get_function/2</a></td><td></td></tr><tr><td valign="top"><a href="#parse-1">parse/1</a></td><td></td></tr></table>
 
 
 
@@ -53,14 +53,4 @@ Module ux_unidata_parser_allkeys
 
 
 `parse(In) -> any()`
-
-<a name="types-0"></a>
-
-<h3>types/0</h3>
-
-
-
-
-
-`types() -> any()`
 

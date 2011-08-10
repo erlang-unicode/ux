@@ -1,4 +1,5 @@
 %%% DerivedNormalizationProps.txt
+%%% @private
 -module(ux_unidata_parser_norm_props).
 -export([parse/1, types/0, get_function/2
 %, after_parse/1

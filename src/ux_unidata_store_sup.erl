@@ -1,3 +1,4 @@
+%%% @private
 -module(ux_unidata_store_sup).
 -behavior(supervisor).
 -export([start_link/0]).

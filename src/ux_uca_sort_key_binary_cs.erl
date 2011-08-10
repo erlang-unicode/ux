@@ -1,5 +1,6 @@
 %%% This module is a variant of ux_uca_sort_key_binary 
 %%% for case sensative collation.
+%%% @private
 -module(ux_uca_sort_key_binary_cs).
 -export([sort_key/2]).
 -import(ux_uca, [sort_array/2]).

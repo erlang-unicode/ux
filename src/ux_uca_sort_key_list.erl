@@ -1,3 +1,4 @@
+%%% @private
 -module(ux_uca_sort_key_list).
 -export([sort_key/2]).
 -import(ux_uca, [sort_array/2]).

@@ -1,4 +1,5 @@
 %%% CompositionExclusions.txt
+%%% @private
 -module(ux_unidata_parser_comp_exclusions).
 -export([parse/1, types/0, get_function/2]).
 %%% Example:

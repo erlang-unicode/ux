@@ -1,4 +1,5 @@
 %%% Key-value store for a list of unidata files.
+%%% @private
 -module(ux_unidata_filelist).
 
 % OTP 

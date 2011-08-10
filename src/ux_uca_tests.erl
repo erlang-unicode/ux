@@ -1,3 +1,4 @@
+%%% @private
 -module(ux_uca_tests).
 -include("ux.hrl").
 

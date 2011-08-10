@@ -1,3 +1,4 @@
+%%% @private
 -module(ux_uca_compress).
 -export([reassign_fun/3]).
 

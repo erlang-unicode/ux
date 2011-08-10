@@ -1,3 +1,4 @@
+%%% @private
 -module(ux_unidata_store).
 
 -export([start_link/2]).

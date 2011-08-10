@@ -1,3 +1,4 @@
+%%% @private
 -module(ux_uca_extract).
 -export([extract/3]).
 

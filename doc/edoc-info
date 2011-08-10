@@ -1,10 +1,5 @@
 {application,ux}.
 {packages,[]}.
-{modules,[ux_char,ux_math,ux_par,ux_string,ux_uca,ux_uca_alt,ux_uca_compress,
-          ux_uca_extract,ux_uca_options,ux_uca_sort_key_binary,
-          ux_uca_sort_key_binary_cs,ux_uca_sort_key_list,
-          ux_uca_sort_key_uncompressed,ux_uca_tests,ux_unidata_filelist,
+{modules,[ux_char,ux_math,ux_par,ux_string,ux_uca,ux_uca_alt,ux_uca_options,
           ux_unidata_parser,ux_unidata_parser_allkeys,
-          ux_unidata_parser_blocks,ux_unidata_parser_comp_exclusions,
-          ux_unidata_parser_norm_props,ux_unidata_parser_unidata,
-          ux_unidata_server,ux_unidata_store,ux_unidata_store_sup,ux_utils]}.
+          ux_unidata_parser_unidata,ux_utils]}.

@@ -1,10 +1,10 @@
+%%% Example:
+%%% ux_unidata_filelist:get_pid({allkeys, [ducet], code:priv_dir(ux) ++ "/UNIDATA/allkeys.txt"}).
+%%% @private
 -module(ux_unidata_parser_allkeys).
 -export([parse/1, types/0, get_function/2
     , after_parse/1 % comment to disable post processing
     ]).
-%%% Example:
-%%% ux_unidata_filelist:get_pid({allkeys, [ducet], code:priv_dir(ux) ++ "/UNIDATA/allkeys.txt"}).
-%%% @private
 
 types() -> [ducet].
 

@@ -32,7 +32,7 @@ start_link() ->
 
 init([]) ->
     error_logger:info_msg(
-        "~w~w: All defaults types were generated. ~n",
+        "~w~w: All default types were generated. ~n",
         [?MODULE, self()]),
     {ok, []}.
 

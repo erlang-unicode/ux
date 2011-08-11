@@ -109,7 +109,7 @@ handle_call({get_funs, all}, _From,
 handle_call({get_funs, Types}, _From, 
     #state{funs=Funs} = LoopData) ->
     error_logger:info_msg(
-        "~w~w: Try get list of functions: ~w. ~n", 
+        "~w~w: Try get the list of the functions: ~w. ~n", 
         [?MODULE, self(), Funs]),
     Reply = get_elems(Types, Funs),
     {reply, Reply, LoopData};
@@ -122,7 +122,7 @@ handle_call(table_list, _From,
 handle_info({'DOWN', _Ref, process, FromPid, _Reason}, 
     #state{clients=Clients} = LoopData) ->
     error_logger:info_msg(
-        "~w~w: Delete process ~w from ~w. ",
+        "~w~w: Delete the process ~w from the process list: ~w. ",
         [?MODULE, self(), FromPid, Clients]),
     NewClients = Clients -- [FromPid],
     case NewClients of
@@ -224,7 +224,7 @@ do_get_elems([], _Elems, Acc) -> Acc.
 
 set_monitor(ClientPid) ->
     error_logger:info_msg(
-        "~w~w: Set monitor on ~w. ~n", 
+        "~w~w: Set the monitor on the process ~w. ~n", 
         [?MODULE, self(), ClientPid]),
     erlang:monitor(process, ClientPid).
     

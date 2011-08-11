@@ -37,12 +37,12 @@ terminate(_Reason, _LoopData) ->
 handle_call({reg_pid, Key, StorePid}, _From, {Dict} = _LoopData) ->
     erlang:monitor(process, StorePid),
     error_logger:info_msg(
-        "~w: Registrate new Pid = ~w with Key = ~w. ~n", 
+        "~w: Registrate a new process ~w with the key ~w. ~n", 
         [?MODULE, StorePid, Key]),
     
     {Reply, NewDict} = case dict:is_key(Key, Dict) of
         false -> {ok, dict:store(Key, StorePid, Dict)};
-        true  -> error_logger:error_msg("~w: Key ~w is already registred. ~w",
+        true  -> error_logger:error_msg("~w: The key ~w is already registred. ~w",
                 [?MODULE, Key]),
             {{error, key_already_registred}, Dict}
     end,
@@ -55,7 +55,7 @@ handle_call({get_pid, Key}, _From, {Dict} = _LoopData) ->
 % Delete pid from dict. FromPid is a pid of ux_unidata_store server.
 handle_info({'DOWN', _Ref, process, FromPid, _Reason}, {Dict} = _LoopData) ->
     error_logger:info_msg(
-        "~w: Delete Pid = ~w from dictionary. ~n", 
+        "~w: Delete Pid = ~w from the dictionary. ~n", 
         [?MODULE, FromPid]),
     NewDict = dict:filter(fun(_K, V) -> V =/= FromPid end, Dict),
     {noreply, {NewDict}}.
@@ -160,7 +160,7 @@ get_source({Parser, Type} = Value) ->
     case get_source_from(process, Value) of
     'undefined' -> 
         error_logger:info_msg(
-            "~w: sourse ~w is undefined. ~n", 
+            "~w: The sourse ~w is undefined. ~n", 
             [?MODULE, Value]),
         Key = {Parser, all, ux_unidata:get_source_file(Parser)},
         % Example:
@@ -174,7 +174,7 @@ get_source({Parser, Type} = Value) ->
         set_proc_dict(Funs),
         Res = get_source_from(process, Value),
         error_logger:info_msg(
-            "~w: return sourse ~w. ~n", 
+            "~w: return the sourse ~w. ~n", 
             [?MODULE, Value]),
         Res;
     Fun -> Fun
@@ -186,10 +186,10 @@ get_source({Parser, Type} = Value) ->
 %% Step 2: Check application enviroment.
 %% Step 3: Use defaults.
 get_source(Value) ->
-    case get_source_from(process, Value) of          % step 1
+    case get_source_from(process, Value) of            % step 1
     'undefined' -> 
-        case get_source_from(application, Value) of  % step 2
-        'undefined' -> get_source_from(node, Value); % step 3
+        case get_source_from(application, Value) of    % step 2
+        'undefined' -> get_source_from('node', Value); % step 3
         Fun -> Fun
         end;
     Fun -> Fun
@@ -218,7 +218,7 @@ get_funs({_,Types,_} = Key, ClientPid) ->
 
 set_app_env(Name, [{Key, Val}|Tail]) ->
     error_logger:info_msg(
-        "~w: Set app ``~w`` env: ~w = ~w. ~n", 
+        "~w: Set a application enviroment variable ~w::~w to ~w. ~n", 
         [?MODULE, Name, Key, Val]),
     application:set_env(Name, Key, Val),
     set_app_env(Name, Tail);
@@ -227,7 +227,7 @@ set_app_env(_Name, []) -> ok.
     
 set_proc_dict([{Key, Val}|Tail]) ->
     error_logger:info_msg(
-        "~w: Put to proc ``~w`` dictionary: ~w = ~w. ~n", 
+        "~w: Put the value to the process dictionary: ~w::~w to ~w. ~n", 
         [?MODULE, self(), Key, Val]),
     erlang:put(Key, Val),
     set_proc_dict(Tail);

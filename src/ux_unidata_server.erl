@@ -1,3 +1,15 @@
+%%% @doc This module provides the access to the store of default files.
+%%%      When client runs a function from the ux_unidata module:
+%%%      1. Code from ux_unidata_filelist module check the process dict 
+%%%         and the application enviroments. If they are unefined, then
+%%%         it call this server.
+%%%      2. If this server already loaded this data, it returns it, and
+%%%         the client code put it to the process dictionary.
+%%%      3. If requested data is not loaded, then this server runs
+%%%         an other server (ux_unidata_store), which parsed a default 
+%%%         UNIDATA file.
+%%% @end
+%%%
 %%% @private
 -module(ux_unidata_server).
 
@@ -103,6 +115,10 @@ handle_call({set_default, Key}, _From, LoopData) ->
     Reply = ux_unidata_filelist:set_source(process, Key),
     {reply, Reply, LoopData}.
 
+%%
+%% API
+%%
+
 %% If cannot load data from default sources, then return undefined.
 get_default(Key) ->
     Reply = gen_server:call(?MODULE, {get_default, Key}, 60000),
@@ -119,7 +135,7 @@ set_default(Key) ->
 
 
 %%
-%% Private
+%% Private helpers
 %% 
 load_default({Parser, Type} = _Key) ->
     FileName = ux_unidata:get_source_file(Parser),

@@ -1,4 +1,5 @@
-%%% Key-value store for a list of unidata files.
+%%% @doc Key-value store for the list of the servers which 
+%%%      serve the unidata files.
 %%% @private
 -module(ux_unidata_filelist).
 
@@ -65,22 +66,27 @@ handle_info({'DOWN', _Ref, process, FromPid, _Reason}, {Dict} = _LoopData) ->
 -spec set_source(Level::atom(), Parser::atom(), Types::[atom()] | all,
     FileName::string()) -> ok.
 
+%% 1. Runs server which parses file and returns a list of funs.
+%% 2. Registers returned funs on the process, application or node level.
+%%
 %% Test me:
 %% ux_unidata_filelist:set_source(process, blocks, all, code:priv_dir(ux) ++ "/UNIDATA/Blocks.txt").
 %% ux_unidata_filelist:set_source(process, blocks, [blocks], code:priv_dir(ux) ++ "/UNIDATA/Blocks.txt").
 %% F=ux_unidata_filelist:get_source(blocks, blocks).
 %% {ok,S}=ux_unidata_filelist:file_owner(code:priv_dir(ux) ++ "/UNIDATA/Blocks.txt").
 %% ux_unidata_store:remove_type(S, blocks).
-set_source(node, Parser, Types, FileName) ->
+
+set_source('node', Parser, Types, FileName) ->
     Key = {Parser, Types, FileName},
     ux_unidata_server:set_default(Key);
     
 set_source(Level, Parser, Types, FileName) ->
     Key = {Parser, Types, FileName},
     ClientPid = case Level of
-        process -> 
+        'process' -> 
             self();
-        application ->
+        'application' ->
+            % We unload data, when the application die.
             {ok, AppName1} = application:get_application(), % let it crash
             get_application_pid(AppName1)
     end,
@@ -91,8 +97,8 @@ set_source(Level, Parser, Types, FileName) ->
             fun
             %% Run check only once.
             %% For fast realizations of filters.
-            (skip_check) ->
-                case ets:info(Ets) of
+            ('skip_check') ->
+                case ets:info(Ets, 'owner') of
                 undefined -> 
                     set_source(process, Parser, [Type], FileName),
                    NewFun = get_source(Parser, Type);
@@ -100,10 +106,10 @@ set_source(Level, Parser, Types, FileName) ->
                 end;
 
             %% For ux_unidata_server. Check ETS before return value.
-            (test_default) ->
-                case ets:info(Ets) of
-                undefined -> 
-                    set_source(node, Parser, [Type], FileName),
+            ('test_default') ->
+                case ets:info(Ets, 'owner') of
+                'undefined' -> 
+                    set_source('node', Parser, [Type], FileName),
                    NewFun = get_source(Parser, Type),
                     true;
                 _ -> true
@@ -112,14 +118,14 @@ set_source(Level, Parser, Types, FileName) ->
             %% Check an ETS table and run function.
             (Val) ->
                 case ets:info(Ets) of
-                undefined -> 
+                'undefined' -> 
                     set_source(Level, Parser, [Type], FileName),
                     NewFun = get_source(Parser, Type),
                     NewFun(Val);
                     _ -> Fun(Val)
                 end
             end
-}
+        }
         
         end, get_funs(Key, ClientPid)),
 
@@ -128,25 +134,31 @@ set_source(Level, Parser, Types, FileName) ->
         [?MODULE, Funs]),
 
     case Level of
-    process -> 
+    'process' -> 
+        % Put to the process dictionary.
         set_proc_dict(Funs);
-    application ->
+    'application' ->
         {ok, AppName2} = application:get_application(), 
         set_app_env(AppName2, Funs)
     end.
 
+%% This is a short form of function.
 set_source(Level, {Parser, Types, Filename} = _Key) -> 
     set_source(Level, Parser, Types, Filename).
 
+%% Return registred fun.
+%% Check: the dict of client process, then application enviroment, 
+%% then try get the default value from the server.
 get_source(Parser, Type) ->
     Value = {Parser, Type},
     get_source(Value).
 
 -spec get_source({Parser::atom(), Type::atom()}) -> fun() | undefined.
+%% Use only the process dictionary for eunit.
 -ifdef(TEST).
 get_source({Parser, Type} = Value) ->
     case get_source_from(process, Value) of
-    undefined -> 
+    'undefined' -> 
         error_logger:info_msg(
             "~w: sourse ~w is undefined. ~n", 
             [?MODULE, Value]),
@@ -168,28 +180,36 @@ get_source({Parser, Type} = Value) ->
     Fun -> Fun
     end.
 -else.
+
+%% Try retrieve the information about the data source:
+%% Step 1: Check process dictionary.
+%% Step 2: Check application enviroment.
+%% Step 3: Use defaults.
 get_source(Value) ->
-    % Step 1: Check process dictionary:
-    case get_source_from(process, Value) of
-    undefined -> 
-        % Step 2: Check application enviroment:
-        case get_source_from(application, Value) of
-        % Step 3: Use defaults:
-        undefined -> get_source_from(node, Value);
+    case get_source_from(process, Value) of          % step 1
+    'undefined' -> 
+        case get_source_from(application, Value) of  % step 2
+        'undefined' -> get_source_from(node, Value); % step 3
         Fun -> Fun
         end;
     Fun -> Fun
     end.
 -endif.
 
-get_source_from(process, Value) ->
+
+%%
+%% Inter-module exports
+%%
+
+get_source_from('process', Value) ->
     erlang:get(Value);
-get_source_from(application, Value) ->
+get_source_from('application', Value) ->
     application:get_env(Value);
-get_source_from(node, Value) ->
+get_source_from('node', Value) ->
     ux_unidata_server:get_default(Value).
     
     
+%% Return the list of functions from the server.
 -spec get_funs(Key::{Parser::atom(), Types::[atom()], FileName::string()},
     pid()) -> [{Type::atom(), Ets::integer(), fun()}].
 get_funs({_,Types,_} = Key, ClientPid) ->
@@ -214,17 +234,15 @@ set_proc_dict([{Key, Val}|Tail]) ->
 set_proc_dict([]) -> ok.
 
 
-
+%% Convert the name of the application to its pid.
 get_application_pid(Name) ->
-    {running, R} = lists:keyfind(running, 1, application:info()),
+    AInfo = application:info(),
+    {'running', R} = lists:keyfind('running', 1, AInfo),
     {Name, Pid} = lists:keyfind(Name, 1, R).
 
 
-%%
-%% Inter-module exports
-%%
-
-%% Try to get a pid of the owner of an ETS table with UNIDATA from  the Key-file.
+%% Try to get a pid of the owner of an ETS table with the UNIDATA 
+%% from the Key-file.
 %% Also, try to monitor ClientPid on the server.
 get_pid(Key, ClientPid) when is_pid(ClientPid) ->
     case file_owner(key_to_filename(Key)) of
@@ -239,7 +257,9 @@ get_pid(Key, ClientPid) when is_pid(ClientPid) ->
             StoreServerPid
     end.
 
-% @private
+%% @private
+%% Returns a pid of the server which serves a file with UNIDATA.
+%% Each file has an own owner.
 file_owner(FileName) ->
     gen_server:call(?MODULE, {get_pid, FileName}).
 

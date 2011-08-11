@@ -218,64 +218,15 @@ do_expand(_, _, _) -> ok.
 
 %% Expand table with two colums: [{Key, Value} or {{From, To}, Value}].
 expand_fun(Table, DefaultValue) ->
-    Body = do_fun_def(DefaultValue),
-    NewBody = "fun " ++ do_expand_fun(Table, Body, DefaultValue),
-%   io:format(user, "Fun: ~s~n",[NewBody]),
-
-    %% Scan the code into tokens
-    {ok, ErlTokens, _} = erl_scan:string(lists:flatten(NewBody)),
-
-    %% Now parse the tokens into the abstract form
-    {ok, ErlAbsForm} = erl_parse:parse_exprs(ErlTokens),
-
-    %% Now evaluate the string
-    Bindings = erl_eval:new_bindings(),
-    {value, Value, _} = erl_eval:exprs(ErlAbsForm, Bindings),
-    Value.
-
--spec do_expand_fun(Table::integer(), Body::string(), DefaultValue::term()) 
-    -> string().
-do_expand_fun(Table, Body, DefaultValue) ->
-    case ets:first(Table) of
-    '$end_of_table' ->
-        Body;
-    Key -> NewBody = case ets:lookup(Table, Key) of
-            [{Key, DefaultValue}] -> Body;
-            [{Key, Val}] -> do_fun_meta(Key, Val) ++ Body
-            end,
-        do_expand_fun_next(Table, NewBody, DefaultValue, Key)
-    end.
-
--spec do_expand_fun_next(Table::integer(), Body::string(), 
-    DefaultValue::term(), Prev::term()) -> string().
-do_expand_fun_next(Table, Body, DefaultValue, Prev)  ->
-    case ets:next(Table, Prev) of
-    '$end_of_table' ->
-        Body;
-    Key -> NewBody = case ets:lookup(Table, Key) of
-            [{Key, DefaultValue}] -> Body;
-            [{Key, Val}] -> do_fun_meta(Key, Val) ++ Body
-            end,
-        do_expand_fun_next(Table, NewBody, DefaultValue, Key)
+    List = ets:tab2list(Table),
+    fun(V) -> 
+       case ux_ranges:search(List, V) of
+       false -> DefaultValue;
+       Result -> Result
+       end
     end.
 
 
-
--spec do_fun_meta(Key::term(), Value::term()) -> string().
-do_fun_meta({From, To}, Val) ->
-    io_lib:format("(V) when V >= ~w andalso V =< ~w -> ~w; ",
-            [From, To, Val]);
-do_fun_meta(Key, Val) ->
-    io_lib:format("(~w) -> ~w; ",
-            [Key, Val]).
-
--spec do_fun_def(Value::term()) -> string().
-do_fun_def(noop) ->
-    "(C) -> C end.";
-do_fun_def(Val) ->
-    io_lib:format("(_) -> ~w end.",
-            [Val]).
-    
 
 ets_fun(Table, DefaultValue) ->
     fun(Key) ->

@@ -83,10 +83,15 @@
     | uncompressed % uncompressed list of weights
     .
 
+-type uca_weight() :: integer().
+-type uca_elem() :: [atom()|uca_weight()].
+-type uca_array() :: [uca_elem()].
+-type result() :: {[uca_elem()], string()}.
+
 % Records
 -record(uca_options, {
     % Generator options
-    hangul_terminator = ?COL_HANGUL_TERMINATOR :: integer(),
+    hangul_terminator = ?COL_HANGUL_TERMINATOR :: uca_elem(),
     natural_sort = true :: boolean(),
     strength = 4 :: uca_strength(),
     alternate = shifted :: uca_alternate(),

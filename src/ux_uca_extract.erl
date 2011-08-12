@@ -2,9 +2,9 @@
 -module(ux_uca_extract).
 -export([extract/3]).
 
--include("ux_uca.hrl").
 -include("ux_char.hrl").
 -include("ux_string.hrl").
+-include("ux_uca.hrl").
 
 %-define(DEBUG_ECHO, ok).
 
@@ -25,7 +25,7 @@
 %% @end
 %% @private
 -spec extract(string(), #uca_options{}, fun()) -> 
-    {[binary()], Tail :: string()}.
+    result().
 extract(C=#uca_options{},D,S) when is_list(S), is_function(D) -> 
     do_extract(C,D,S).
 
@@ -33,6 +33,8 @@ extract(C=#uca_options{},D,S) when is_list(S), is_function(D) ->
 %% @param S::string() String
 %% @param D::fun() DUCET function
 %% @param W::fun() Weights before extracted weights.
+-spec do_extract(string(), #uca_options{}, fun()) -> 
+    result().
 do_extract(#uca_options { 
         hangul_terminator=Term, 
         natural_sort=NS,
@@ -61,7 +63,7 @@ do_extract(#uca_options {
         true  -> lists:map(fun case_sensitive_hack/1, W3)
         end,
     
-    ok = check_weights(W4),
+%   ok = check_weights(W4),
 
     {W4, S2}.
 
@@ -73,6 +75,7 @@ do_check_weights([[non_variable,_,_,_,_]|T]) ->
 do_check_weights([]) -> ok.
 
 %% This function hides C,D,S from client.
+-spec do_proxy(#uca_options{}, fun(), string()) -> fun().
 do_proxy(C,D,S) ->
     fun(get_more) -> 
         case S of
@@ -91,22 +94,27 @@ do_proxy(C,D,S) ->
        (Result) -> {lists:reverse(Result),S}
         end.
 
+-spec do_mod(#uca_options{}, fun(), uca_array(), uca_array()) ->
+    result().
 do_mod(#uca_options { 
         natural_sort=NS
     }, F, W, Acc) ->
     mod_weights(F, W, NS, Acc).
 
+-spec get_terminator(#uca_options{}) -> uca_weight().
 get_terminator(#uca_options { 
         hangul_terminator=Term
     }) -> Term.
 
 %% @doc Uppercase to sort before lowercase. Remap L3.
 %% @private
+-spec case_first_hack(uca_elem()) -> uca_elem().
 case_first_hack([Var,L1,L2,L3,L4]) ->
     NewL3 = case_invert(L3),
     [Var,L1,L2,NewL3,L4].
 
 %% @private
+-spec case_invert(uca_weight()) -> uca_weight().
 case_invert(L3) when L3 >= 2, L3 =< 6 ->
     L3 + 6;
 case_invert(L3) when L3 >= 8, L3 =< 12 ->
@@ -117,6 +125,7 @@ case_invert(L3) ->
 
 %% @doc Move L3 before L1.
 %% @private
+-spec case_sensitive_hack(uca_elem()) -> uca_elem().
 case_sensitive_hack([Var,L1,L2,L3,L4]) ->
     [Var,L3,L2,L1,L4].
         
@@ -149,21 +158,32 @@ case_sensitive_hack([Var,L1,L2,L3,L4]) ->
 % L1 as an part of ?IS_L1_OF_HANGUL_L is first level.
 %% @private
 % Hack for Hangul.
+-spec mod_weights(fun(), uca_array(), boolean(), uca_array()) -> result().
 mod_weights(E, [[Var,L1|_]=H|T], _NS, Acc) 
     when ?IS_L1_OF_HANGUL_L(L1) ->
     do_hangul(E, l, T, [H|Acc]);
 % Hack for numbers.
 mod_weights(E, [[Var,L1|LOther]=H|T], NS=true, Acc) 
     when ?IS_L1_OF_DECIMAL(L1) ->
-    F = fun(W) -> [Var,W|LOther] end,
-    NewAcc = [F(16#FFFE), F(1)|Acc],
+    F = fun(W) -> [Var,W|LOther] end, % define F.
     Num = ?COL_WEIGHT_TO_DECIMAL(L1),
-    do_decimal(E, F, Num, T, NewAcc);
+    do_decimal(E, F, Num, T, Acc);
 mod_weights(E, [H|T], NS, Acc) ->
     mod_weights(E, T, NS, [H|Acc]);
 mod_weights(E, [], _NS, Acc) ->
     E(Acc). % L1 is not found. There is no hangul jamo in this string.
 
+%% @doc Scans the string for the digits.
+%%      When a non-digit character is extracted, stop extraction and
+%%      form the weights.
+%%      
+%% @end
+%% @param E The proxy function
+%% @param F The function which forms a weight element.
+%% @param N Number
+%% @param W The tail of the weights
+%% @param Acc Accumulator for the weights
+-spec do_decimal(fun(), fun(), boolean(), uca_array(), uca_array()) -> result().
 do_decimal(E, F, N, [[_,0|_]=H|T]=_W, Acc) ->
     do_decimal(E, F, N, T, [H|Acc]); % skip an ignorable element.
 do_decimal(E, F, N, [[_,L1|_]=H|T]=_W, Acc) 
@@ -188,19 +208,37 @@ do_decimal(E, F, N, W, Acc) ->
     
     Restarter(W, NewAcc).
 
-
+-spec decimal_result(fun(), integer(), uca_array()) -> uca_array().
+%% @doc Forms the weight elements.
+%%      F is function, which gets the L1 weights and returns the full element.
+%%      For example:
+%%      ```
+%%      > decimal_result(F, 100, []).
+%%      [[100],[16#FFFE],[1]].
+%%      '''
+%% @end
 decimal_result(F, N, Acc) ->
+    NewAcc = [F(16#FFFE), F(1)|Acc],
+    do_decimal_result(F, N, Acc).
+
+-spec do_decimal_result(fun(), integer(), uca_array()) -> uca_array().
+do_decimal_result(F, N, Acc) ->
 ?ECHO("Res: ~w~n", [N]),
     case N div 16#FFFE of
     0 -> [F(N)|Acc];
     Div ->
         Rem = N rem 16#FFFE,
-        decimal_result(F, Div, [F(Rem), F(16#FFFE)|Acc])
+        do_decimal_result(F, Div, [F(Rem), F(16#FFFE)|Acc])
     end.
 
 %% L1 was found. 
 %% Mod: l
 %% @private
+%% @param E Proxy function
+%% @param E l, lv, ll Step
+%% @param Tail of weights
+%% @param Accumulator for weights
+-spec do_hangul(fun(), atom(), uca_array(), uca_array()) -> result().
 do_hangul(E, Mod, [[_,0|_]=H|T], Acc) ->
    % skip an ignorable element.
    do_hangul(E, Mod, T, [H|Acc]); 
@@ -234,6 +272,7 @@ do_hangul(E, _Mod, [], Acc) -> % L
     E(Acc).
 
 %% @private
+-spec hangul_result(fun(), uca_array(), uca_array()) -> result().
 hangul_result(E, T, Acc) ->
     E(Acc).
 
@@ -242,6 +281,8 @@ hangul_result(E, T, Acc) ->
 %% @private
 %% @param Str:string() String 
 %% @param D::fun() Ducet Function
+
+-spec do_extract0(string(), fun()) -> result().
 do_extract0([], _) -> % No Any Char
     {[], []};
 
@@ -307,6 +348,9 @@ do_extract0([H|T]=S, DFn) ->
 
 %% @param S:string() String
 %% Res is a last good Key.
+-spec do_extract1(string(), fun(), string(), ux_ccc()|false, 
+    string(), uca_array()) -> 
+    {result,string(),string()}|not_found.
 do_extract1([H|T]=S, MFn, Key, OldCCC, Skipped, Res) 
     when is_list(Skipped) ->
     NewKey = [H|Key],
@@ -358,11 +402,13 @@ do_extract1([]=_S, MFn, Key, OldCCC, Skipped, Res)
         
 
 %% After skiping a character, we set OldCCC = NewCCC.
+-spec select_ccc(false|ux_ccc(), ux_ccc()) -> false|ux_ccc().
 select_ccc(_OldCCC=false, _NewCCC) ->
     false;
 select_ccc(_OldCCC, NewCCC) ->
     NewCCC.
         
+-spec do_extract1_return(string()) -> string().
 do_extract1_return(Res) -> lists:reverse(Res).
 
 
@@ -373,6 +419,7 @@ do_extract1_return(Res) -> lists:reverse(Res).
 
 
 %% @param L::string() List of unicode codepaints
+-spec ducet_lookup(fun()) -> fun().
 ducet_lookup(D) ->
     D(member_function).
 
@@ -380,8 +427,9 @@ ducet_lookup(D) ->
 
     
 
+-spec get_more(fun(), fun()) -> term().
 get_more(LFn, CFn) ->
-    fun([H|_]=K, OldCCC) ->
+    fun([H|_]=K, OldCCC) when is_integer(H) ->
         case CFn(H) of
         NewCCC when OldCCC =:= false;
                     OldCCC=/=0, OldCCC<NewCCC ->
@@ -418,10 +466,5 @@ implicit_weight(CP, BASE) when is_integer(CP) and is_integer(BASE) ->
     BBBB = (CP band 16#7FFF) bor 16#8000,
     [[non_variable, AAAA, 32, 2, 0], 
      [non_variable, BBBB, 32, 2, 0]]. % reversed
-
-%% @private
-%% Returns: <<Bin>>
-set_l1_to_value_bin([Var, L1|LOther], NewL1) ->
-    [Var, NewL1|LOther].
 
 

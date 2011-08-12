@@ -60,6 +60,8 @@
     | other
 .
 
+-type ux_ccc() :: 0..240.
+
 % CJK_Unified_Ideograph and CJK_Compatibility_Ideographs from 
 % http://www.unicode.org/Public/UNIDATA/Blocks.txt
 -define(CHAR_IS_CJK_UNIFIED_IDEOGRAPH(Ch), (

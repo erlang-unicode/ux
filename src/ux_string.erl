@@ -29,7 +29,7 @@
 -module(ux_string).
 -author('Uvarov Michael <freeakk@gmail.com>').
 
--export([list_to_latin1/1,
+-export([
         html_special_chars/1,
 
         explode/2, explode/3,
@@ -50,7 +50,7 @@
         to_ncr/1,
 
         to_graphemes/1, reverse/1,
-        length/1, len/1,
+        length/1, 
         first/2, last/2,
 
         info/1,
@@ -86,6 +86,51 @@ is_compat(V) -> ?UNIDATA:is_compat(V).
 comp(V1, V2) -> ?UNIDATA:comp(V1, V2).
 decomp(V) -> ?UNIDATA:decomp(V).
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%
+%% ==String functions based on the UNIDATA==
+%%
 
 %% @doc Returns various "character types" which can be used 
 %%      as a default categorization in implementations.
@@ -236,6 +281,56 @@ to_string(Str) when is_integer(Str) -> [Str].
 split(P1, P2)     -> delete_empty(explode(P1, P2)).
 split(P1, P2, P3) -> delete_empty(explode(P1, P2, P3)).
 
+%% @doc Counts how many identical chars in the string.
+%%      Returns a dict.
+%%      Example:
+%%      ```
+%% >dict:to_list(ux_string:freq("FFDF")).
+%% [{70,3},{68,1}]'''
+%%
+%% @end
+-spec freq(string()) -> dict(). 
+
+freq(Str) -> do_freq(Str, dict:new()).
+
+%% @private
+do_freq([Char|Str], Dict) -> do_freq(Str, dict:update_counter(Char, 1, Dict));
+do_freq([], Dict)         -> Dict.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%
+%% ==PHP-style functions==
+%%
+
 %% @doc Splits the string by delimeters.
 -spec explode([string()], string()) -> [string()];
         (char(), string()) -> [string()];
@@ -311,7 +406,7 @@ explode_cycle_pos(Delimeter, [_|_] = Str, Buf, Result, Limit) ->
             Limit-1)
     end.
 
-%% @doc This function get a delimeter and a part of the string 
+%% @doc This function get the delimeter and the part of the string.
 %%      If (Str = Delimeter + Tail), return a Tail, else return 'false'.
 %% @end
 %% @private
@@ -481,26 +576,46 @@ tags_to_list([], Res, _) -> Res.
 %% @private
 not_in_array(X,Y) -> not lists:member(X,Y).
 
-%% @doc Counts a letter frequency.
--spec freq(string()) -> dict(). 
 
-freq(Str) -> freq_1(Str, dict:new()).
 
-%% @private
-freq_1([Char|Str], Dict) -> freq_1(Str, dict:update_counter(Char, 1, Dict));
-freq_1([], Dict)         -> Dict.
 
-%------------------------------------------------------------------------------
-%    %  %    %  %%%%%%
-%    %  %%   %  %
-%    %  % %  %  %%%%%
-%    %  %  % %  %
-%    %  %   %%  %
- %%%%   %    %  %
 
-%% UNICODE NORMALIZATION FORMS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%
+%% ==UNICODE NORMALIZATION FORMS==
+%%
 %% Unicode Standard Annex #15
 %% http://unicode.org/reports/tr15/
+%%
+
 -spec is_nf(list(), integer(), atom(), function()) -> yes | no | maybe.
 is_nf([Head|Tail], LastCC, Result, CheckFun) -> 
     case ccc(Head) of
@@ -547,29 +662,6 @@ to_nfkd([])  -> [];
 to_nfkd([_|_] = Str) -> normalize(get_recursive_decomposition(false, Str)).
 
 
--spec list_to_latin1(list()) -> list().
-list_to_latin1(Str) ->
-    lists:reverse(list_to_latin1(Str, [])).
-
--spec list_to_latin1(list(), list()) -> list().
-list_to_latin1([Char|Str], Res) ->
-    list_to_latin1(Str, char_to_list(Char, [], Res));
-list_to_latin1([], Res) -> Res.
-
-% magic
-% Char>255
--spec char_to_list(integer(), list(), list()) -> list().
-char_to_list(Char, Buf, Res) ->
-    case Char bsr 8 of
-    0   ->  
-        case Buf of
-        [] -> [Char|Res];
-        _  -> lists:reverse(Buf)++[Char|Res]
-        end;
-    Div -> 
-        Rem = Char band 2#11111111,
-        char_to_list(Div, [Rem|Buf], Res)
-    end.
 
 %% @doc internal_decompose(Str)
 %% Canonical  If true bit is on in this byte, then selects the recursive 
@@ -751,27 +843,34 @@ to_ncr([         ], Res) -> Res.
 to_graphemes(Str) ->
     explode_reverse(to_graphemes_raw(Str, [], [])).
 
+to_graphemes_raw([H|T], Buf, Res) ->
+    F = ccc(skip_check),
+    to_graphemes_raw(F, [H|T], Buf, Res).
+    
 %% @doc Returns not reversed result.
 %% @private
-to_graphemes_raw([H|T], Buf, Res) ->
-    case {ccc(H), Buf} of
-    {0, []} -> to_graphemes_raw(T, [H], Res);
-    {0, _ } -> to_graphemes_raw(T, [H], [Buf|Res]);
-    _       -> to_graphemes_raw(T, [H|Buf], Res)
+-spec to_graphemes_raw(fun(), string(), string(), [string()]) ->
+    [string()].
+to_graphemes_raw(F, [H|T], Buf, Res) ->
+    case {F(H), Buf} of
+    {0, []}    -> to_graphemes_raw(F, T, [H], Res);
+    {0, [_|_]} -> to_graphemes_raw(F, T, [H], [Buf|Res]);
+    _          -> to_graphemes_raw(F, T, [H|Buf], Res)
     end;
-to_graphemes_raw([   ], [ ], Res) -> Res;
-to_graphemes_raw([   ], Buf, Res) -> [Buf|Res].
+to_graphemes_raw(_F, [   ], [  ]=_Buf, Res) -> Res;
+to_graphemes_raw(_F, [   ], [_|_]=Buf, Res) -> [Buf|Res].
 
 %% @doc Compute count of graphemes in the string.
-length(Str) -> len_graphemes(Str, 0).
-len(Str) -> len_graphemes(Str, 0).
+length(Str) -> 
+    F = ccc(skip_check),
+    do_length(F, Str, 0).
 
-len_graphemes([H|T], Len) ->
-    case ccc(H) of
-    0 -> len_graphemes(T, Len + 1);
-    _ -> len_graphemes(T, Len)
+do_length(F, [H|T], Len) ->
+    case F(H) of
+    0 -> do_length(F, T, Len + 1);
+    _ -> do_length(F, T, Len)
     end;
-len_graphemes([   ], Len) -> Len.
+do_length(_F, [   ], Len) -> Len.
 
 %% @doc Return Len chars from the beginning of the string.
 first(Str, Len) ->
@@ -785,27 +884,55 @@ last(Str, Len) ->
             lists:sublist(
                 to_graphemes_raw(Str, [], []), Len))).
 
-%% @doc Reverses string graphemes.
+%% @doc Reverses the string graphemes.
 reverse(Str) ->
     reverse_flatten(
         lists:reverse(to_graphemes_raw(Str, [], [])), 
         [], []).
 
-reverse_flatten([H|T], [], Res) ->
+%% [[1,2,3],[4,5,6]] => [6,5,4,3,2,1].
+reverse_flatten([[_|_]=H|T], [], Res) ->
     reverse_flatten(T, H, Res);
 reverse_flatten(T, [HH|TT],  Res) ->
     reverse_flatten(T, TT, [HH|Res]);
 reverse_flatten(_, [], Res) ->
     Res.
 
-%------------------------------------------------------------------------------
-  %%%   %     % %%%%%%% %%%%%%%
-   %    %%    % %       %     %
-   %    % %   % %       %     %
-   %    %  %  % %%%%%   %     %
-   %    %   % % %       %     %
-   %    %    %% %       %     %
-  %%%   %     % %       %%%%%%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%
+%% ==String information==
+%%
 
 %% Collect information about string.
 -spec info(Str::string()) -> #unistr_info {}.
@@ -894,14 +1021,46 @@ info_char_block(Obj = #unistr_info{str=Str}) ->
 
 % String Info End.
 
-%------------------------------------------------------------------------------
-  %%%%%  %%%%%%   %%%%    %%%%%   %%%%
-    %    %       %          %    %
-    %    %%%%%    %%%%      %     %%%%
-    %    %            %     %         %
-    %    %       %    %     %    %    %
-    %    %%%%%%   %%%%      %     %%%%
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%
+%% Tests
+%%
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
@@ -1073,6 +1232,35 @@ last_test_() ->
     F = 'last',
     [?_assertEqual(M:F("Octocat!", 4), "cat!")
     ].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -ifdef(SLOW_TESTS).
 %% @doc Normalization Conformance Test

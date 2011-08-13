@@ -338,6 +338,9 @@ do_generator2(S, [[WH|WR]|WT], R) ->
 
     
 
+%%
+%% Tests
+%%
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").

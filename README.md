@@ -4,7 +4,9 @@
 
 [License LGPLv3](http://http://www.gnu.org/licenses/lgpl-3.0.html)
 
-This library contains helpful functions.
+__Author__: Uvarov Michael ([`freeakk@gmail.com`](mailto:freeakk@gmail.com))
+
+== Unicode eXtension ==
 
 All actions with Unicode was described in [Unicode Standards](http://www.unicode.org/reports/).
 This library realized only these documents:
@@ -31,7 +33,7 @@ Structure of the library
 ux\_string.erl: String Functions for lists of Unicode characters.
 ================================================================
 
-This module provides functions for operations with
+This module provides the functions for operations with
 [UNIDATA](http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html).
 UNIDATA contains data about Unicode characters.
 
@@ -54,7 +56,7 @@ Functions from stdlib for Unicode strings
 
 Functions for processing strings as groups of graphemes
 -------------------------------------------------------
-Grapheme is letter with its modifiers.
+Grapheme is a letter with its modifiers.
 * length/1
 * reverse/1
 * first/2
@@ -126,7 +128,7 @@ Result:
 [lu,ll,ll,ll,ll,ll,zs,ll,ll,ll,ll,ll,ll,ll,zs,ll,ll,ll,zs,
  ll,ll,ll,ll,ll,zs,ll,ll,zs,ll|...]
 ```
-Where lu is Letter, Uppercase; ll is Letter, Lowercase. Read more about
+Where ``lu`` is Letter, Uppercase; ll is Letter, Lowercase. Read more about
 types from description of ``ux_char:type/1``.
 
 Code:
@@ -295,6 +297,6 @@ So, different processes can use their own unidata dictionaries.
 
 Level is `process`, `application` or `node`.
 
-Parsers located into ux_unidata_parser_* modules.
+Parsers located into ``ux_unidata_parser_*`` modules.
 
 Default unidata loads when ux application starts.

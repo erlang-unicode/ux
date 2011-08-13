@@ -4,7 +4,7 @@
 Unicode eXtension
 =================
 
-[License LGPLv3](http://http://www.gnu.org/licenses/lgpl-3.0.html)
+__License__: [LGPLv3](http://http://www.gnu.org/licenses/lgpl-3.0.html)
 
 __Author__: Uvarov Michael ([`freeakk@gmail.com`](mailto:freeakk@gmail.com))
 

@@ -1,12 +1,16 @@
 ; -- Mode: Markdown; -- ; vim: filetype=markdown tw=76 expandtab shiftwidth=4 tabstop=4
 
-[Read edoc documentation](https://github.com/freeakk/ux/blob/master/doc/README.md)
+
+Unicode eXtension
+=================
 
 [License LGPLv3](http://http://www.gnu.org/licenses/lgpl-3.0.html)
 
 __Author__: Uvarov Michael ([`freeakk@gmail.com`](mailto:freeakk@gmail.com))
 
-== Unicode eXtension ==
+[Read edoc documentation](https://github.com/freeakk/ux/blob/master/doc/README.md)
+
+
 
 All actions with Unicode was described in [Unicode Standards](http://www.unicode.org/reports/).
 This library realized only these documents:

@@ -102,7 +102,7 @@ types(Str) ->
 %% @doc Returns a new string which is made from the chars of Str 
 %%      which are not a type from Types list.
 %% @end
--spec delete_types([char_type()], string()) -> string().
+-spec delete_types([char_type()], string()) -> string() | none().
 
 delete_types(Types, Str) -> 
     Fun = ux_char:type(skip_check),
@@ -113,7 +113,7 @@ delete_types(Types, Str) ->
 %% @doc Stops delete_type/2 after Limit deleted chars. If Limit &lt; 0, then
 %%      stops after -Limit skipped chars.
 %% @end
--spec delete_types([char_type()], string(), integer()) -> string().
+-spec delete_types([char_type()], string(), integer()) -> string() | none().
 
 delete_types(Types, Str, Limit) when Limit > 0 ->
     lists:reverse(get_types(Types, Str, Limit, [], true, 
@@ -125,7 +125,7 @@ delete_types(Types, Str, Limit) when Limit < 0 ->
 %% @doc Returns a new string which is made from the chars of Str 
 %%      which are a type from Types list.
 % @end
--spec filter_types([char_type()], string()) -> string().
+-spec filter_types([char_type()], string()) -> string() | none().
 
 filter_types(Types, Str) -> 
     Fun = ux_char:type(skip_check),
@@ -135,7 +135,7 @@ filter_types(Types, Str) ->
 
 %% @doc Stops after -Limit skipped chars.
 %% @end
--spec filter_types([char_type()], string(), integer()) -> string().
+-spec filter_types([char_type()], string(), integer()) -> string() | none().
 
 filter_types(Types, Str, Limit) when Limit > 0 ->
     lists:reverse(
@@ -149,7 +149,7 @@ filter_types(Types, Str, Limit) when Limit < 0 ->
 %% @doc If Len&lt;0, then gets first Len chars of type, which is in Types
 %%      If Len&gt;0, then gets first -Len chars of type, which is NOT in Types
 %% @end
--spec first_types([char_type()], string(), integer()) -> string().
+-spec first_types([char_type()], string(), integer()) -> string() | none().
 first_types(Types, Str, Len) -> 
     lists:reverse(
         get_types(Types, Str, Len, [], false, 
@@ -159,7 +159,7 @@ first_types(Types, Str, Len) ->
 %% @doc If Len&lt;0, then gets last Len chars of type, which is in Types
 %%      If Len&gt;0, then gets last -Len chars of type, which is NOT in Types
 %% @end
--spec last_types([char_type()], string(), integer()) -> string().
+-spec last_types([char_type()], string(), integer()) -> string() | none().
 last_types(Types, Str, Len) -> 
     get_types(Types, lists:reverse(Str), Len, [], false, 
         ?ASSERT_IN_ARRAY_LAMBDA(Len>0), 
@@ -237,8 +237,12 @@ split(P1, P2)     -> delete_empty(explode(P1, P2)).
 split(P1, P2, P3) -> delete_empty(explode(P1, P2, P3)).
 
 %% @doc Splits the string by delimeters.
--spec explode([string()], string()) -> string().
--spec explode([string()], string(), integer()) -> string().
+-spec explode([string()], string()) -> [string()];
+        (char(), string()) -> [string()];
+        (string(), string()) -> [string()].
+-spec explode([string()], string(), integer()) -> string();
+        (char(), string(), integer()) -> [string()];
+        (string(), string(), integer()) -> [string()].
 
 explode([Delimeter], [_|_] = Str) when is_integer(Delimeter) -> 
     explode_simple(Delimeter, lists:reverse(Str), [], []);

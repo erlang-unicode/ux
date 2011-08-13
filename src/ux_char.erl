@@ -43,19 +43,25 @@
 -include("ux_char.hrl").
 -include("ux_unidata.hrl").
 
--spec to_lower(char()) -> char().
--spec to_upper(char()) -> char().
--spec is_lower(char()) -> boolean().
--spec is_upper(char()) -> boolean().
+-spec to_lower(char()) -> char(); 
+        (skip_check) -> fun().
+-spec to_upper(char()) -> char(); 
+        (skip_check) -> fun().
+-spec is_lower(char()) -> boolean();
+        (skip_check) -> fun().
+-spec is_upper(char()) -> boolean(); 
+        (skip_check) -> fun().
 to_lower(V) -> ?UNIDATA:char_to_lower(V).
 to_upper(V) -> ?UNIDATA:char_to_upper(V).
 is_lower(V) -> ?UNIDATA:is_lower(V).
 is_upper(V) -> ?UNIDATA:is_upper(V).
 
--spec comment(char()) -> string().
+-spec comment(char()) -> binary();
+        (skip_check) -> fun().
 comment(V) -> ?UNIDATA:char_comment(V).
 
--spec type(char()) -> char_type().
+-spec type(char()) -> char_type(); 
+        (skip_check) -> fun().
 type(V) -> ?UNIDATA:char_type(V).
 
 
@@ -153,5 +159,7 @@ is_unified_ideograph(Ch) when
     ?CHAR_IS_UNIFIED_IDEOGRAPH(Ch) -> true;
 is_unified_ideograph(_) -> false.
 
+-spec block(char) -> atom();
+        (skip_check) -> fun().
 block(V) -> ?UNIDATA:char_block(V).
 

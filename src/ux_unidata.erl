@@ -54,6 +54,7 @@
         is_comp_excl/1, is_compat/1, decomp/1, comp/2,
         ducet/1, char_block/1]).
 -include("ux_unidata.hrl").
+-include("ux_char.hrl").
 
 -spec get_source_file(Parser::atom()) -> string().
 get_source_file(allkeys) ->
@@ -67,20 +68,39 @@ get_source_file(norm_props) ->
 get_source_file(unidata) ->
     code:priv_dir(ux) ++ "/UNIDATA/UnicodeData.txt".
 
--spec is_upper(C::char()) -> boolean().
--spec is_lower(C::char()) -> boolean().
--spec char_type(C::char()) -> atom().
--spec char_comment(C::char()) -> binary().
--spec ccc(C::char()) -> integer().
--spec nfc_qc(C::char()) -> y | n | m.
--spec nfd_qc(C::char()) -> y | n | m.
--spec nfkc_qc(C::char()) -> y | n | m.
--spec nfkd_qc(C::char()) -> y | n | m.
--spec is_compat(C::char()) -> true | false.
--spec is_comp_excl(C::char()) -> true | false.
--spec ducet(list()) -> list() | atom().
--spec comp(integer(), integer()) -> integer() | false.
--spec decomp(integer()) -> list().
+-spec char_to_lower(char()) -> char(); 
+        (skip_check) -> fun().
+-spec char_to_upper(char()) -> char(); 
+        (skip_check) -> fun().
+-spec is_lower(char()) -> boolean(); 
+        (skip_check) -> fun().
+-spec is_upper(char()) -> boolean(); 
+        (skip_check) -> fun().
+-spec char_type(C::char()) -> atom();
+        (skip_check) -> fun().
+-spec char_comment(C::char()) -> binary();
+        (skip_check) -> fun().
+-spec ccc(C::char()) -> ux_ccc();
+        (skip_check) -> fun().
+-spec nfc_qc(C::char()) -> y | n | m;
+        (skip_check) -> fun().
+-spec nfd_qc(C::char()) -> y | n | m;
+        (skip_check) -> fun().
+-spec nfkc_qc(C::char()) -> y | n | m;
+        (skip_check) -> fun().
+-spec nfkd_qc(C::char()) -> y | n | m;
+        (skip_check) -> fun().
+-spec is_compat(C::char()) -> boolean();
+        (skip_check) -> fun().
+-spec is_comp_excl(C::char()) -> boolean();
+        (skip_check) -> fun().
+-spec ducet(list()) -> list() | atom();
+        (skip_check) -> fun().
+-spec comp(char(), char()) -> char() | false.
+-spec decomp(char()) -> list();
+        (skip_check) -> fun().
+-spec char_block(C::char()) -> atom();
+        (skip_check) -> fun().
 
 func(Parser, Type, Value) -> 
     F = ux_unidata_filelist:get_source(Parser, Type),

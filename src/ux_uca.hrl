@@ -91,7 +91,7 @@
 % Records
 -record(uca_options, {
     % Generator options
-    hangul_terminator = ?COL_HANGUL_TERMINATOR :: uca_elem(),
+    hangul_terminator = ?COL_HANGUL_TERMINATOR :: uca_weight(),
     natural_sort = true :: boolean(),
     strength = 4 :: uca_strength(),
     alternate = shifted :: uca_alternate(),

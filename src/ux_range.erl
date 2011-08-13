@@ -1,3 +1,16 @@
+%% @doc ETS is fast only as a key-value store.
+%%      But some data files contains ranges: From..To.
+%%      The fastest way is using lists for storing this values.
+%%
+%%      There is two types of these lists:
+%%      * with booleans: `[{1,3}, 6, {8,9}]'. For example, `is_compat';
+%%      * with values: `[{{1,3}, value1}, {{4,12}, value2}]'.
+%%
+%%      `in_list' function is for the first type.
+%%      `search' function is for the second type.
+%%
+%% @end
+
 -module(ux_range).
 -export([in_list/2,search/2]).
 

@@ -19,6 +19,9 @@ clean:
 build_plt:
 	@$(REBAR) build-plt
 
+check_plt:
+	@$(REBAR) check-plt
+
 dialyzer:
 	@$(REBAR) dialyze
 

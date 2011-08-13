@@ -301,6 +301,7 @@ So, different processes can use their own unidata dictionaries.
 
 Level is `process`, `application` or `node`.
 
-Parsers located into ``ux_unidata_parser_*`` modules.
+Parsers are located into ``ux_unidata_parser_*`` modules.
 
-Default unidata loads when ux application starts.
+Default unidata files are loaded when the application tries get the access to
+them.

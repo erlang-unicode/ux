@@ -44,13 +44,16 @@ do_extract(#uca_options {
     R1 = do_extract0(S, D),
     {W1, S1} = R1,
     
-    % Form function for proxy.
-    F = do_proxy(C,D,S1),
     {W2,S2} = 
-        case mod_weights(F, W1, NS, []) of
-        false -> R1;
-        V -> V
-        end,
+       case has_mod(W1, NS) of
+       true ->
+          % Form function for proxy.
+          F = do_proxy(C,D,S1),
+          mod_weights(F, W1, NS, []);
+       false ->
+          R1
+       end,
+
 
     W3 = case CF of
         off   -> W2;
@@ -129,6 +132,18 @@ case_invert(L3) ->
 case_sensitive_hack([Var,L1,L2,L3,L4]) ->
     [Var,L3,L2,L1,L4].
         
+
+%has_mod([[_Var,L1|_]|_], _NS) 
+%    when ?IS_L1_OF_HANGUL_L(L1) ->
+%    true;
+%% Hack for numbers.
+%has_mod([[_Var,L1|_]|T], _NS=true) 
+%    when ?IS_L1_OF_DECIMAL(L1) ->
+%    true;
+has_mod([[_|_]|T], NS) ->
+    has_mod(T, NS);
+has_mod([], _NS) ->
+    false. 
 
 % 7.1.5 Hangul Collation
 % Interleaving Method

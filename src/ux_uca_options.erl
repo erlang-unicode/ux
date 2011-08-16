@@ -37,25 +37,47 @@ get_options(shift_trimmed) ->
         alternate = shift_trimmed 
     };
 get_options([_|_] = Params) ->
-    get_options(Params, get_options()).
+    C = get_options(),
+    get_options(C, Params).
 
 %% @doc If you want use this library without import *.hrl, you can create 
 %% a #uca_options {} record with this function.
 %% @end
-get_options([{hangul_terminator, Val}|T], Opt = #uca_options{ }) ->
-    get_options(T, Opt#uca_options{ hangul_terminator=Val });
-get_options([{natural_sort, Val}|T], Opt = #uca_options{ }) ->
-    get_options(T, Opt#uca_options{ natural_sort=Val });
-get_options([{case_sensitive, Val}|T], Opt = #uca_options{ }) ->
-    get_options(T, Opt#uca_options{ case_sensitive=Val });
-get_options([{case_first, Val}|T], Opt = #uca_options{ }) ->
-    get_options(T, Opt#uca_options{ case_first=Val });
-get_options([{strength, Val}|T], Opt = #uca_options{ }) ->
-    get_options(T, Opt#uca_options{ strength=Val });
-get_options([{alternate, Val}|T], Opt = #uca_options{ }) ->
-    get_options(T, Opt#uca_options{ alternate=Val });
-get_options([{sort_key_format, Val}|T], Opt = #uca_options{ }) ->
-    get_options(T, Opt#uca_options{ sort_key_format=Val });
-get_options([], Opt = #uca_options{ }) ->
-    Opt.
+get_options(C=#uca_options{}, 
+    [{hangul_terminator, Val}|T]) ->
+    NewC = C#uca_options{ hangul_terminator=Val },
+    get_options(NewC, T);
+
+get_options(C=#uca_options{}, 
+    [{natural_sort, Val}|T]) ->
+    NewC = C#uca_options{ natural_sort=Val },
+    get_options(NewC, T);
+
+get_options(C=#uca_options{}, 
+    [{case_sensitive, Val}|T]) ->
+    NewC = C#uca_options{ case_sensitive=Val },
+    get_options(NewC, T);
+
+get_options(C=#uca_options{}, 
+    [{case_first, Val}|T]) ->
+    NewC = C#uca_options{ case_first=Val },
+    get_options(NewC, T);
+
+get_options(C=#uca_options{}, 
+    [{strength, Val}|T]) ->
+    NewC = C#uca_options{ strength=Val },
+    get_options(NewC, T);
+
+get_options(C=#uca_options{}, 
+    [{alternate, Val}|T]) ->
+    NewC = C#uca_options{ alternate=Val },
+    get_options(NewC, T);
+
+get_options(C=#uca_options{}, 
+    [{sort_key_format, Val}|T]) ->
+    NewC = C#uca_options{ sort_key_format=Val },
+    get_options(NewC, T);
+
+get_options(C=#uca_options{}, []) ->
+    C.
 

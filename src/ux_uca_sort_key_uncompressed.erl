@@ -22,8 +22,15 @@ sort_key(C=#uca_options{strength=MaxLvl}, S) ->
 %% @param R::[[int()]]  Remain weights
 %% @param K::[int()]    Result key
 do_sort_key1(S, [WH|WT], A, R, K) ->
-    {NewA, [L1|Rem]} = do_alt(A, WH),
-    do_sort_key1(S, WT, NewA, [Rem|R], [L1|K]);
+    {NewA, Ints} = do_alt(A, WH),
+    case Ints of
+    [0|Rem] ->
+        do_sort_key1(S, WT, NewA, [Rem|R], K);
+    [L1|Rem] ->
+        do_sort_key1(S, WT, NewA, [Rem|R], [L1|K]);
+    _ ->
+        do_sort_key1(S, WT, NewA, R, K)
+    end;
 do_sort_key1(S, [], A, R, K) 
     when (S > 1) ->
     W = lists:reverse(R),

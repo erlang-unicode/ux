@@ -8,6 +8,8 @@
 -spec get_options() -> #uca_options{}.
 
 do_alt(A, El) -> A(El).
+do_alt(A, El, S) -> listsLsublist(A(El), S).
+
 get_ducet() -> ux_unidata:ducet(skip_check).
 
 %% Extract a weight from the string.
@@ -25,6 +27,8 @@ get_options() -> #uca_options{}.
 split_levels(W) -> do_split_levels(W, [], []).
 do_split_levels([WH|WT], Res, Rem) ->
     case WH of
+    [0] -> do_split_levels(WT, Res, Rem);
+    [0|T] -> do_split_levels(WT, Res, [T|Rem]);
     [H] -> do_split_levels(WT, [H|Res], Rem);
     [H|T] -> do_split_levels(WT, [H|Res], [T|Rem])
     end;

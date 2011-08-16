@@ -97,13 +97,16 @@ natural_sort_test_() ->
          "Xiph Xlater 2000",
          "Xiph Xlater 5000",
          "Xiph Xlater 10000"],
+
     C1 = ux_uca_options:get_options([
                 {natural_sort, true}, 
                 {alternate, non_ignorable}]),
+
     C2 = ux_uca_options:get_options([
                     {natural_sort, true}, 
                     {alternate, non_ignorable},
                     {case_first, upper}]),
+
     F = fun ux_uca:sort/2,
 
 

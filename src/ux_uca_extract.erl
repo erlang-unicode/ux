@@ -45,14 +45,14 @@ do_extract(#uca_options {
     {W1, S1} = R1,
     
     {W2,S2} = 
-       case has_mod(W1, NS) of
-       true ->
-          % Form function for proxy.
-          F = do_proxy(C,D,S1),
-          mod_weights(F, W1, NS, []);
-       false ->
-          R1
-       end,
+      case has_mod(W1, NS) of
+      true ->
+         % Form function for proxy.
+         F = do_proxy(C,D,S1),
+         mod_weights(F, W1, NS, []);
+      false ->
+         R1
+      end,
 
 
     W3 = case CF of
@@ -133,13 +133,13 @@ case_sensitive_hack([Var,L1,L2,L3,L4]) ->
     [Var,L3,L2,L1,L4].
         
 
-%has_mod([[_Var,L1|_]|_], _NS) 
-%    when ?IS_L1_OF_HANGUL_L(L1) ->
-%    true;
-%% Hack for numbers.
-%has_mod([[_Var,L1|_]|T], _NS=true) 
-%    when ?IS_L1_OF_DECIMAL(L1) ->
-%    true;
+% Hack for numbers.
+has_mod([[_Var,L1|_]|T], _NS=true) 
+    when ?IS_L1_OF_DECIMAL(L1) ->
+    true;
+has_mod([[_Var,L1|_]|_], _NS) 
+    when ?IS_L1_OF_HANGUL_L(L1) ->
+    true;
 has_mod([[_|_]|T], NS) ->
     has_mod(T, NS);
 has_mod([], _NS) ->
@@ -174,15 +174,15 @@ has_mod([], _NS) ->
 %% @private
 % Hack for Hangul.
 -spec mod_weights(fun(), uca_array(), boolean(), uca_array()) -> result().
-mod_weights(E, [[Var,L1|_]=H|T], _NS, Acc) 
-    when ?IS_L1_OF_HANGUL_L(L1) ->
-    do_hangul(E, l, T, [H|Acc]);
 % Hack for numbers.
 mod_weights(E, [[Var,L1|LOther]=H|T], NS=true, Acc) 
     when ?IS_L1_OF_DECIMAL(L1) ->
     F = fun(W) -> [Var,W|LOther] end, % define F.
     Num = ?COL_WEIGHT_TO_DECIMAL(L1),
     do_decimal(E, F, Num, T, Acc);
+mod_weights(E, [[Var,L1|_]=H|T], _NS, Acc) 
+    when ?IS_L1_OF_HANGUL_L(L1) ->
+    do_hangul(E, l, T, [H|Acc]);
 mod_weights(E, [H|T], NS, Acc) ->
     mod_weights(E, T, NS, [H|Acc]);
 mod_weights(E, [], _NS, Acc) ->

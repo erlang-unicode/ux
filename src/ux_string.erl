@@ -838,7 +838,22 @@ to_ncr([Char|Tail], Res) -> to_ncr(Tail, ux_char:to_ncr(Char) ++ Res);
 to_ncr([         ], Res) -> Res.
 
 %% @doc Split unicode string into
-%% [graphemes](http://en.wikipedia.org/wiki/Grapheme)
+%% [graphemes](http://en.wikipedia.org/wiki/Grapheme).
+%% Based on
+%% [UAX29: UNICODE TEXT SEGMENTATION]
+%% (http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries).
+%%
+%% It is important to recognize that what the user thinks of as 
+%% a "character"—a basic unit of a writing system for a language—may 
+%% not be just a single Unicode code point. Instead, that basic unit 
+%% may be made up of multiple Unicode code points. 
+%% To avoid ambiguity  with the computer use of the term character, 
+%% this is called a user-perceived character. 
+%% For example, “G” + acute-accent is a user-perceived character: 
+%% users think of it as a single character, yet is actually represented 
+%% by two Unicode code points. These user-perceived characters are 
+%% approximated by what is called a grapheme cluster, which can be
+%% determined programmatically.
 %% @end
 to_graphemes(Str) ->
     explode_reverse(to_graphemes_raw(Str, [], [])).

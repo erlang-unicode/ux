@@ -87,6 +87,7 @@
 -type uca_elem() :: [atom()|uca_weight()].
 -type uca_array() :: [uca_elem()].
 -type result() :: {[uca_elem()], string()}.
+-type uca_weights() :: [uca_weight()].
 
 % Records
 -record(uca_options, {

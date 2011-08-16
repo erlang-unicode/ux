@@ -7,8 +7,11 @@
         {integer(), string()}.
 -spec get_options() -> #uca_options{}.
 
-do_alt(A, El) -> A(El).
-do_alt(A, El, S) -> listsLsublist(A(El), S).
+do_alt(A, W) -> A(W).
+do_alt(A, W, S) -> 
+    {NewA, AltW} = A(W),
+    NewAltW = lists:sublist(AltW, S),
+    {NewA, NewAltW}.
 
 get_ducet() -> ux_unidata:ducet(skip_check).
 

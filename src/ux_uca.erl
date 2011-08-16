@@ -274,24 +274,24 @@ sort(C=#uca_options{}, Strings) ->
 
 
 
-alt_sort_array(S) ->
+weights(S) ->
     C = get_options(),
-    alt_sort_array(C, S).
+    weights(C, S).
 
-alt_sort_array(C=#uca_options{strength=S}, Str) ->
+weights(C=#uca_options{strength=S}, Str) ->
     List = sort_array(C, Str),
 
     D = get_ducet(),
     A = ux_uca_alt:get_alternate_function(C, D),
-    do_alt_array(A, S, List, []).
+    do_weights(A, S, List, []).
 
 
 %% Apply the alternate function for the list of weights.
-do_alt_array(A, S, [H|T], Acc) ->
+do_weights(A, S, [H|T], Acc) ->
     {NewA, Ints} = do_alt(A, H, S),
     NewAcc = [Ints|Acc],
-    do_alt_array(NewA, S, T, NewAcc);
-do_alt_array(A, S, [], Acc) ->
+    do_weights(NewA, S, T, NewAcc);
+do_weights(A, S, [], Acc) ->
     NewAcc = lists:reverse(Acc),
     {A, NewAcc}.
 
@@ -371,20 +371,107 @@ do_generator2(S, [[WH|WR]|WT], R) ->
     F = fun() -> do_generator2(S, WT, [WR|R]) end,
     {WH, F}.
     
+%% 1|x|x  => 1|x|x
+%% 1|1|x  => 1|x|x
+%% 1|0|1  => 1|x|x
+%% 1|0|0  => 1|1|1
+%%           1|3|2
+prefix_weight([N,0|T]) ->
+    NewN = N + 1,
+    NewEl = [NewN|T],
+    prefix_weight(NewEl);
+prefix_weight([N]) ->
+    false;
+prefix_weight(El) -> 
+    El.
 
-search(S, SubS) ->
+prefix_weights([H|T], Acc) ->
+    case prefix_weight([1|H]) of
+    false -> 
+        %skip:
+        prefix_weights(T, Acc);
+
+    NewH -> 
+        NewAcc = [NewH|Acc],
+        prefix_weights(T, NewAcc)
+    end;
+prefix_weights([], Acc) ->
+    lists:reverse(Acc).
+    
+%% http://unicode.org/reports/tr10/#Searching
+search(T, P) ->
     C = get_options(),
-    M = medial,
-    search(C, S, SubS, M).
+    M = 'minimal',
+    search(C, T, P, M).
 
-search(S, SubS, M) ->
+%% M is match-style:
+search(T, P, M) ->
     C = get_options(),
-    search(C, S, SubS, M).
+    search(C, T, P, M).
 
-search(C, S, SubS, M) ->
+
+search(C, T, P, 'medium') ->
     NewOpts = [{'sort_key_format', 'uncompressed'}],
     NewC = ux_uca_options:get_options(C, NewOpts),
-    K = sort_key(NewC, SubS), % retrieve the sort key of the substring
+
+    % Retrieve the sort key of the substring;
+    {_NewAlt, AltW} = weights(NewC, P),
+    % Convert to weights with prefix:
+    PW = prefix_weights(AltW, []), 
+    
+    D = get_ducet(),
+    A = ux_uca_alt:get_alternate_function(C, D),
+    Skipped = [],
+
+    
+
+    case do_search('first_minimal', C, P, D, A, PW, Skipped) of
+    {[], _, []} ->
+        % is equal
+        do_search('first_minimal', C, T, D, A, PW, Skipped);
+    
+    {SubBefore, SubMatch, SubAfter} = SubV ->
+        case do_search('maximal', C, T, D, A, PW, Skipped) of
+        false -> false;
+        {MaxBefore, MaxMatch, MaxAfter} = MaxV ->
+            MinV =
+                do_search('first_minimal', C, MaxMatch, D, A, PW, Skipped),
+            {MinBefore, MinMatch, MinAfter} = MinV,
+
+
+%   error_logger:info_msg(
+%       "~w: "
+%           "Max ~w. ~n"
+%           "Min ~w. ~n"
+%           "Sub ~w. ~n", 
+%       [?MODULE, MaxV, MinV, SubV]),
+        
+        % concat the left part        
+        {MedBeforeTail, MedMatch1} = 
+            do_split(lists:reverse(MinBefore), lists:reverse(SubBefore), MinMatch),
+
+        MedBefore = MaxBefore++lists:reverse(MedBeforeTail),
+        
+        % concat the right part        
+        {MedAfterTail, MedMatch2} = 
+            do_split(MinAfter, SubAfter, lists:reverse(MedMatch1)),
+        
+        MedAfter = MedAfterTail++MaxAfter,
+                
+        MedMatch = lists:reverse(MedMatch2),
+
+        {MedBefore, MedMatch, MedAfter}
+        end        
+    end;
+
+search(C, S, P, M) ->
+    NewOpts = [{'sort_key_format', 'uncompressed'}],
+    NewC = ux_uca_options:get_options(C, NewOpts),
+
+    % Retrieve the sort key of the substring;
+    {_NewAlt, AltW} = weights(NewC, P),
+    % Convert to weights with prefix:
+    PW = prefix_weights(AltW, []), 
     
     D = get_ducet(),
     A = ux_uca_alt:get_alternate_function(C, D),
@@ -392,21 +479,24 @@ search(C, S, SubS, M) ->
 
     NewM = case M of
     'minimal' -> 'first_minimal';
-    medial -> first_medial;
-    'maximal' -> 'first_maximal'
+    'maximal' -> 'maximal'
     end,
 
-    do_search(NewM, C, S, D, A, K, Skipped).
+    do_search(NewM, C, S, D, A, PW, Skipped).
+
+%% @private
+do_split([H|T1], [H|T2], Acc) ->
+    do_split(T1, T2, [H|Acc]);
+do_split(T1, _T2, Acc) ->
+    {T1, Acc}.
 
 
-do_search(M, C, [H|T]=S, D, A, K, Skipped) ->
-    Acc = [],
-    L = 1,
-    case do_search_extract(L, M, C, S, D, A, K, Acc) of
+do_search(M, C, [H|T]=S, D, A, PW, Skipped) ->
+    case do_search_extract(M, C, S, D, A, PW) of
     'stop' -> false;
     false -> 
         NewSkipped = [H|Skipped],
-        do_search(M, C, T, D, A, K, NewSkipped);
+        do_search(M, C, T, D, A, PW, NewSkipped);
     {true,  NewT} ->
         NewSkipped = lists:reverse(Skipped),
         Matched = delete_tail(S, NewT),
@@ -426,98 +516,157 @@ do_delete_tail([_FH|FT], [_TH|TT]) ->
 do_delete_tail(Rev, []) ->
     lists:reverse(Rev).
 
-% Slow realization:
-%delete_tail2(From, Tail) ->
-%    RevF = lists:reverse(From),
-%    RevT = lists:reverse(Tail),
-%    S = RevF -- RevT,
-%    lists:reverse(S).
 
+-spec do_search_extract(M::atom(), #uca_options{}, S::string(), 
+        D::fun(), A::fun(),
+        PW::uca_weights()) -> term().
 
-do_search_extract(L, M, C, S, D, A, K, Acc) ->
-    Ext = do_extract(C, S, D),
-    case Ext of
+do_search_extract('first_minimal'=_M, 
+    C=#uca_options{strength=L}, S, D, A, PW) ->
+    case do_extract(C, S, D) of
     {[], _} -> 
         'stop';
     {[_|_]=NewW, NewS} -> 
-        {NewA, AltW} = do_alt_array(A, NewW, []),
-        case {M, AltW} of
-        {'first_minimal', [[0|_]|_]} ->
-            false;
-        _ ->
-            case get_new_acc(L, AltW, Acc) of
-            'is_not_ignorable' -> false;
-            NewAcc -> 
-                NewM = match_type(M),
-                do_search_match(L, NewM, C, NewS, D, NewA, K, AltW, Acc)
-            end
-        end
-    end.
-
-match_type('first_minimal') -> 'minimal';
-match_type('first_medial') -> 'medial';
-match_type('first_maximal') -> 'maximal';
-match_type(M) -> M.
-
-
-% W has only ignorable
-get_new_acc(1, W, Acc) -> W;
-get_new_acc(L, [[0|T]|W], Acc) -> 
-    NewAcc = [T|Acc],
-    get_new_acc(L, W, NewAcc);
-get_new_acc(L, [], Acc) when is_integer(L) -> 
-    NewW = lists:reverse(Acc),
-    NewAcc = [],
-    NewL = L - 1,
-    get_new_acc(NewL, NewW, NewAcc);
-get_new_acc(L, [_|_], Acc) when is_integer(L) -> 
-    'is_not_ignorable'.
-
-
-
-% fully matched. return tail
-do_search_match(L, _M='maximal', C, S, D, A, []=_K, []=_W, Acc) -> 
-    {true, delete_ignorables(C,S,D,A)};
+        {NewA, AltW} = do_weights(A, L, NewW, []),
+        case is_ignorable_array(L, AltW) of
+        true -> false; % reject ignorables
+        false -> 
     
-do_search_match(L, M, C, S, D, A, []=_K, []=_W, Acc) -> 
-    {true, S};
+            case search_match(C, PW, AltW) of
+            false -> false;
+            true  -> {true, NewS};
+            {'more', NewPW} ->
+                NewM = 'minimal',
+                do_search_extract(NewM, 
+                    C, NewS, D, NewA, NewPW) 
+            end
 
-do_search_match(L, M, C, S, D, A, []=_K, [_|_]=_W, Acc) -> 
-    false;
-
-% matched, check other levels
-do_search_match(L, M, C, S, D, A, [0|K], W, Acc) -> 
-    ShiftL = 2,
-    case get_new_acc(ShiftL, W, Acc) of
-    'is_not_ignorable' -> false;
-    NewAcc -> 
-        NewL = L + 1,
-        WW = lists:reverse(NewAcc),
-        % try match the next new level
-        do_search_match(NewL, M, C, S, D, A, K, WW, [])
+        end
     end;
 
-% try extract more
-do_search_match(L, M, C, S, D, A, [_|_]=K, []=_W, Acc) -> 
-    do_search_extract(L, M, C, S, D, A, K, Acc);
+do_search_extract(M, 
+    C=#uca_options{strength=L}, S, D, A, PW) ->
+
+    case do_extract(C, S, D) of
+    {[], _} -> 
+        'stop';
+
+    {[_|_]=NewW, NewS} -> 
+        {NewA, AltW} = do_weights(A, L, NewW, []),
+    
+        case search_match(C, PW, AltW) of
+        false -> 
+            false;
+
+        true when M=:='maximal' -> 
+            NewNewS = delete_ignorables(C, NewS, D, A),
+            {true, NewNewS};
+
+        true -> 
+            {true, NewS};
+
+        {'more', NewPW} ->
+            do_search_extract(M, 
+                C, NewS, D, NewA, NewPW) 
+        end
+
+    end.
+
+
+search_match(C=#uca_options{strength=MaxL}, PW, W) ->
+    L = 1,
+    SkippedPW = [], % skipped weights from PW.
+    SkippedW = [], % skipped weights from W.
+    do_search_match(MaxL, L, PW, SkippedPW, W, SkippedW).
+
+
+
+
+
+%% @param MaxL strength
+%% @param L Level:    1->2...->MaxL
+%% @param PW          Pattern weights (weights after `prefix_weights')
+%% @param SkippedPW   Skipped pattern weights
+%% @param W           Target weights
+%% @param SkippedW    Skipped target weights
 
 % skip ignorable
-do_search_match(L, M, C, S, D, A, [_|_]=K, [[0|T]|W], Acc) -> 
-    NewAcc = [T|Acc],
-    do_search_match(L, M, C, S, D, A, K, W, NewAcc);
+do_search_match(MaxL, L, PW, SkippedPW, [[0]=_HW|TW], SkippedW) ->
+    do_search_match(MaxL, L, PW, SkippedPW, TW, SkippedW);
+    
+% skip and save the tail
+do_search_match(MaxL, L, PW, SkippedPW, [[0|THW]=_HW|TW], SkippedW) ->
+    NewSkippedW = [THW|SkippedW],
+    do_search_match(MaxL, L, PW, SkippedPW, TW, NewSkippedW);
 
-% matched weight
-do_search_match(L, M, C, S, D, A, [H|K], [[H|T]|W], Acc) -> 
-    NewAcc = [T|Acc],
-    do_search_match(L, M, C, S, D, A, K, W, NewAcc);
+% matched H
+do_search_match(MaxL, L, [[L,H|THS]=_HS|TS], SkippedPW, 
+    [[H|HHW]=_HW|TW], SkippedW) ->
+    NewHS = prefix_weight([L+1|THS]),
+    NewSkippedPW = 
+        case NewHS of
+        false ->
+            %skip:
+            SkippedPW;
+        _ ->
+            [NewHS|SkippedPW]
+        end,
 
-do_search_match(_L, _M, _C, _S, _D, _A, _K, _W, _Acc) -> 
-    false.    
+    NewSkippedW = 
+        case HHW of
+        [] -> SkippedW;
+        _ -> [HHW|SkippedW]
+        end,
+
+    do_search_match(MaxL, L, TS, NewSkippedPW, 
+        TW, NewSkippedW);
+    
+% skip WTF
+do_search_match(MaxL, L, PW, SkippedPW, [[]=_HW|TW], SkippedW) ->
+    do_search_match(MaxL, L, PW, SkippedPW, TW, SkippedW);
+    
+% All levels was matched
+do_search_match(MaxL, L, PW, SkippedPW, []=_W, []=_SkippedW) ->
+    NewPW = append_skipped(PW, SkippedPW),
+    case NewPW of
+    [] -> true;
+    _  -> {'more', NewPW}
+    end;
+
+% This level was matched. Run next level.
+do_search_match(MaxL, L, PW, SkippedPW, []=_W, SkippedW) ->
+    NewL = L + 1,
+    NewPW = append_skipped(PW, SkippedPW),
+    NewSkippedPW = [],
+    NewW = lists:reverse(SkippedW),
+    NewSkippedW = [],
+    do_search_match(MaxL, NewL, NewPW, NewSkippedPW, NewW, NewSkippedW);
+
+do_search_match(_MaxL, _L, _PW, _SkippedPW, _W, _SkippedW) ->
+    false.
+
+    
+    
+
+
+
+
+
+%% @private
+append_skipped(W, [H|T]) ->
+    append_skipped([H|W], T);
+append_skipped(W, []) ->
+    W.
+
+    
+
+
 
 %% Deletes all ignorables from the beginning of the string
+%% @private
 delete_ignorables(C=#uca_options{strength=L},[_|_]=S,D,A) ->
     {NewW,NewS} = do_extract(C, S, D),
-    {AltA, AltW} = do_alt_array(A, L, NewW, []),
+    {AltA, AltW} = do_weights(A, L, NewW, []),
     case is_ignorable_array(L, AltW) of
     true -> 
         delete_ignorables(C,NewS,D,A);
@@ -526,28 +675,18 @@ delete_ignorables(C=#uca_options{strength=L},[_|_]=S,D,A) ->
     end;
 delete_ignorables(_C,[]=_S,D,A) ->
     [].
+
+%% Warning: length(El) =< L
+%%
+%% @param L::integer() Max Level
+%% @param A::[El] Array
+%% @private
+is_ignorable_array(L, A) ->
+    Mask = lists:duplicate(L, 0),
+    lists:all(fun(El) -> El=:=Mask end, A).
+
     
 
-is_ignorable_array(L, [H|T]) ->
-    case is_ignorable(L, H) of
-    true ->
-        is_ignorable_array(L, T);
-
-    false -> false
-    end;
-is_ignorable_array(L, []) ->
-    true.
-
-%% All `L' levels are ignorable.
-%% F(4,[0,0,0,0]) -> true.
-is_ignorable(0, _) ->
-    true;
-is_ignorable(L, [0|T]) when L>0 ->
-    is_ignorable(L-1, T);
-is_ignorable(_L, [_|_T]) ->
-    false;
-is_ignorable(_L, []) ->
-    true.
     
 
 %%
@@ -556,6 +695,8 @@ is_ignorable(_L, []) ->
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+
+-define(TO(X), {timeout, 30, [X]}).
 
 delete_tail_test_() ->
     F = fun delete_tail/2,
@@ -568,13 +709,59 @@ split_levels_test_() ->
     ,?_assertEqual(F([[1,2,3],[4],[7,8]]), {[1,4,7], [[2,3],[8]]})
     ].
 
-get_new_acc_test_() ->
-    F = fun get_new_acc/3,
-    [?_assertEqual(F(1, [[1,2],[3,4]], []), [[1,2],[3,4]])
-    ,?_assertEqual(F(1, [[1,2],[3,4]], []), [[1,2],[3,4]])
-    ,?_assertEqual(F(2, [[0,2],[0,4]], []), [[2],[4]])
-    ,?_assertEqual(F(2, [[0,2],[0,4]], [[6]]), [[6],[2],[4]])
-    ,?_assertEqual(F(3, [[0,0,2],[0,4]], []), 'is_not_ignorable')
-    ].
+
+search_test_() ->
+    C = ux_uca_options:get_options([{strength,2}]),
+    F = fun(StyleType, Target, Pattern) ->
+        ux_uca:search(C, Target, Pattern, StyleType)
+        end,
+
+    FF = fun(StyleType) ->
+        Target = "def$!Abc%$ghi",
+        Pattern = "*!abc!*",
+        ux_uca:search(C, Target, Pattern, StyleType)
+        end,
+
+    FF2 = fun(StyleType) ->
+        Target = "def@!Abc%@ghi",
+        Pattern = "*!abc!*",
+        ux_uca:search(C, Target, Pattern, StyleType)
+        end,
+
+   {"http://unicode.org/reports/tr10/#Matches_Table",
+    [{"The minimal match is the tightest one, because $! and %$ are "
+            "ignored in the target.",
+        
+         [?TO(?_assertEqual(FF('minimal'), {"def$!","Abc","%$ghi"}))
+         ,?TO(?_assertEqual(FF2('minimal'), {"def@!","Abc","%@ghi"}))
+         ]
+     }
+
+    ,{"The medial one includes those characters that are binary equal.",
+        
+         [?TO(?_assertEqual(FF('medium'),  {"def$","!Abc","%$ghi"}))
+         ,?TO(?_assertEqual(FF2('medium'),  {"def@","!Abc","%@ghi"}))
+         ]
+     }
+
+    % TODO: Is this error in UCA?
+    % ux_unidata:ducet("$").
+    % [[non_variable,5492,32,2,36]]
+    % 
+    % $ is not ignorable, but in example it is.
+
+    ,{"The maximal match is the loosest one, including the surrounding"
+            "ignored characters.",
+
+    % From example:
+%     ?_assertEqual(FF('maximal'), {"def","$!Abc%$","ghi"})
+    
+    % For real data:
+         [?TO(?_assertEqual(FF('maximal'), {"def$","!Abc%","$ghi"}))
+         ,?TO(?_assertEqual(FF2('maximal'), {"def","@!Abc%@","ghi"}))
+         ]
+    }
+    ]}.
+    
 
 -endif.

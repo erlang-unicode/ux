@@ -285,6 +285,10 @@ Code:
 (ux@delta)30> ux_uca:search("The quick brown fox jumps over the lazy dog.",
 "fox").
 {"The quick brown ","fox"," jumps over the lazy dog."}
+
+(ux@delta)33> ux_uca:search("The quick brown fox jumps over the lazy dog.",
+"cat").         
+false
 ```
 
 
@@ -295,7 +299,7 @@ Code:
 
 ```erlang
 (ux@delta)20> CF = fun(S) -> ux_uca_options:get_options([{strength,S}]) end.      
-\#Fun<erl_eval.6.80247286>
+#Fun<erl_eval.6.80247286>
 
 (ux@delta)32> ux_uca:search(CF(2), "The quick brown fox jumps over the lazy
 dog.", "dog", maximal).
@@ -315,7 +319,7 @@ Code:
 
 ```erlang
 (ux@delta)20> CF = fun(S) -> ux_uca_options:get_options([{strength,S}]) end.      
-\#Fun<erl_eval.6.80247286>
+#Fun<erl_eval.6.80247286>
 
 (ux@delta)27> ux_uca:search(CF(3), "! F   ?S?", "! F !", 'minimal').
 {"! ","F","   ?S?"}

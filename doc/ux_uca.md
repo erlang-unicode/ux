@@ -218,7 +218,7 @@ Example:
 
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#compare-2">compare/2</a></td><td>Compare two strings and return: lower, greater or equal.</td></tr><tr><td valign="top"><a href="#compare-3">compare/3</a></td><td></td></tr><tr><td valign="top"><a href="#search-2">search/2</a></td><td></td></tr><tr><td valign="top"><a href="#search-3">search/3</a></td><td></td></tr><tr><td valign="top"><a href="#sort-1">sort/1</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort-2">sort/2</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort_array-1">sort_array/1</a></td><td>Convert the unicode string to the
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#compare-2">compare/2</a></td><td>Compare two strings and return: lower, greater or equal.</td></tr><tr><td valign="top"><a href="#compare-3">compare/3</a></td><td></td></tr><tr><td valign="top"><a href="#search-2">search/2</a></td><td></td></tr><tr><td valign="top"><a href="#search-3">search/3</a></td><td></td></tr><tr><td valign="top"><a href="#search-4">search/4</a></td><td></td></tr><tr><td valign="top"><a href="#sort-1">sort/1</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort-2">sort/2</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort_array-1">sort_array/1</a></td><td>Convert the unicode string to the
 <a href="http://unicode.org/reports/tr10/#Step_2" target="_top">collation element array</a></td></tr><tr><td valign="top"><a href="#sort_array-2">sort_array/2</a></td><td></td></tr><tr><td valign="top"><a href="#sort_key-1">sort_key/1</a></td><td>Convert the unicode string to the sort key.</td></tr><tr><td valign="top"><a href="#sort_key-2">sort_key/2</a></td><td></td></tr></table>
 
 
@@ -274,6 +274,18 @@ Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
 
 <pre>search(Target::string(), Pattern::string(), MatchStyle::atom()) -> <a href="#type-search_result">search_result()</a></pre>
+<br></br>
+
+
+<a name="search-4"></a>
+
+<h3>search/4</h3>
+
+
+
+
+
+<pre>search(Uca_options::#uca_options{}, Target::string(), Pattern::string(), MatchStyle::atom()) -> <a href="#type-search_result">search_result()</a></pre>
 <br></br>
 
 

@@ -212,6 +212,7 @@ Functions
 Examples
 --------
 Code from erlang shell:
+
 ```erlang
 1> ux_uca:sort_key("a").   
 <<21,163,0,0,32,0,0,2,0,0,255,255>>

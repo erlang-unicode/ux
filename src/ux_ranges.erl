@@ -12,6 +12,7 @@
 %%      `search' function is for the second type.
 %%
 %% @end
+%% @private
 
 -module(ux_ranges).
 -export([in_list/2,search/2]).

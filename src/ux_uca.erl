@@ -19,6 +19,7 @@
 %%%
 %%% @copyright 2010-2011 Michael Uvarov
 %%% @author Michael Uvarov <freeakk@gmail.com>
+%%% =====================================================================
 %%%
 %%% @doc UNICODE COLLATION ALGORITHM
 %%%      see Unicode Technical Standard #10

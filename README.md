@@ -10,6 +10,8 @@ __Author__: Uvarov Michael ([`freeakk@gmail.com`](mailto:freeakk@gmail.com))
 
 [Read edoc documentation](https://github.com/freeakk/ux/blob/master/doc/README.md)
 
+Module for working strings.
+A string is a flatten list of Unicode characters.
 
 
 All actions with Unicode was described in [Unicode Standards](http://www.unicode.org/reports/).

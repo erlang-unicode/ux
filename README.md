@@ -259,7 +259,7 @@ ok.
 
 Result:
 
-```
+```erlang
 epm
 erlang
 esl
@@ -281,7 +281,7 @@ Searching
 ---------
 Code:
 
-```
+```erlang
 (ux@delta)30> ux_uca:search("The quick brown fox jumps over the lazy dog.",
 "fox").
 {"The quick brown ","fox"," jumps over the lazy dog."}
@@ -293,7 +293,7 @@ Searching and Strength
 Code:
 
 
-```
+```erlang
 (ux@delta)20> CF = fun(S) -> ux_uca_options:get_options([{strength,S}]) end.      
 \#Fun<erl_eval.6.80247286>
 
@@ -313,7 +313,7 @@ Searching and Match-Style
 
 Code:
 
-```
+```erlang
 (ux@delta)20> CF = fun(S) -> ux_uca_options:get_options([{strength,S}]) end.      
 \#Fun<erl_eval.6.80247286>
 

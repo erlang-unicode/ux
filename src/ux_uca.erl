@@ -399,18 +399,36 @@ prefix_weights([], Acc) ->
     lists:reverse(Acc).
     
 %% http://unicode.org/reports/tr10/#Searching
+-spec search(Target::string(), Pattern::string()) -> 
+                search_result().
+
 search(T, P) ->
     C = get_options(),
     M = 'minimal',
     search(C, T, P, M).
 
+-type search_result()::{string(),string(),string()}.
+
+-spec search(Target::string(), Pattern::string(), MatchStyle::atom()) -> 
+                search_result();
+            (#uca_options{}, Target::string(), Pattern::string()) -> 
+                search_result().
+
 %% M is match-style:
-search(T, P, M) ->
+search(T, P, M)
+    when is_atom(M) ->
     C = get_options(),
+    search(C, T, P, M);
+search(C=#uca_options{}, T, P) ->
+    M = 'minimal',
     search(C, T, P, M).
 
 
-search(C, T, P, 'medium') ->
+-spec search(#uca_options{}, Target::string(), Pattern::string(), 
+        MatchStyle::atom()) -> 
+            search_result().
+
+search(C=#uca_options{}, T, P, 'medium') ->
     NewOpts = [{'sort_key_format', 'uncompressed'}],
     NewC = ux_uca_options:get_options(C, NewOpts),
 
@@ -728,7 +746,12 @@ search_test_() ->
         ux_uca:search(C, Target, Pattern, StyleType)
         end,
 
-   {"http://unicode.org/reports/tr10/#Matches_Table",
+
+   [{"Simple match tests",
+    [?TO(?_assertEqual(F('minimal',"F","F"), {"","F",""}))
+    ]
+    }
+   ,{"http://unicode.org/reports/tr10/#Matches_Table",
     [{"The minimal match is the tightest one, because $! and %$ are "
             "ignored in the target.",
         
@@ -761,7 +784,7 @@ search_test_() ->
          ,?TO(?_assertEqual(FF2('maximal'), {"def","@!Abc%@","ghi"}))
          ]
     }
-    ]}.
+    ]}].
     
 
 -endif.

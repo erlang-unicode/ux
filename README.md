@@ -205,6 +205,7 @@ Functions
 * sort/1,2
 * sort_key/1,2
 * sort_array/1,2
+* search/2,3,4
 
 Examples
 --------
@@ -274,6 +275,56 @@ mochiweb [5876,5924,5585,5735,5760,6180,5631,5561,0,32,32,32,32,32,32,32,32,0,2,
 nitrogen [5890,5760,6089,6000,5924,5700,5631,5890,0,32,32,32,32,32,32,32,32,0,2,2,2,2,2,2,2,2]
 rebar [6000,5631,5561,5539,6000,0,32,32,32,32,32,0,2,2,2,2,2]
 ok
+```
+
+Searching
+---------
+Code:
+
+```
+(ux@delta)30> ux_uca:search("The quick brown fox jumps over the lazy dog.",
+"fox").
+{"The quick brown ","fox"," jumps over the lazy dog."}
+```
+
+
+Searching and Strength
+----------------------
+Code:
+
+
+```
+(ux@delta)20> CF = fun(S) -> ux_uca_options:get_options([{strength,S}]) end.      
+\#Fun<erl_eval.6.80247286>
+
+(ux@delta)32> ux_uca:search(CF(2), "The quick brown fox jumps over the lazy
+dog.", "dog", maximal).
+{"The quick brown fox jumps over the lazy"," dog.",[]}
+
+(ux@delta)21> ux_uca:search(CF(2), "fF", "F").                                    
+{[],"f","F"}
+
+(ux@delta)22> ux_uca:search(CF(3), "fF", "F").
+{"f","F",[]}
+```
+
+Searching and Match-Style
+-------------------------
+
+Code:
+
+```
+(ux@delta)20> CF = fun(S) -> ux_uca_options:get_options([{strength,S}]) end.      
+\#Fun<erl_eval.6.80247286>
+
+(ux@delta)27> ux_uca:search(CF(3), "! F   ?S?", "! F !", 'minimal').
+{"! ","F","   ?S?"}
+
+(ux@delta)28> ux_uca:search(CF(3), "! F   ?S?", "! F !", 'maximal').
+{[],"! F   ?","S?"}
+
+(ux@delta)29> ux_uca:search(CF(3), "! F   ?S?", "! F !", 'medium'). 
+{[],"! F ","  ?S?"}
 ```
 
 

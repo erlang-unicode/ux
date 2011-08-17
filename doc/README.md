@@ -12,8 +12,8 @@ The ux application
 
 <table width="100%" border="0" summary="list of modules">
 <tr><td><a href="ux_char.md" class="module">ux_char</a></td></tr>
-<tr><td><a href="ux_math.md" class="module">ux_math</a></td></tr>
-<tr><td><a href="ux_par.md" class="module">ux_par</a></td></tr>
+<tr><td><a href="ux_range.md" class="module">ux_range</a></td></tr>
+<tr><td><a href="ux_ranges.md" class="module">ux_ranges</a></td></tr>
 <tr><td><a href="ux_string.md" class="module">ux_string</a></td></tr>
 <tr><td><a href="ux_uca.md" class="module">ux_uca</a></td></tr>
 <tr><td><a href="ux_uca_options.md" class="module">ux_uca_options</a></td></tr>

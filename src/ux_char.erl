@@ -45,24 +45,44 @@
 
 -spec to_lower(char()) -> char(); 
         (skip_check) -> fun().
+
+to_lower(V) -> 
+    ?UNIDATA:char_to_lower(V).
+
+
 -spec to_upper(char()) -> char(); 
         (skip_check) -> fun().
+
+to_upper(V) -> 
+    ?UNIDATA:char_to_upper(V).
+
+
 -spec is_lower(char()) -> boolean();
         (skip_check) -> fun().
+
+is_lower(V) -> 
+    ?UNIDATA:is_lower(V).
+
+
 -spec is_upper(char()) -> boolean(); 
         (skip_check) -> fun().
-to_lower(V) -> ?UNIDATA:char_to_lower(V).
-to_upper(V) -> ?UNIDATA:char_to_upper(V).
-is_lower(V) -> ?UNIDATA:is_lower(V).
-is_upper(V) -> ?UNIDATA:is_upper(V).
+
+is_upper(V) -> 
+    ?UNIDATA:is_upper(V).
+
 
 -spec comment(char()) -> binary();
         (skip_check) -> fun().
-comment(V) -> ?UNIDATA:char_comment(V).
+
+comment(V) -> 
+    ?UNIDATA:char_comment(V).
+
 
 -spec type(char()) -> char_type(); 
         (skip_check) -> fun().
-type(V) -> ?UNIDATA:char_type(V).
+
+type(V) -> 
+    ?UNIDATA:char_type(V).
 
 
 -spec is_acsii(char()) -> boolean().

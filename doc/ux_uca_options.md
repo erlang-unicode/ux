@@ -62,7 +62,7 @@ a #uca_options {} record with this function.</td></tr></table>
 
 
 
-`get_options(T, Opt) -> any()`
+`get_options(C, T) -> any()`
 
 
 

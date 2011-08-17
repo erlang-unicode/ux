@@ -335,9 +335,6 @@ do_freq([], Dict)         -> Dict.
 -spec explode([string()], string()) -> [string()];
         (char(), string()) -> [string()];
         (string(), string()) -> [string()].
--spec explode([string()], string(), integer()) -> string();
-        (char(), string(), integer()) -> [string()];
-        (string(), string(), integer()) -> [string()].
 
 explode([Delimeter], [_|_] = Str) when is_integer(Delimeter) -> 
     explode_simple(Delimeter, lists:reverse(Str), [], []);
@@ -351,6 +348,12 @@ explode([_|_] = Delimeter, [_|_] = Str) ->
 explode([], _) -> false;
 explode(_, []) -> [].
 
+
+
+-spec explode([string()], string(), integer()) -> string();
+        (char(), string(), integer()) -> [string()];
+        (string(), string(), integer()) -> [string()].
+
 explode(Delimeter, [_|_] = Str, Limit) when is_integer(Delimeter) ->
     explode([Delimeter], [_|_] = Str, Limit); 
 explode([_|_] = Delimeter, [_|_] = Str, Limit) when Limit > 0 -> 
@@ -363,6 +366,10 @@ explode([_|_] = Delimeter, [_|_] = Str, Limit) when Limit < 0 ->
 explode([_|_] = Delimeter, [_|_] = Str, 0) -> explode(Delimeter, Str);
 explode([], _, _) -> false;
 explode(_, [], _) -> [].
+
+
+
+
 
 %% @private
 explode_reverse(Res) -> lists:map(fun lists:reverse/1, lists:reverse(Res)). 
@@ -471,12 +478,25 @@ hsc([H  | T], Buf) -> hsc(T, [H|Buf]).
 %%      "a b"'''
 %% @end
 -spec strip_tags(string()) -> string().
+
+strip_tags(Str) -> 
+    st(Str, []).
+
+
 -spec strip_tags(string, [string() | atom() | char()]) -> string().
 
-strip_tags(Str) -> st(Str, []).
+strip_tags(Str, Allowed) -> 
+    st(Str, Allowed).
 
-strip_tags(Str, Allowed) -> st(Str, Allowed).
-strip_tags(Str, Allowed, Alt) -> st(Str, Allowed, Alt).
+
+
+-spec strip_tags(string, [string() | atom() | char()], string()) -> string().
+
+strip_tags(Str, Allowed, Alt) -> 
+    st(Str, Allowed, Alt).
+
+
+
 
 %% @see ux_string:strip_tags/1
 %% @private
@@ -634,32 +654,58 @@ is_nf([], _, Result, _) -> Result.
 %% Detecting Normalization Forms
 %% http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
 -spec is_nfc(list()) -> yes | no | maybe.
--spec is_nfd(list()) -> yes | no | maybe.
--spec is_nfkc(list()) -> yes | no | maybe.
--spec is_nfkd(list()) -> yes | no | maybe.
+
 is_nfc(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfc_qc(skip_check)).
+
+
+-spec is_nfd(list()) -> yes | no | maybe.
+
 is_nfd(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfd_qc(skip_check)).
+
+
+-spec is_nfkc(list()) -> yes | no | maybe.
+
 is_nfkc(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfkc_qc(skip_check)).
+
+
+-spec is_nfkd(list()) -> yes | no | maybe.
+
 is_nfkd(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfkd_qc(skip_check)).
 
 
+
+
+
 -spec to_nfc(list()) -> list().
--spec to_nfd(list()) -> list().
--spec to_nfkc(list()) -> list().
--spec to_nfkd(list()) -> list().
+
 to_nfc([])   -> [];
 to_nfc(Str)  -> 
     case is_nfc(Str) of
     yes -> Str;
     _   -> get_composition(to_nfd(Str))
     end.
+
+
+-spec to_nfkc(list()) -> list().
+
 to_nfkc([])  -> [];
 to_nfkc([_|_] = Str) -> get_composition(
         normalize(get_recursive_decomposition(false, Str))).
+
+
+-spec to_nfd(list()) -> list().
+
 to_nfd([])   -> [];
-to_nfd([_|_] = Str) -> normalize(get_recursive_decomposition(true,  Str)).
+to_nfd([_|_] = Str) -> 
+    normalize(get_recursive_decomposition(true,  Str)).
+
+
+-spec to_nfkd(list()) -> list().
+
 to_nfkd([])  -> [];
-to_nfkd([_|_] = Str) -> normalize(get_recursive_decomposition(false, Str)).
+to_nfkd([_|_] = Str) -> 
+    normalize(get_recursive_decomposition(false, Str)).
+
 
 
 

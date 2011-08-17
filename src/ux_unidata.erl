@@ -70,58 +70,127 @@ get_source_file(unidata) ->
 
 -spec char_to_lower(char()) -> char(); 
         (skip_check) -> fun().
+
+char_to_lower(C) -> 
+    func(unidata, to_lower, C).
+
+
 -spec char_to_upper(char()) -> char(); 
         (skip_check) -> fun().
+
+char_to_upper(C) -> 
+    func(unidata, to_upper, C).
+
+
 -spec is_lower(char()) -> boolean(); 
         (skip_check) -> fun().
+
+is_lower(C) -> 
+    func(unidata, is_lower, C).
+
+
 -spec is_upper(char()) -> boolean(); 
         (skip_check) -> fun().
+
+is_upper(C) -> 
+    func(unidata, is_upper, C).
+
+
 -spec char_type(C::char()) -> atom();
         (skip_check) -> fun().
+
+char_type(C) -> 
+    func(unidata, type, C).
+
+
 -spec char_comment(C::char()) -> binary();
         (skip_check) -> fun().
+
+char_comment(C) -> 
+    func(unidata, comment, C).
+
+
 -spec ccc(C::char()) -> ux_ccc();
         (skip_check) -> fun().
+
+ccc(C) -> 
+    func(unidata, ccc, C).
+
+
+
 -spec nfc_qc(C::char()) -> y | n | m;
         (skip_check) -> fun().
+
+nfc_qc(C) -> 
+    func(norm_props, nfc_qc, C).
+
+
 -spec nfd_qc(C::char()) -> y | n | m;
         (skip_check) -> fun().
+
+nfd_qc(C) -> 
+    func(norm_props, nfd_qc, C).
+
+
 -spec nfkc_qc(C::char()) -> y | n | m;
         (skip_check) -> fun().
+
+nfkc_qc(C) -> 
+    func(norm_props, nfkc_qc, C).
+
+
 -spec nfkd_qc(C::char()) -> y | n | m;
         (skip_check) -> fun().
+
+nfkd_qc(C) -> 
+    func(norm_props, nfkd_qc, C).
+
+
 -spec is_compat(C::char()) -> boolean();
         (skip_check) -> fun().
+
+is_compat(C) -> 
+    func(unidata, is_compat, C).
+
+
+
 -spec is_comp_excl(C::char()) -> boolean();
         (skip_check) -> fun().
+
+is_comp_excl(C) -> 
+    func(comp_exclusions, is_exclusion, C).
+
+
 -spec ducet(list()) -> list() | atom();
         (skip_check) -> fun().
+
+ducet(L) -> func(allkeys, ducet, L).
+
+
 -spec comp(char(), char()) -> char() | false.
+
+comp(C1, C2) -> 
+    func(unidata, comp, {C1, C2}).
+
+
 -spec decomp(char()) -> list();
         (skip_check) -> fun().
+
+decomp(C) -> 
+    func(unidata, decomp, C).
+
+
 -spec char_block(C::char()) -> atom();
         (skip_check) -> fun().
+
+char_block(C) -> 
+    func(blocks, block, C).
+
+
 
 func(Parser, Type, Value) -> 
     F = ux_unidata_filelist:get_source(Parser, Type),
     F(Value).
-char_to_upper(C) -> func(unidata, to_upper, C).
-char_to_lower(C) -> func(unidata, to_lower, C).
-is_upper(C) -> func(unidata, is_upper, C).
-is_lower(C) -> func(unidata, is_lower, C).
-char_type(C) -> func(unidata, type, C).
-char_comment(C) -> func(unidata, comment, C).
-ccc(C) -> func(unidata, ccc, C).
-nfc_qc(C) -> func(norm_props, nfc_qc, C).
-nfd_qc(C) -> func(norm_props, nfd_qc, C).
-nfkc_qc(C) -> func(norm_props, nfkc_qc, C).
-nfkd_qc(C) -> func(norm_props, nfkd_qc, C).
-is_compat(C) -> func(unidata, is_compat, C).
-is_comp_excl(C) -> func(comp_exclusions, is_exclusion, C).
-ducet(L) -> func(allkeys, ducet, L).
-comp(C1, C2) -> func(unidata, comp, {C1, C2}).
-decomp(C) -> func(unidata, decomp, C).
-char_block(C) -> func(blocks, block, C).
 
 
 priv_dir() ->

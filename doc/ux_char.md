@@ -39,7 +39,9 @@ __See also:__ [ux](ux.md).
 
 
 
-`block(V) -> any()`
+<pre>block(V::char) -> atom()</pre>
+<br></br>
+
 
 <a name="comment-1"></a>
 
@@ -49,7 +51,9 @@ __See also:__ [ux](ux.md).
 
 
 
-`comment(V) -> any()`
+<pre>comment(V::char()) -> binary()</pre>
+<br></br>
+
 
 <a name="is_acsii-1"></a>
 
@@ -59,7 +63,9 @@ __See also:__ [ux](ux.md).
 
 
 
-`is_acsii(Char) -> any()`
+<pre>is_acsii(Char::char()) -> boolean()</pre>
+<br></br>
+
 
 <a name="is_cjk_compatibility_ideograph-1"></a>
 
@@ -89,7 +95,9 @@ __See also:__ [ux](ux.md).
 
 
 
-`is_decimal(C) -> any()`
+<pre>is_decimal(C::char()) -> boolean()</pre>
+<br></br>
+
 
 
 
@@ -121,7 +129,9 @@ Return true, if C is a decimal number.<a name="is_hangul-1"></a>
 
 
 
-`is_letter(C) -> any()`
+<pre>is_letter(C::char()) -> boolean()</pre>
+<br></br>
+
 
 
 
@@ -133,7 +143,9 @@ Returns true, if C is a letter.<a name="is_lower-1"></a>
 
 
 
-`is_lower(V) -> any()`
+<pre>is_lower(V::char()) -> boolean()</pre>
+<br></br>
+
 
 <a name="is_mark-1"></a>
 
@@ -153,7 +165,9 @@ Returns true, if C is a letter.<a name="is_lower-1"></a>
 
 
 
-`is_number(C) -> any()`
+<pre>is_number(C::char()) -> boolean()</pre>
+<br></br>
+
 
 
 
@@ -165,7 +179,9 @@ Returns true, if is C is a number.<a name="is_punctuation_mark-1"></a>
 
 
 
-`is_punctuation_mark(C) -> any()`
+<pre>is_punctuation_mark(C::char()) -> boolean()</pre>
+<br></br>
+
 
 
 
@@ -177,7 +193,9 @@ Returns true, if is C is a punctiation mark.<a name="is_separator-1"></a>
 
 
 
-`is_separator(C) -> any()`
+<pre>is_separator(C::char()) -> boolean()</pre>
+<br></br>
+
 
 
 
@@ -199,7 +217,9 @@ Return true, if is C is a separator.<a name="is_unified_ideograph-1"></a>
 
 
 
-`is_upper(V) -> any()`
+<pre>is_upper(V::char()) -> boolean()</pre>
+<br></br>
+
 
 <a name="to_lower-1"></a>
 
@@ -209,7 +229,9 @@ Return true, if is C is a separator.<a name="is_unified_ideograph-1"></a>
 
 
 
-`to_lower(V) -> any()`
+<pre>to_lower(V::char()) -> char()</pre>
+<br></br>
+
 
 <a name="to_ncr-1"></a>
 
@@ -219,7 +241,9 @@ Return true, if is C is a separator.<a name="is_unified_ideograph-1"></a>
 
 
 
-`to_ncr(Char) -> any()`
+<pre>to_ncr(Char::char()) -> string()</pre>
+<br></br>
+
 
 <a name="to_upper-1"></a>
 
@@ -229,7 +253,9 @@ Return true, if is C is a separator.<a name="is_unified_ideograph-1"></a>
 
 
 
-`to_upper(V) -> any()`
+<pre>to_upper(V::char()) -> char()</pre>
+<br></br>
+
 
 <a name="type-1"></a>
 
@@ -239,5 +265,7 @@ Return true, if is C is a separator.<a name="is_unified_ideograph-1"></a>
 
 
 
-`type(V) -> any()`
+<pre>type(V::char()) -> <a href="#type-char_type">char_type()</a></pre>
+<br></br>
+
 

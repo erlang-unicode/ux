@@ -5,6 +5,7 @@ Module ux_uca
 <h1>Module ux_uca</h1>
 
 * [Description](#description)
+* [Data Types](#types)
 * [Function Index](#index)
 * [Function Details](#functions)
 
@@ -94,7 +95,7 @@ http://unicode.org/reports/tr10/#Multi_Level_Comparison
 
 Example using levels:
 <pre>   C = ux_uca_options:get_options([{strength, 3}]).
-ux_uca:sort_key(C, "Get L1-L3 weights").</pre>
+   ux_uca:sort_key(C, "Get L1-L3 weights").</pre>
 
 
 
@@ -121,7 +122,7 @@ get the weights explicitly mentioned in the file.
 
 Example:
 <pre>   C = ux_uca_options:get_options(non_ignorable).
-ux_uca:sort_key(C, "Non-ignorable collation sort key").</pre>
+   ux_uca:sort_key(C, "Non-ignorable collation sort key").</pre>
 
 
 
@@ -145,7 +146,7 @@ For example,
 
 Example:
 <pre>   C = ux_uca_options:get_options(non_ignorable).
-ux_uca:sort_key(C, "Blanked collation sort key").</pre>
+   ux_uca:sort_key(C, "Blanked collation sort key").</pre>
 
 
 
@@ -169,7 +170,7 @@ so that their weights at levels one through four are zero.
 
 Example:
 <pre>   C = ux_uca_options:get_options(shifted).
-ux_uca:sort_key(C, "Shifted collation sort key").</pre>
+   ux_uca:sort_key(C, "Shifted collation sort key").</pre>
 
 
 
@@ -185,15 +186,39 @@ This could be used to emulate POSIX behavior.
 
 Example:
 <pre>   C = ux_uca_options:get_options(shift_trimmed).
-ux_uca:sort_key(C, "Shift-trimmed collation sort key").</pre>
+   ux_uca:sort_key(C, "Shift-trimmed collation sort key").</pre>
 
+
+
+
+<h2><a name="types">Data Types</a></h2>
+
+
+
+
+
+<h3 class="typedecl"><a name="type-search_result">search_result()</a></h3>
+
+
+
+
+<pre>search_result() = {string(), string(), string()}</pre>
+
+
+
+<h3 class="typedecl"><a name="type-uca_compare_result">uca_compare_result()</a></h3>
+
+
+
+
+<pre>uca_compare_result() = lower | greater | equal</pre>
 
 
 <h2><a name="index">Function Index</a></h2>
 
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#compare-2">compare/2</a></td><td>Compare two strings and return: lower, greater or equal.</td></tr><tr><td valign="top"><a href="#compare-3">compare/3</a></td><td></td></tr><tr><td valign="top"><a href="#sort-1">sort/1</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort-2">sort/2</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort_array-1">sort_array/1</a></td><td>Convert the unicode string to the
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#compare-2">compare/2</a></td><td>Compare two strings and return: lower, greater or equal.</td></tr><tr><td valign="top"><a href="#compare-3">compare/3</a></td><td></td></tr><tr><td valign="top"><a href="#search-2">search/2</a></td><td></td></tr><tr><td valign="top"><a href="#search-3">search/3</a></td><td></td></tr><tr><td valign="top"><a href="#sort-1">sort/1</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort-2">sort/2</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort_array-1">sort_array/1</a></td><td>Convert the unicode string to the
 <a href="http://unicode.org/reports/tr10/#Step_2" target="_top">collation element array</a></td></tr><tr><td valign="top"><a href="#sort_array-2">sort_array/2</a></td><td></td></tr><tr><td valign="top"><a href="#sort_key-1">sort_key/1</a></td><td>Convert the unicode string to the sort key.</td></tr><tr><td valign="top"><a href="#sort_key-2">sort_key/2</a></td><td></td></tr></table>
 
 
@@ -210,7 +235,9 @@ ux_uca:sort_key(C, "Shift-trimmed collation sort key").</pre>
 
 
 
-`compare(S1, S2) -> any()`
+<pre>compare(S1::string(), S2::string()) -> <a href="#type-uca_compare_result">uca_compare_result()</a></pre>
+<br></br>
+
 
 
 
@@ -222,7 +249,33 @@ Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
 
 
-`compare(C, S1, S2) -> any()`
+<pre>compare(Uca_options::#uca_options{}, S1::string(), S2::string()) -> <a href="#type-uca_compare_result">uca_compare_result()</a></pre>
+<br></br>
+
+
+<a name="search-2"></a>
+
+<h3>search/2</h3>
+
+
+
+
+
+<pre>search(Target::string(), Pattern::string()) -> <a href="#type-search_result">search_result()</a></pre>
+<br></br>
+
+
+<a name="search-3"></a>
+
+<h3>search/3</h3>
+
+
+
+
+
+<pre>search(Target::string(), Pattern::string(), MatchStyle::atom()) -> <a href="#type-search_result">search_result()</a></pre>
+<br></br>
+
 
 <a name="sort-1"></a>
 
@@ -232,7 +285,9 @@ Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
 
 
-`sort(Strings) -> any()`
+<pre>sort(Strings::[string()]) -> [string()]</pre>
+<br></br>
+
 
 
 
@@ -244,7 +299,9 @@ Sort a list of strings.<a name="sort-2"></a>
 
 
 
-`sort(C, Strings) -> any()`
+<pre>sort(Uca_options::#uca_options{}, Strings::[string()]) -> [string()]</pre>
+<br></br>
+
 
 
 

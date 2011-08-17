@@ -717,7 +717,7 @@ to_nfkd([_|_] = Str) ->
 get_recursive_decomposition(true, Str) -> 
     get_recursive_decomposition(is_compat(skip_check), Str, []);
 get_recursive_decomposition(false, Str) -> 
-    get_recursive_decomposition(fun ux_utils:is_always_false/1, Str, []);
+    get_recursive_decomposition(fun(_X) -> false end, Str, []);
 get_recursive_decomposition(Canonical, Str) when is_function(Canonical) -> 
     get_recursive_decomposition(Canonical, Str, []).
 

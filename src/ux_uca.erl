@@ -153,7 +153,8 @@
         sort/1,         % Str
         sort/2,         % Opt, [Str]
         search/2,
-        search/3
+        search/3,
+        search/4
 %       get_options/0, 
 %       get_options/1, 
 %       get_options/2

@@ -159,7 +159,6 @@
 %       get_options/2
         ]).
 
--compile(export_all).
 
 -include("ux.hrl").
 -include("ux_uca.hrl").

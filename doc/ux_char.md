@@ -17,8 +17,6 @@ Copyright (c) 2010-2011 Michael Uvarov
 
 __Authors:__ Michael Uvarov ([`freeakk@gmail.com`](mailto:freeakk@gmail.com)).
 
-__See also:__ [ux](ux.md).
-
 <h2><a name="index">Function Index</a></h2>
 
 

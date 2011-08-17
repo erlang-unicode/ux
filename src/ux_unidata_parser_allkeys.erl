@@ -2,6 +2,10 @@
 %%% ux_unidata_filelist:get_pid({allkeys, [ducet], code:priv_dir(ux) ++ "/UNIDATA/allkeys.txt"}).
 %%% @private
 -module(ux_unidata_parser_allkeys).
+-include("ux.hrl").
+-include("ux_unidata_server.hrl").
+
+
 -export([parse/1, types/0, get_function/2
     , after_parse/1 % comment to disable post processing
     ]).
@@ -186,7 +190,7 @@ do_after_ranges(Table) ->
     Index ->
         [{_, Val}] = ets:lookup(Table, Index),
         [Init|ValList] = bin_to_list(Val),
-        error_logger:info_msg(
+        ?DBG(
             "~w:do_after_ranges: Init values: ~w. ~n", 
             [?MODULE, Init]),
         NewMax = lists:foldl(zip2fun(fun max/2), Init, ValList),

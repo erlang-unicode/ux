@@ -1,6 +1,8 @@
 %%% @private
 -module(ux_uca_compress).
 -export([reassign_fun/3]).
+-include("ux.hrl").
+-include("ux_unidata_server.hrl").
 
 
 reassign_fun(_Lvl=1, _Min, Max) ->
@@ -18,7 +20,7 @@ reassign_fun(Lvl, Min, OldMax) ->
     true = (GapSize > 0),
    
     Bound = MaxBottom + (GapSize div 2),
-    error_logger:info_msg(
+    ?DBG(
         "~w:reassign_fun: Level ~w.~n"
         "   COMMON   is ~w. ~n" 
         "   MIN      is ~w. ~n" 

@@ -2,6 +2,8 @@
 %%%      serve the unidata files.
 %%% @private
 -module(ux_unidata_filelist).
+-include("ux.hrl").
+-include("ux_unidata_server.hrl").
 
 % OTP 
 -export([start_link/0]).
@@ -15,6 +17,8 @@
     get_source/2, get_source/1, get_source_from/2]).
 
 -behavior(gen_server).
+
+
 
 %% Exported Client Functions
 %% Operation & Maintenance API
@@ -36,13 +40,14 @@ terminate(_Reason, _LoopData) ->
 % Key is a combination of filename and fileoptions.
 handle_call({reg_pid, Key, StorePid}, _From, {Dict} = _LoopData) ->
     erlang:monitor(process, StorePid),
-    error_logger:info_msg(
-        "~w: Registrate a new process ~w with the key ~w. ~n", 
+    ?DBG("~w: Registrate a new process ~w with the key ~w. ~n", 
         [?MODULE, StorePid, Key]),
     
     {Reply, NewDict} = case dict:is_key(Key, Dict) of
-        false -> {ok, dict:store(Key, StorePid, Dict)};
-        true  -> error_logger:error_msg("~w: The key ~w is already registred. ~w",
+        false -> 
+            {ok, dict:store(Key, StorePid, Dict)};
+        true  -> 
+            error_logger:error_msg("~w: The key ~w is already registred. ~w",
                 [?MODULE, Key]),
             {{error, key_already_registred}, Dict}
     end,
@@ -54,8 +59,7 @@ handle_call({get_pid, Key}, _From, {Dict} = _LoopData) ->
 
 % Delete pid from dict. FromPid is a pid of ux_unidata_store server.
 handle_info({'DOWN', _Ref, process, FromPid, _Reason}, {Dict} = _LoopData) ->
-    error_logger:info_msg(
-        "~w: Delete Pid = ~w from the dictionary. ~n", 
+    ?DBG("~w: Delete Pid = ~w from the dictionary. ~n", 
         [?MODULE, FromPid]),
     NewDict = dict:filter(fun(_K, V) -> V =/= FromPid end, Dict),
     {noreply, {NewDict}}.
@@ -129,8 +133,7 @@ set_source(Level, Parser, Types, FileName) ->
         
         end, get_funs(Key, ClientPid)),
 
-    error_logger:info_msg(
-        "~w: Loaded funs: ~w. ~n", 
+    ?DBG("~w: Loaded funs: ~w. ~n", 
         [?MODULE, Funs]),
 
     case Level of
@@ -159,8 +162,7 @@ get_source(Parser, Type) ->
 get_source({Parser, Type} = Value) ->
     case get_source_from(process, Value) of
     'undefined' -> 
-        error_logger:info_msg(
-            "~w: The sourse ~w is undefined. ~n", 
+        ?DBG("~w: The sourse ~w is undefined. ~n", 
             [?MODULE, Value]),
         Key = {Parser, all, ux_unidata:get_source_file(Parser)},
         % Example:
@@ -173,8 +175,7 @@ get_source({Parser, Type} = Value) ->
             end, ux_unidata_store:get_funs(ServerPid, all)),
         set_proc_dict(Funs),
         Res = get_source_from(process, Value),
-        error_logger:info_msg(
-            "~w: return the sourse ~w. ~n", 
+        ?DBG("~w: return the sourse ~w. ~n", 
             [?MODULE, Value]),
         Res;
     Fun -> Fun
@@ -217,8 +218,7 @@ get_funs({_,Types,_} = Key, ClientPid) ->
     ux_unidata_store:get_funs(ServerPid, Types).
 
 set_app_env(Name, [{Key, Val}|Tail]) ->
-    error_logger:info_msg(
-        "~w: Set a application enviroment variable ~w::~w to ~w. ~n", 
+    ?DBG("~w: Set a application enviroment variable ~w::~w to ~w. ~n", 
         [?MODULE, Name, Key, Val]),
     application:set_env(Name, Key, Val),
     set_app_env(Name, Tail);
@@ -226,8 +226,7 @@ set_app_env(_Name, []) -> ok.
     
     
 set_proc_dict([{Key, Val}|Tail]) ->
-    error_logger:info_msg(
-        "~w: Put the value to the process dictionary: ~w::~w to ~w. ~n", 
+    ?DBG("~w: Put the value to the process dictionary: ~w::~w to ~w. ~n", 
         [?MODULE, self(), Key, Val]),
     erlang:put(Key, Val),
     set_proc_dict(Tail);

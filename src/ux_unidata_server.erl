@@ -12,6 +12,8 @@
 %%%
 %%% @private
 -module(ux_unidata_server).
+-include("ux.hrl").
+-include("ux_unidata_server.hrl").
 
 -export([start_link/0]).
 -export([init/1, terminate/2, 
@@ -31,8 +33,7 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, Arguments, Opts).
 
 init([]) ->
-    error_logger:info_msg(
-        "~w~w: All default types were generated. ~n",
+    ?DBG("~w~w: All default types were generated. ~n",
         [?MODULE, self()]),
     {ok, []}.
 
@@ -85,8 +86,7 @@ check_key(Key) ->
 % Key stores Pid of a waiter or Fun.
 % Delete pid from dict. FromPid is a pid of ux_unidata_store server.
 handle_info({'DOWN', Ref, process, FromPid, _Reason}, LoopData) ->
-    error_logger:info_msg(
-        "~w: Delete Pid = ~w from the process dictionary. ~n", 
+    ?DBG("~w: Delete Pid = ~w from the process dictionary. ~n", 
         [?MODULE, FromPid]),
 
     case erlang:get(Ref) of

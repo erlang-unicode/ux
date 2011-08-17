@@ -1,5 +1,7 @@
 %%% @private
 -module(ux_unidata_store).
+-include("ux.hrl").
+-include("ux_unidata_server.hrl").
 
 -export([start_link/2]).
 -export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2]).
@@ -49,8 +51,7 @@ terminate(_Reason, _LoopData) ->
 
 handle_call({check_types, _Types}, _From, 
     #state{remain=[]} = LoopData) ->
-    error_logger:info_msg(
-        "~w~w: All types were already generated. ~n", 
+    ?DBG("~w~w: All types were already generated. ~n", 
         [?MODULE, self()]),
     Reply = ok,
     {reply, Reply, LoopData};
@@ -70,8 +71,7 @@ handle_call({check_types, Types}, _From,
     {Reply, NewLoopData} = 
         case NewRemTypes == RemTypes of
         true  -> 
-            error_logger:info_msg(
-                "~w~w: Types were already generated. ~n", 
+            ?DBG("~w~w: Types were already generated. ~n", 
                 [?MODULE, self()]),
             {ok, LoopData};
         false ->
@@ -108,8 +108,7 @@ handle_call({get_funs, all}, _From,
     {reply, Reply, LoopData};
 handle_call({get_funs, Types}, _From, 
     #state{funs=Funs} = LoopData) ->
-    error_logger:info_msg(
-        "~w~w: Try get the list of the functions: ~w. ~n", 
+    ?DBG("~w~w: Try get the list of the functions: ~w. ~n", 
         [?MODULE, self(), Funs]),
     Reply = get_elems(Types, Funs),
     {reply, Reply, LoopData};
@@ -121,15 +120,13 @@ handle_call(table_list, _From,
 
 handle_info({'DOWN', _Ref, process, FromPid, _Reason}, 
     #state{clients=Clients} = LoopData) ->
-    error_logger:info_msg(
-        "~w~w: Delete the process ~w from the process list: ~w. ",
+    ?DBG("~w~w: Delete the process ~w from the process list: ~w. ",
         [?MODULE, self(), FromPid, Clients]),
     NewClients = Clients -- [FromPid],
     case NewClients of
         [] -> % wait 15 second and stop server. 
             Timeout = 15000,
-            error_logger:info_msg(
-                "~w~w: Nobody use this server and ETS table. "
+            ?DBG("~w~w: Nobody use this server and ETS table. "
                     "Wait ~w ms and stop. ~n", 
                 [?MODULE, self(), Timeout]),
             
@@ -139,14 +136,12 @@ handle_info({'DOWN', _Ref, process, FromPid, _Reason},
     end,
     {noreply, LoopData#state{clients=NewClients}};
 handle_info(delete_timeout, #state{clients=[]}) ->
-    error_logger:info_msg(
-        "~w~w: Nobody use this server and ETS table. Stop. ~n", 
+    ?DBG("~w~w: Nobody use this server and ETS table. Stop. ~n", 
         [?MODULE, self()]),
     {stop, no_clients, false};
 % We have new clients.
 handle_info(delete_timeout, LoopData) ->
-    error_logger:info_msg(
-        "~w~w: New users use this server. Cancel stop. ~n", 
+    ?DBG("~w~w: New users use this server. Cancel stop. ~n", 
         [?MODULE, self()]),
     {noreply, LoopData}.
 
@@ -156,8 +151,7 @@ handle_cast({run_parser, {ParserType, Types, FileName} = File},
     % Run parser.
     {ok, Ets, RemTypes} = ux_unidata_parser:run(File),
     Funs = ux_unidata_parser:get_functions(ParserType, Ets),
-    error_logger:info_msg(
-        "~w~w: Init. Parser ~w generated ets: ~w and funs: ~w. ~n", 
+    ?DBG("~w~w: Init. Parser ~w generated ets: ~w and funs: ~w. ~n", 
         [?MODULE, self(), ParserType, Ets, Funs]),
     NewLoopData = LoopData#state{
         ets    = Ets,
@@ -223,8 +217,7 @@ do_get_elems([], _Elems, Acc) -> Acc.
 
 
 set_monitor(ClientPid) ->
-    error_logger:info_msg(
-        "~w~w: Set the monitor on the process ~w. ~n", 
+    ?DBG("~w~w: Set the monitor on the process ~w. ~n", 
         [?MODULE, self(), ClientPid]),
     erlang:monitor(process, ClientPid).
     

@@ -6,12 +6,12 @@
 -include("ux_string.hrl").
 -include("ux_uca.hrl").
 
-%-define(DEBUG_ECHO, ok).
+%-define(DEBUG_DBG, ok).
 
--ifdef(DEBUG_ECHO).
--define(ECHO(X, Y), error_logger:info_msg(X, Y)).
+-ifdef(DEBUG_DBG).
+-define(DBG(X, Y), error_logger:info_msg(X, Y)).
 -else.
--define(ECHO(X, Y), ok).
+-define(DBG(X, Y), ok).
 -endif.
 
 %% @doc MANUAL:
@@ -188,6 +188,7 @@ mod_weights(E, [H|T], NS, Acc) ->
 mod_weights(E, [], _NS, Acc) ->
     E(Acc). % L1 is not found. There is no hangul jamo in this string.
 
+
 %% @doc Scans the string for the digits.
 %%      When a non-digit character is extracted, stop extraction and
 %%      form the weights.
@@ -204,13 +205,13 @@ do_decimal(E, F, N, [[_,0|_]=H|T]=_W, Acc) ->
 do_decimal(E, F, N, [[_,L1|_]=H|T]=_W, Acc) 
     when ?IS_L1_OF_DECIMAL(L1) -> 
     NewN = (N * 10) + ?COL_WEIGHT_TO_DECIMAL(L1),
-?ECHO("old ~w; new ~w~n", [N, NewN]),
+    ?DBG("old ~w; new ~w~n", [N, NewN]),
     do_decimal(E, F, NewN, T, Acc); 
 do_decimal(E, F, N, []=_W, Acc) -> 
     % We need more gold. Try extract 1 more char. :)
     case E(get_more) of
     {NewW, NewE} -> 
-?ECHO(  "more ~w~n", [NewW]),
+    ?DBG("more ~w~n", [NewW]),
         do_decimal(NewE, F, N, NewW, Acc);
     no_more -> 
         NewAcc = decimal_result(F, N, Acc),
@@ -222,6 +223,7 @@ do_decimal(E, F, N, W, Acc) ->
     Restarter = E(restart),
     
     Restarter(W, NewAcc).
+
 
 -spec decimal_result(fun(), integer(), uca_array()) -> uca_array().
 %% @doc Forms the weight elements.
@@ -238,7 +240,7 @@ decimal_result(F, N, Acc) ->
 
 -spec do_decimal_result(fun(), integer(), uca_array()) -> uca_array().
 do_decimal_result(F, N, Acc) ->
-?ECHO("Res: ~w~n", [N]),
+    ?DBG("Res: ~w~n", [N]),
     case N div 16#FFFE of
     0 -> [F(N)|Acc];
     Div ->
@@ -353,11 +355,11 @@ do_extract0([H|T]=S, DFn) ->
     case do_extract1(S, MFn, Key, OldCCC, Skipped, Res) of
     {result, Key2, T2} ->
         W = DFn(Key2),
-?ECHO(  "W:~w T: ~w~n", [W, T2]),
+    ?DBG("W:~w T: ~w~n", [W, T2]),
         {W, T2};
     not_found ->
         W = implicit_weight(H, 16#FBC0),
-?ECHO(  "W:~w not_found~n", [W]),
+    ?DBG("W:~w not_found~n", [W]),
         {W, T}
     end.
 
@@ -378,7 +380,7 @@ do_extract1([H|T]=S, MFn, Key, OldCCC, Skipped, Res)
 
     {true, NewCCC} -> 
         CCC = select_ccc(OldCCC, NewCCC),
-?ECHO(  "selected ccc is ~w.~n", [CCC]),
+    ?DBG("selected ccc is ~w.~n", [CCC]),
         do_extract1(T, MFn, NewKey, CCC, Skipped, NewKey);
 
     {maybe, NewCCC} when Res =:= more ->
@@ -448,15 +450,18 @@ get_more(LFn, CFn) ->
         case CFn(H) of
         NewCCC when OldCCC =:= false;
                     OldCCC=/=0, OldCCC<NewCCC ->
-?ECHO(      "ccc is ok. OldCCC is ~w. NewCCC is ~w. ~n", [OldCCC, NewCCC]),
+            ?DBG("ccc is ok. OldCCC is ~w. NewCCC is ~w. ~n", 
+                [OldCCC, NewCCC]),
             Status = LFn(K),
-?ECHO(      "Status is ~w. ~n", [Status]),
+            ?DBG("Status is ~w. ~n", [Status]),
             {Status, NewCCC};
+
         NewCCC when OldCCC =:= NewCCC, OldCCC =/= 0 ->
-?ECHO(       "Char is blocked. CCC is ~w. ~n", [OldCCC]),
+            ?DBG("Char is blocked. CCC is ~w. ~n", [OldCCC]),
             {false, NewCCC}; % blocked
         NewCCC ->
-?ECHO(      "Bad CCC. OldCCC is ~w. NewCCC is ~w ~n", [OldCCC, NewCCC]),
+            ?DBG("Bad CCC. OldCCC is ~w. NewCCC is ~w ~n", 
+                [OldCCC, NewCCC]),
             bad_ccc
         end
     end.

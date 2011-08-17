@@ -3,6 +3,8 @@
 %%% @end
 %%% @private
 -module(ux_unidata_parser).
+-include("ux.hrl").
+-include("ux_unidata_server.hrl").
 
 -export([run/1, check/1, get_functions/2]).
 -export([check_types/2]).
@@ -103,7 +105,7 @@ create_tables(DataTypes) ->
 
 do_create_tables([Name|T], Acc) ->
     E = ets:new(Name, []),
-    error_logger:info_msg(
+    ?DBG(
         "~w:  Create ETS table ~w. ~n",
         [?MODULE, E]),
     do_create_tables(T, [{Name, E}|Acc]);

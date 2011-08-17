@@ -263,7 +263,7 @@ prof(File, Params, Count) ->
 
 
 nat_prof(Seq) ->
-    Lists = [io_lib:format("Abr~w", [X]) || X <- Seq],
+    Lists = [lists:flatten(io_lib:format("Abr~w", [X])) || X <- Seq],
     Params = ux_uca_options:get_options(
             [{alternate, non_ignorable}, {natural_sort, true}]
         ),

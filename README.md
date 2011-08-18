@@ -68,6 +68,22 @@ Grapheme is a letter with its modifiers.
 * first/2
 * last/2
 
+Examples
+--------
+
+Code:
+
+```erlang
+(ux@delta)11> ux_string:length("FF g̈").
+4
+(ux@delta)12> string:len("FF g̈").       
+5
+(ux@delta)13> ux_string:to_graphemes("FF g̈").
+["F","F"," ",[103,776]]
+```
+
+
+
 "PHP-style" string functions
 ----------------------------
 * explode/2,3

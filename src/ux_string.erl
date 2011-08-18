@@ -82,6 +82,7 @@ nfkc_qc(V) -> ?UNIDATA:nfkc_qc(V).
 nfkd_qc(V) -> ?UNIDATA:nfkd_qc(V).
 is_compat(V) -> ?UNIDATA:is_compat(V).
 comp(V1, V2) -> ?UNIDATA:comp(V1, V2).
+comp('skip_check') -> ?UNIDATA:comp('skip_check').
 decomp(V) -> ?UNIDATA:decomp(V).
 
 
@@ -715,65 +716,93 @@ to_nfkd([_|_] = Str) ->
 %% @private
 -spec get_recursive_decomposition(atom() | function(), list()) -> list().
 get_recursive_decomposition(true, Str) -> 
-    get_recursive_decomposition(is_compat(skip_check), Str, []);
+    Canonical = is_compat(skip_check),
+    Decomp = decomp(skip_check),
+    get_recursive_decomposition(Decomp, Canonical, Str, []);
+
 get_recursive_decomposition(false, Str) -> 
-    get_recursive_decomposition(fun(_X) -> false end, Str, []);
-get_recursive_decomposition(Canonical, Str) when is_function(Canonical) -> 
-    get_recursive_decomposition(Canonical, Str, []).
+    Canonical = fun(_X) -> false end, % always false
+    Decomp = decomp(skip_check),
+    get_recursive_decomposition(Decomp, Canonical, Str, []);
+
+get_recursive_decomposition(Canonical, Str) 
+    when is_function(Canonical) -> 
+    Decomp = decomp(skip_check),
+    get_recursive_decomposition(Decomp, Canonical, Str, []).
+
+
+
 
 % Skip ASCII
 %% @private
--spec get_recursive_decomposition(function(), list(), list()) -> list().
-get_recursive_decomposition(Canonical, [Char|Tail], Result) 
+-spec get_recursive_decomposition(fun(), fun(), list(), list()) -> list().
+get_recursive_decomposition(Decomp, Canonical, [Char|Tail], Result) 
     when Char < 128 -> % Cannot be decomposed 
-    get_recursive_decomposition(Canonical, Tail,
+    get_recursive_decomposition(Decomp, Canonical, Tail,
     [Char|Result]);
 
 %% @doc Decompose one char of hangul.
-get_recursive_decomposition(Canonical, [Char|Tail], Result)
+get_recursive_decomposition(Decomp, Canonical, [Char|Tail], Result)
     when (Char >= ?HANGUL_SBASE) and (Char =< ?HANGUL_SLAST) ->
     SIndex = Char - ?HANGUL_SBASE,
     L = ?HANGUL_LBASE + (SIndex div ?HANGUL_NCOUNT),
     V = ?HANGUL_VBASE + (SIndex rem ?HANGUL_NCOUNT) div ?HANGUL_TCOUNT,
     T = ?HANGUL_TBASE + (SIndex rem ?HANGUL_TCOUNT),
-    get_recursive_decomposition(Canonical, Tail,
+    get_recursive_decomposition(Decomp, Canonical, Tail,
         case T of
         ?HANGUL_TBASE -> [V|[L|Result]];
         _ -> [T|[V|[L|Result]]]
         end);
 
-get_recursive_decomposition(Canonical, [Char|Tail], Result) ->
-    case decomp(Char) of
-    []  -> get_recursive_decomposition(Canonical, Tail,
+get_recursive_decomposition(Decomp, Canonical, [Char|Tail], Result) ->
+    case Decomp(Char) of
+    []  -> get_recursive_decomposition(Decomp, Canonical, Tail,
             [Char|Result]);
     Dec -> 
         case Canonical(Char) of % not is_compat = singleton
         true  -> 
-            get_recursive_decomposition(Canonical, Tail, 
+            get_recursive_decomposition(Decomp, Canonical, Tail, 
                 [Char|Result]);
         false -> 
-            get_recursive_decomposition(Canonical, Tail, 
-                get_recursive_decomposition(Canonical,
+            get_recursive_decomposition(Decomp, Canonical, Tail, 
+                get_recursive_decomposition(Decomp, Canonical,
                     Dec, Result))
         end
     end;
-get_recursive_decomposition(_, [], Result) -> Result.
+get_recursive_decomposition(_, _, [], Result) -> Result.
+
+
+
+
+
+
+
 
 %% @doc Normalize NFD or NFKD.
-normalize(Str)              -> normalize1(Str, [], []).
+normalize(Str) -> 
+    CCC = ccc('skip_check'),
+    normalize1(CCC, Str, [], []).
+
+
 %% @private
-normalize1([], [ ], Result) -> Result;
-normalize1([], Buf, Result) -> normalize2(lists:reverse(Buf), Result);
-normalize1([Char|Tail], Buf, Result) ->
-    Class = ccc(Char),
+normalize1(_CCC, [], [ ], Result) -> 
+    Result;
+
+normalize1(CCC, [], [_|_]=Buf, Result) -> 
+    normalize2(lists:reverse(Buf), Result);
+
+normalize1(CCC, [Char|Tail], [_|_]=Buf, Result) ->
+    Class = CCC(Char),
     if
         (Class == 0) and (Buf == []) -> 
-            normalize1(Tail, [], [Char | Result]);
+            normalize1(CCC, Tail, [], [Char | Result]);
         (Class == 0) -> 
-            normalize1(Tail, [], 
+            normalize1(CCC, Tail, [], 
                 [Char | normalize2(lists:reverse(Buf), Result)]);
-        true -> normalize1(Tail, [{Class, Char} | Buf], Result)
+        true -> normalize1(CCC, Tail, [{Class, Char} | Buf], Result)
     end.
+
+
 
 %% @doc Append chars from Buf to Result in a right order.
 %% @private
@@ -793,8 +822,11 @@ normalize3([_|Tail], Value, MaxClass) ->
     normalize3(Tail, Value, MaxClass);
 normalize3([], Value, _) -> Value.
 
+
+
+
 -define(COMP_CHAR_CLASS(Char),
-       (case ccc(Char) of
+       (case CCC(Char) of
             0 -> 0;
             _ -> 256
         end)).
@@ -802,8 +834,11 @@ normalize3([], Value, _) -> Value.
 %% @doc Internal Composition Function.
 %% @private
 get_composition([Char|Tail]) -> 
+    CCC = ccc('skip_check'),
+    Comp = comp('skip_check'),
+
     lists:reverse(
-        get_composition(Tail, Char, 
+        get_composition(CCC, Comp, Tail, Char, 
             ?COMP_CHAR_CLASS(Char), [], [])
     ).
 
@@ -813,7 +848,7 @@ get_composition([Char|Tail]) ->
 %% 2. check to see if two current characters are LV and T
 %% @end
 %% @private
-get_composition([VChar |Tail], LChar, 0, [], Result) 
+get_composition(CCC, Comp, [VChar |Tail], LChar, 0, [], Result) 
     when ?CHAR_IS_HANGUL_L(LChar)
      and ?CHAR_IS_HANGUL_V(VChar)
     ->
@@ -829,40 +864,55 @@ get_composition([VChar |Tail], LChar, 0, [], Result)
         Result3 = [LVTChar|Result],
         case Tail2 of
         [Char|Tail3] ->
-            get_composition(Tail3, Char, 
+            get_composition(CCC, Comp, Tail3, Char, 
                 ?COMP_CHAR_CLASS(Char), [], Result3);
         [] -> Result3
         end;
     [Char|Tail2] ->
-        get_composition(Tail2, Char, 
+        get_composition(CCC, Comp, Tail2, Char, 
             ?COMP_CHAR_CLASS(Char), [], [LVChar|Result]);
     [] -> [LVChar|Result]
     end;
 
-get_composition([Char | Tail], LChar, 0, [], Result) 
+get_composition(CCC, Comp, [Char | Tail], LChar, 0, [], Result) 
     when ?CHAR_IS_HANGUL_L(LChar) ->
-    get_composition(Tail, Char, 
+    get_composition(CCC, Comp, Tail, Char, 
         ?COMP_CHAR_CLASS(Char), [], [LChar|Result]);
                     
-get_composition([Char|Tail], LastChar, _, Mods, Result) when Char < 128 ->
-    get_composition(Tail, Char, 0, [], comp_append([LastChar|Result], Mods));
+get_composition(CCC, Comp, [Char|Tail], LastChar, _, Mods, Result) 
+    when Char < 128 ->
+    NewResult = comp_append([LastChar|Result], Mods),
+    get_composition(CCC, Comp, Tail, Char, 0, [], NewResult);
 
-get_composition([Char|Tail], LastChar, LastClass, Mods, Result) ->
+get_composition(CCC, Comp, [Char|Tail], LastChar, LastClass, Mods, Result) ->
     CharClass = ccc(Char),
     Comp = comp(LastChar, Char),
     if
         (Comp =/= false) 
         and ((LastClass < CharClass) or (LastClass == 0)) ->
-            get_composition(Tail, Comp, LastClass, Mods, Result);
+            get_composition(CCC, Comp, 
+                Tail, Comp, LastClass, Mods, Result);
+
         (CharClass == 0) -> 
-            get_composition(Tail, Char, CharClass, [], 
-                comp_append([LastChar|Result], Mods));
-        true -> get_composition(Tail, LastChar, CharClass, [Char|Mods], Result)
+            NewResult = comp_append([LastChar|Result], Mods),
+            get_composition(CCC, Comp, 
+                Tail, Char, CharClass, [], NewResult);
+
+        true -> 
+            NewMods = [Char|Mods],
+            get_composition(CCC, Comp, 
+                Tail, LastChar, CharClass, NewMods, Result)
     end;
-get_composition([], Char, _LastClass, [], Result) ->
+
+get_composition(_CCC, _Comp, [], Char, _LastClass, [], Result) ->
     [Char|Result];
-get_composition([], Char, _LastClass, Mods, Result) ->
+
+get_composition(_CCC, _Comp, [], Char, _LastClass, Mods, Result) ->
     comp_append([Char|Result], Mods).
+
+
+
+
 
 %% @doc Mods ++ Result.
 %% @private
@@ -900,36 +950,43 @@ to_ncr([         ], Res) -> Res.
 %% determined programmatically.
 %% @end
 to_graphemes(Str) ->
-    explode_reverse(to_graphemes_raw(Str, [], [])).
+    explode_reverse(to_graphemes_raw(Str)).
 
-to_graphemes_raw([H|T], Buf, Res) ->
-    F = ccc(skip_check),
-    to_graphemes_raw(F, [H|T], Buf, Res).
+to_graphemes_raw(S) ->
+    [H|T] = ux_gb:split('extended', S),
+    Buf = [H],
+    Res = [],
+    
+    to_graphemes_raw(T, Buf, Res).
     
 %% @doc Returns not reversed result.
 %% @private
--spec to_graphemes_raw(fun(), string(), string(), [string()]) ->
+-spec to_graphemes_raw(list(), string(), [string()]) ->
     [string()].
-to_graphemes_raw(F, [H|T], Buf, Res) ->
-    case {F(H), Buf} of
-    {0, []}    -> to_graphemes_raw(F, T, [H], Res);
-    {0, [_|_]} -> to_graphemes_raw(F, T, [H], [Buf|Res]);
-    _          -> to_graphemes_raw(F, T, [H|Buf], Res)
-    end;
-to_graphemes_raw(_F, [   ], [  ]=_Buf, Res) -> Res;
-to_graphemes_raw(_F, [   ], [_|_]=Buf, Res) -> [Buf|Res].
+to_graphemes_raw(['x',H|T], Buf, Res) ->
+    NewBuf = [H|Buf],
+    to_graphemes_raw(T, NewBuf, Res);
+to_graphemes_raw([H|T], Buf, Res) ->
+    NewBuf = [H],
+    NewRes = [Buf|Res],
+    to_graphemes_raw(T, NewBuf, NewRes);
+to_graphemes_raw([], Buf, Res) ->
+    [Buf|Res].
+    
+    
+    
 
 %% @doc Compute count of graphemes in the string.
-length(Str) -> 
-    F = ccc(skip_check),
-    do_length(F, Str, 0).
+length(S) -> 
+    BS = ux_gb:split('extended', S),
+    do_length(BS, 0).
 
-do_length(F, [H|T], Len) ->
-    case F(H) of
-    0 -> do_length(F, T, Len + 1);
-    _ -> do_length(F, T, Len)
-    end;
-do_length(_F, [   ], Len) -> Len.
+do_length(['x',H|T], Len) ->
+    do_length(T, Len);
+do_length([H|T], Len) ->
+    do_length(T, Len + 1);
+do_length([], Len) ->
+    Len.
 
 %% @doc Return Len chars from the beginning of the string.
 first(Str, Len) ->
@@ -941,12 +998,12 @@ last(Str, Len) ->
     lists:flatten(
         explode_reverse(
             lists:sublist(
-                to_graphemes_raw(Str, [], []), Len))).
+                to_graphemes_raw(Str), Len))).
 
 %% @doc Reverses the string graphemes.
 reverse(Str) ->
     reverse_flatten(
-        lists:reverse(to_graphemes_raw(Str, [], [])), 
+        lists:reverse(to_graphemes_raw(Str)), 
         [], []).
 
 %% [[1,2,3],[4,5,6]] => [6,5,4,3,2,1].

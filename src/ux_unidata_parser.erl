@@ -188,11 +188,14 @@ expand_table(Table) ->
     case ets:first(Table) of
     '$end_of_table' ->
         ok;
-    {From, To} = El ->
-        do_expand(Table, From, To),
-        expand_table_next(Table, El);
-    El ->
-        expand_table_next(Table, El) 
+    {From, To} = Key ->
+        [El] = ets:lookup(Table, Key),
+        ets:delete(Table, Key),
+        
+        do_expand(Table, El, From, To),
+        expand_table_next(Table, Key);
+    Key ->
+        expand_table_next(Table, Key) 
     end,
     ets:safe_fixtable(Table, false),
     ok.
@@ -201,18 +204,21 @@ expand_table_next(Table, Prev) ->
     case ets:next(Table, Prev) of
     '$end_of_table' ->
         ok;
-    {From, To} = El ->
-        ets:delete(Table, El),
-        do_expand(Table, From, To),
-        expand_table_next(Table, El);
-    El ->
-        expand_table_next(Table, El) 
+    {From, To} = Key ->
+        [El] = ets:lookup(Table, Key),
+        ets:delete(Table, Key),
+        
+        do_expand(Table, El, From, To),
+        expand_table_next(Table, Key);
+    Key ->
+        expand_table_next(Table, Key) 
     end.
 
-do_expand(Table, From, To) when From =< To ->
-    ets:insert(Table, {From}),
-    do_expand(Table, From+1, To);
-do_expand(_, _, _) -> ok.
+do_expand(Table, El, From, To) when From =< To ->
+    NewEl = erlang:setelement(1, El, From),
+    ets:insert(Table, NewEl),
+    do_expand(Table, El, From+1, To);
+do_expand(_, _, _, _) -> ok.
 
 
 

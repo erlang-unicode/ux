@@ -19,9 +19,11 @@
 
 -spec in_list([{integer(), integer()} | integer()], integer()) -> 
     boolean().
-in_list([{From, To}|T], V) when V >= From, V =< To ->
+in_list([H|T], H) 
+    when is_integer(H) ->
     true;
-in_list([H|T], V) when V =:= H ->
+in_list([{From, To}|T], V) 
+    when V >= From, V =< To ->
     true;
 in_list([H|T], V) ->
     in_list(T, V);
@@ -29,10 +31,12 @@ in_list([], _V) -> false.
 
 -spec search([{{integer(), integer()} | integer(), term()}], integer()) -> 
     boolean().
-search([{{From, To},P}|T], V) when V >= From, V =< To ->
+search([{H,P}|T], H) 
+    when is_integer(H) ->
     P;
-search([{H,P}|T], V) when V =:= H ->
+search([{{From, To},P}|T], V) 
+    when V >= From, V =< To ->
     P;
-search([H|T], V) ->
+search([_H|T], V) ->
     search(T, V);
 search([], _V) -> false.

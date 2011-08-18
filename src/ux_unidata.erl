@@ -51,8 +51,10 @@
 -export([char_to_upper/1, char_to_lower/1, is_upper/1, is_lower/1,
         char_comment/1, char_type/1, ccc/1, 
         nfc_qc/1, nfd_qc/1, nfkc_qc/1, nfkd_qc/1, 
-        is_comp_excl/1, is_compat/1, decomp/1, comp/2,
-        ducet/1, char_block/1]).
+        is_comp_excl/1, is_compat/1, decomp/1, comp/2, comp/1,
+        ducet/1, char_block/1,
+
+        break_props/1]).
 -include("ux_unidata.hrl").
 -include("ux_char.hrl").
 
@@ -66,7 +68,10 @@ get_source_file(comp_exclusions) ->
 get_source_file(norm_props) ->
     code:priv_dir(ux) ++ "/UNIDATA/DerivedNormalizationProps.txt";
 get_source_file(unidata) ->
-    code:priv_dir(ux) ++ "/UNIDATA/UnicodeData.txt".
+    code:priv_dir(ux) ++ "/UNIDATA/UnicodeData.txt";
+get_source_file(grapheme_break_property) ->
+    code:priv_dir(ux) ++ "/UNIDATA/auxiliary/GraphemeBreakProperty.txt".
+
 
 -spec char_to_lower(char()) -> char(); 
         (skip_check) -> fun().
@@ -172,6 +177,13 @@ ducet(L) -> func(allkeys, ducet, L).
 comp(C1, C2) -> 
     func(unidata, comp, {C1, C2}).
 
+comp('skip_check') -> 
+    F = func(unidata, comp, 'skip_check'),
+    fun(C1, C2) ->
+        F({C1, C2})
+    end.
+    
+
 
 -spec decomp(char()) -> list();
         (skip_check) -> fun().
@@ -186,6 +198,12 @@ decomp(C) ->
 char_block(C) -> 
     func(blocks, block, C).
 
+
+-spec break_props(atom()) -> fun().
+break_props('grapheme') ->
+    Name = 'grapheme_break_property',
+    func(Name, Name, 'skip_check').
+    
 
 
 func(Parser, Type, Value) -> 

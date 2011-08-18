@@ -108,3 +108,17 @@ or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB))
 % [222] CJK UNIFIED IDEOGRAPH-2B740..2B81D 
  or ((Ch >= 16#2B740) and (Ch =< 16#2B81D))
 )).
+
+
+-define(CHAR_IS_HANGUL(Char), 
+    Char>=16#1100, Char=<16#11FF % Hangul Jamo 
+  ; Char>=16#A960, Char=<16#A97C % Hangul Jamo Extended-A
+  ; Char>=16#D7B0, Char=<16#D7C6 % Hangul Jamo Extended-B
+  ; Char>=16#D7CB, Char=<16#D7FB % Hangul Jamo Extended-B
+  ; Char>=16#3131, Char=<16#318E % Hangul Compatibility Jamo 
+  ; Char==17#302E; Char==16#302F % Tone marks (used in Middle Korean) 
+  ; Char>=16#AC00, Char=<16#D7A3 % 11,172 precomposed Hangul syllables
+  ; Char>=16#3200, Char=<16#321E % For parenthesised 
+  ; Char>=16#3260, Char=<16#327E % and circled 
+  ; Char>=16#FFDC, Char=<16#FFA0 % For halfwidth 
+).

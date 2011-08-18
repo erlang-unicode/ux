@@ -27,15 +27,6 @@ parse(In) ->
         end
     end.
 
-%after_parse(Ets) ->
-%    do_after(Ets),
-%    ok.
-
-%do_after([{_Name, Table} | Tail]) ->
-%    ux_unidata_parser:expand_table(Table),
-%    do_after(Tail);
-%do_after([]) -> ok.
-
 
 get_function(block, Table) ->
     DefValue = other,

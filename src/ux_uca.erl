@@ -215,7 +215,10 @@ sort_array(C, S) ->
     W = [],
     A = [],
     D = get_ducet(),
-    do_sort_array(C, D, S, W, A).
+    % Return always all 4 levels, because
+    % if strength=3, alternate=shifted, array will be incorrect.
+    NewC = ux_uca_options:get_opltions(C, [{length, 4}]),
+    do_sort_array(NewC, D, S, W, A).
 
 do_sort_array(_C, _D, []=_S, []=_W, A) ->
     lists:reverse(A);

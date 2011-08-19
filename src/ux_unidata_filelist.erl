@@ -102,6 +102,7 @@ set_source(Level, Parser, Types, FileName) ->
             %% Run check only once.
             %% For fast realizations of filters.
             ('skip_check') ->
+
                 case ets:info(Ets, 'owner') of
                 undefined -> 
                     set_source(process, Parser, [Type], FileName),
@@ -110,24 +111,35 @@ set_source(Level, Parser, Types, FileName) ->
                 end;
 
             %% For ux_unidata_server. Check ETS before return value.
-            ('test_default') ->
+            ('test') ->
+                case ets:info(Ets, 'owner') of
+                'undefined' -> 
+                    false;
+                _ -> true
+                end;
+
+            ('reload') ->
                 case ets:info(Ets, 'owner') of
                 'undefined' -> 
                     set_source('node', Parser, [Type], FileName),
                    NewFun = get_source(Parser, Type),
-                    true;
-                _ -> true
+                    ok;
+                _ -> ok
                 end;
 
             %% Check an ETS table and run function.
             (Val) ->
-                case ets:info(Ets) of
-                'undefined' -> 
-                    set_source(Level, Parser, [Type], FileName),
-                    NewFun = get_source(Parser, Type),
-                    NewFun(Val);
-                    _ -> Fun(Val)
-                end
+                try
+                    Fun(Val)
+                catch
+                error:badarg -> 
+                    case ets:info(Ets) of
+                    'undefined' -> 
+                        set_source(Level, Parser, [Type], FileName),
+                        NewFun = get_source(Parser, Type),
+                        NewFun(Val) 
+                    end
+                end 
             end
         }
         

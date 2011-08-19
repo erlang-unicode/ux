@@ -4,6 +4,8 @@
 -export([start_link/0]).
 -export([init/1]).
 -export([read_file/2]).
+-export([restart/0]).
+
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
@@ -22,3 +24,7 @@ read_file(Filename, ClientPid) when is_pid(ClientPid) ->
     Ret.
 
     
+%% @doc Restart this supervisor.
+restart() ->
+    exit(whereis('ux_unidata_store_sup'), 'kill').
+

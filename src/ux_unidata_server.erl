@@ -21,7 +21,7 @@
 -export([set_default/1, get_default/1]).
 
 % spawn export.
--export([spawn_waiter/1]).
+-export([spawn_waiter/2]).
 
 -behavior(gen_server).
 
@@ -41,8 +41,8 @@ terminate(_Reason, _LoopData) ->
     ok.
 
 %% Spawns process which waits result from ux_unidata_store.
-spawn_waiter(Key) ->
-    ok = load_default(Key),
+spawn_waiter(LoaderFn, Key) ->
+    ok = LoaderFn(),
     Reply = ux_unidata_filelist:get_source_from(process, Key),
     % Reply to ux_unidata_server.
     gen_server:cast(?MODULE, {waiter_reply, Key}),
@@ -99,18 +99,37 @@ handle_cast({waiter_reply, Key}, LoopData) ->
     ok = load_default(Key),
     {noreply, LoopData}.
 
-handle_call({get_default, Key}, _From, LoopData) ->
+handle_call({get_default, Key} = V, From, LoopData) ->
     case ux_unidata_filelist:get_source_from(process, Key) of
     undefined -> 
-        {WaiterPid, Ref} = spawn_monitor(?MODULE, spawn_waiter, [Key]),
+        LoaderFn = fun() -> 
+            load_default(Key) 
+            end,
+        {WaiterPid, Ref} = spawn_monitor(?MODULE, 
+                'spawn_waiter', [LoaderFn, Key]),
         put(Key, WaiterPid),
         put(Ref, Key),
         Reply = WaiterPid,
         {reply, Reply, LoopData};
     Reply when is_function(Reply) -> 
-        Reply(test_default),
-        {reply, Reply, LoopData}
+        case Reply('test') of
+        true ->
+            {reply, Reply, LoopData};
+
+        % Restart the "dead" function
+        false ->
+            LoaderFn = fun() -> 
+                Reply('reload')
+                end,
+            {WaiterPid, Ref} = spawn_monitor(?MODULE, 
+                    'spawn_waiter', [LoaderFn, Key]),
+            put(Key, WaiterPid),
+            put(Ref, Key),
+            Reply2 = WaiterPid,
+            {reply, Reply2, LoopData}
+        end
     end;
+
 handle_call({set_default, Key}, _From, LoopData) ->
     Reply = ux_unidata_filelist:set_source(process, Key),
     {reply, Reply, LoopData}.

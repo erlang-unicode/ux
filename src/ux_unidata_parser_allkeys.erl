@@ -52,16 +52,18 @@ get_function(ducet, Table) ->
             end
         end,
     
-    fun({reassign_function, 1}) -> R1; % Return fun.
+    fun(member_function) -> MF;
+       ({reassign_function, 1}) -> R1; % Return fun.
        ({reassign_function, 2}) -> R2; % Return fun.
        ({reassign_function, 3}) -> R3;
        ({reassign_function, 4}) -> R4;
-       (member_function) -> MF;
-       (Value) -> 
-            case F(Value) of
-            W when is_binary(W) -> bin_to_list2(W);
-            Other -> Other
-            end
+       ([_|_]=Value) -> 
+        case F(Value) of
+        W when is_binary(W) -> 
+            bin_to_list2(W);
+        Other -> 
+            Other
+        end 
       end.
 
 get_reassign_function(Table, Lvl) ->
@@ -232,19 +234,22 @@ min(V1, V2) -> V2.
 %% bin_to_list(Bin) -> lists:map(fun([H|T]) -> T end, bin_to_list2(Bin)).
 bin_to_list(Bin) ->
     do_bin_to_list(Bin, []).
-do_bin_to_list(<<>>, Res) ->
-    lists:reverse(Res);
+
 do_bin_to_list(<<_:8, L1:16, L2:8, L3:8, L4:16, Rem/binary>>, Res) ->
     El = [L1, L2, L3, L4],
-    do_bin_to_list(Rem, [El|Res]).
+    do_bin_to_list(Rem, [El|Res]);
+do_bin_to_list(<<>>, Res) ->
+    lists:reverse(Res).
+
 
 bin_to_list2(Bin) ->
     do_bin_to_list2(Bin, []).
-do_bin_to_list2(<<>>, Res) ->
-    lists:reverse(Res);
+
 do_bin_to_list2(<<T:8, L1:16, L2:8, L3:8, L4:16, Rem/binary>>, Res) ->
     El = [type_atom(T), L1, L2, L3, L4],
-    do_bin_to_list2(Rem, [El|Res]).
+    do_bin_to_list2(Rem, [El|Res]);
+do_bin_to_list2(<<>>, Res) ->
+    lists:reverse(Res).
 
 
 %%

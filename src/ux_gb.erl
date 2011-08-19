@@ -1,3 +1,9 @@
+%%% @doc Default Grapheme Cluster Boundary Breaker
+%%% 
+%%%      [UTR29: Grapheme Cluster Boundaries]
+%%%      (http://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries)
+%%% @end
+
 -module(ux_gb).
 -include("ux_char.hrl").
 -export([split/2]).
@@ -17,8 +23,10 @@
 
 
 
-
-split(T,S) -> 
+%% Adds the atom 'x' between non-breaked characters.
+split(T,S) when
+    T=:='legacy';
+    T=:='extended' -> 
     Acc = [],
 
     % extract general classes
@@ -27,6 +35,8 @@ split(T,S) ->
 
     do_split(T, S, Types, Acc).
 
+
+%% http://unicode.org/reports/tr29/#Table_Combining_Char_Sequences_and_Grapheme_Clusters
 
 % GB3
 do_split(T, [_CR |ST], 

@@ -1,8 +1,8 @@
 %%% Blocks.txt
 %%% @private
 -module(ux_unidata_parser_grapheme_break_property).
--export([parse/1, types/0, get_function/2, 
-        after_parse/1]).
+-export([parse/1, types/0, get_function/2]).
+%       after_parse/1]).
 
 -define(TO_INT(C), ux_unidata_parser:hex_to_int(C)).
 
@@ -30,19 +30,19 @@ parse(In) ->
 get_function('grapheme_break_property', Table) ->
     DefValue = 'Any',
 %   ux_unidata_parser:expand_fun(Table, DefValue).
-    ux_unidata_parser:ets_fun(Table, DefValue).
+    ux_unidata_parser:expand_opt_fun(Table, DefValue).
 
 
 
-after_parse(Ets) ->
-    do_after(Ets),
-    ok.
-
-
-do_after([{_Name, Table} | Tail]) ->
-    ux_unidata_parser:expand_table(Table),
-    do_after(Tail);
-do_after([]) -> ok.
+%after_parse(Ets) ->
+%    do_after(Ets),
+%    ok.
+%
+%
+%do_after([{_Name, Table} | Tail]) ->
+%    ux_unidata_parser:expand_table(Table),
+%    do_after(Tail);
+%do_after([]) -> ok.
 
 %%
 %% Helpers

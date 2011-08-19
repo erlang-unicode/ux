@@ -228,7 +228,7 @@ get_types(Types, [Char|Tail],
     Fun, % Check function
     TrueStep, % Len+TrueStep, if Fun return true
     FalseStep) -> 
-    case apply(Fun, [ux_char:type(Char), Types]) of
+    case Fun(ux_char:type(Char), Types) of
     true  -> get_types(Types, Tail, Len+TrueStep, [Char|Result], 
                 RetTail, Fun, TrueStep, FalseStep);
     false -> get_types(Types, Tail, Len+FalseStep, Result, 
@@ -635,18 +635,18 @@ not_in_array(X,Y) -> not lists:member(X,Y).
 %% http://unicode.org/reports/tr15/
 %%
 
--spec is_nf(list(), integer(), atom(), function()) -> yes | no | maybe.
-is_nf([Head|Tail], LastCC, Result, CheckFun) -> 
-    case ccc(Head) of
+-spec is_nf(fun(), list(), integer(), atom(), fun()) -> yes | no | maybe.
+is_nf(CCC, [Head|Tail], LastCC, Result, CheckFun) -> 
+    case CCC(Head) of
     CC when (LastCC > CC) and (CC =/= 0) -> no;
     CC -> 
-        case apply(CheckFun, [Head]) of
+        case CheckFun(Head) of
         n -> no;
-        m -> is_nf(Tail, CC, maybe,  CheckFun);
-        y -> is_nf(Tail, CC, Result, CheckFun)
+        m -> is_nf(CCC, Tail, CC, maybe,  CheckFun);
+        y -> is_nf(CCC, Tail, CC, Result, CheckFun)
         end
     end;
-is_nf([], _, Result, _) -> Result.
+is_nf(_CCC, [], _, Result, _) -> Result.
 
 
 
@@ -654,22 +654,34 @@ is_nf([], _, Result, _) -> Result.
 %% http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
 -spec is_nfc(list()) -> yes | no | maybe.
 
-is_nfc(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfc_qc(skip_check)).
+is_nfc(Str) when is_list(Str) -> 
+    CCC = ccc('skip_check'),
+    QC = nfc_qc('skip_check'),
+    is_nf(CCC, Str, 0, yes, QC).
 
 
 -spec is_nfd(list()) -> yes | no | maybe.
 
-is_nfd(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfd_qc(skip_check)).
+is_nfd(Str) when is_list(Str) -> 
+    CCC = ccc('skip_check'),
+    QC = nfd_qc('skip_check'),
+    is_nf(CCC, Str, 0, yes, QC).
 
 
 -spec is_nfkc(list()) -> yes | no | maybe.
 
-is_nfkc(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfkc_qc(skip_check)).
+is_nfkc(Str) when is_list(Str) ->
+    CCC = ccc('skip_check'),
+    QC = nfkc_qc('skip_check'),
+    is_nf(CCC, Str, 0, yes, QC).
 
 
 -spec is_nfkd(list()) -> yes | no | maybe.
 
-is_nfkd(Str) when is_list(Str) -> is_nf(Str, 0, yes, nfkd_qc(skip_check)).
+is_nfkd(Str) when is_list(Str) ->
+    CCC = ccc('skip_check'),
+    QC = nfkd_qc('skip_check'),
+    is_nf(CCC, Str, 0, yes, QC).
 
 
 
@@ -791,7 +803,7 @@ normalize1(_CCC, [], [ ], Result) ->
 normalize1(CCC, [], [_|_]=Buf, Result) -> 
     normalize2(lists:reverse(Buf), Result);
 
-normalize1(CCC, [Char|Tail], [_|_]=Buf, Result) ->
+normalize1(CCC, [Char|Tail], Buf, Result) ->
     Class = CCC(Char),
     if
         (Class == 0) and (Buf == []) -> 
@@ -835,10 +847,10 @@ normalize3([], Value, _) -> Value.
 %% @private
 get_composition([Char|Tail]) -> 
     CCC = ccc('skip_check'),
-    Comp = comp('skip_check'),
+    COMP = comp('skip_check'),
 
     lists:reverse(
-        get_composition(CCC, Comp, Tail, Char, 
+        get_composition(CCC, COMP, Tail, Char, 
             ?COMP_CHAR_CLASS(Char), [], [])
     ).
 
@@ -848,7 +860,7 @@ get_composition([Char|Tail]) ->
 %% 2. check to see if two current characters are LV and T
 %% @end
 %% @private
-get_composition(CCC, Comp, [VChar |Tail], LChar, 0, [], Result) 
+get_composition(CCC, COMP, [VChar |Tail], LChar, 0, [], Result) 
     when ?CHAR_IS_HANGUL_L(LChar)
      and ?CHAR_IS_HANGUL_V(VChar)
     ->
@@ -864,43 +876,43 @@ get_composition(CCC, Comp, [VChar |Tail], LChar, 0, [], Result)
         Result3 = [LVTChar|Result],
         case Tail2 of
         [Char|Tail3] ->
-            get_composition(CCC, Comp, Tail3, Char, 
+            get_composition(CCC, COMP, Tail3, Char, 
                 ?COMP_CHAR_CLASS(Char), [], Result3);
         [] -> Result3
         end;
     [Char|Tail2] ->
-        get_composition(CCC, Comp, Tail2, Char, 
+        get_composition(CCC, COMP, Tail2, Char, 
             ?COMP_CHAR_CLASS(Char), [], [LVChar|Result]);
     [] -> [LVChar|Result]
     end;
 
-get_composition(CCC, Comp, [Char | Tail], LChar, 0, [], Result) 
+get_composition(CCC, COMP, [Char | Tail], LChar, 0, [], Result) 
     when ?CHAR_IS_HANGUL_L(LChar) ->
-    get_composition(CCC, Comp, Tail, Char, 
+    get_composition(CCC, COMP, Tail, Char, 
         ?COMP_CHAR_CLASS(Char), [], [LChar|Result]);
                     
-get_composition(CCC, Comp, [Char|Tail], LastChar, _, Mods, Result) 
+get_composition(CCC, COMP, [Char|Tail], LastChar, _, Mods, Result) 
     when Char < 128 ->
     NewResult = comp_append([LastChar|Result], Mods),
-    get_composition(CCC, Comp, Tail, Char, 0, [], NewResult);
+    get_composition(CCC, COMP, Tail, Char, 0, [], NewResult);
 
-get_composition(CCC, Comp, [Char|Tail], LastChar, LastClass, Mods, Result) ->
+get_composition(CCC, COMP, [Char|Tail], LastChar, LastClass, Mods, Result) ->
     CharClass = ccc(Char),
-    Comp = comp(LastChar, Char),
+    Comp = COMP(LastChar, Char),
     if
         (Comp =/= false) 
         and ((LastClass < CharClass) or (LastClass == 0)) ->
-            get_composition(CCC, Comp, 
+            get_composition(CCC, COMP, 
                 Tail, Comp, LastClass, Mods, Result);
 
         (CharClass == 0) -> 
             NewResult = comp_append([LastChar|Result], Mods),
-            get_composition(CCC, Comp, 
+            get_composition(CCC, COMP, 
                 Tail, Char, CharClass, [], NewResult);
 
         true -> 
             NewMods = [Char|Mods],
-            get_composition(CCC, Comp, 
+            get_composition(CCC, COMP, 
                 Tail, LastChar, CharClass, NewMods, Result)
     end;
 
@@ -1074,7 +1086,7 @@ info(Ch) when is_integer(Ch) ->
 
 %% @private
 info1([F|Tail], Rec) ->
-    NewRec = apply(F, [Rec]),
+    NewRec = F(Rec),
     info1(Tail, NewRec);
 info1([], Rec) ->
     Rec.

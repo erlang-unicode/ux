@@ -51,7 +51,7 @@ parse(In) ->
 
 get_function(_Type, Table) ->
     DefValue = y,
-    ux_unidata_parser:expand_fun(Table, DefValue).
+    ux_unidata_parser:expand_opt_fun(Table, DefValue).
 
 %%
 %% Helpers

@@ -14,7 +14,7 @@
 
 %% Intermodule export
 -export([expand_table/1]).
--export([expand_fun/2, ets_fun/2, bool_fun/1]).
+-export([expand_fun/2, expand_opt_fun/2, ets_fun/2, bool_fun/1]).
 
 -spec check(tuple()) -> ok.
 check({FileType, all, FileName}) ->
@@ -234,6 +234,9 @@ expand_fun(Table, DefaultValue) ->
        end
     end.
 
+expand_opt_fun(Table, DefaultValue) ->
+    List = ets:tab2list(Table),
+    ux_opt_ranges:search(DefaultValue, List).
 
 
 ets_fun(Table, DefaultValue) ->

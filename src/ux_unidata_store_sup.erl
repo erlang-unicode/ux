@@ -19,9 +19,7 @@ init([]) ->
 read_file(Filename, ClientPid) when is_pid(ClientPid) ->
     SupervisorName = ?MODULE,
     Ret = supervisor:start_child(SupervisorName, [Filename, ClientPid]),
-    {ok, ServerPid} = Ret,
-%   erlang:link(ServerPid),
-    Ret.
+    {ok, ServerPid} = Ret.
 
     
 %% @doc Restart this supervisor.

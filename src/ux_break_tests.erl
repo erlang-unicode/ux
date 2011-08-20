@@ -69,10 +69,10 @@ grapheme_break_test_() ->
 
 word_break_test_() ->
     Fun = fun(S) -> 
-        R = ux_wb:split(S),
+        {_Types, R} = ux_wb:split(S),
         case R of
         [] -> [];
-        _ -> ['-'] ++ R ++ ['-']
+        [_|_] -> ['-'] ++ R ++ ['-']
         end
         end,
     Fun2 = fun(S) -> 

@@ -169,30 +169,6 @@ get_source(Parser, Type) ->
     get_source(Value).
 
 -spec get_source({Parser::atom(), Type::atom()}) -> fun() | undefined.
-%% Use only the process dictionary for eunit.
--ifdef(TEST).
-get_source({Parser, Type} = Value) ->
-    case get_source_from(process, Value) of
-    'undefined' -> 
-        ?DBG("~w: The sourse ~w is undefined. ~n", 
-            [?MODULE, Value]),
-        Key = {Parser, all, ux_unidata:get_source_file(Parser)},
-        % Example:
-        % ux_unidata_store:start_link({unidata, [ccc], code:priv_dir(ux) ++ "/UNIDATA/UnicodeData.txt"},self()).
-        {ok, ServerPid} = ux_unidata_store:start_link(Key, self()),
-        Funs = lists:map(fun({Type, Ets, Fun}) ->
-                {{Parser, Type}, fun
-                    (skip_check) -> Fun;
-                    (Val) -> Fun(Val) end}
-            end, ux_unidata_store:get_funs(ServerPid, all)),
-        set_proc_dict(Funs),
-        Res = get_source_from(process, Value),
-        ?DBG("~w: return the sourse ~w. ~n", 
-            [?MODULE, Value]),
-        Res;
-    Fun -> Fun
-    end.
--else.
 
 %% Try retrieve the information about the data source:
 %% Step 1: Check process dictionary.
@@ -207,7 +183,6 @@ get_source(Value) ->
         end;
     Fun -> Fun
     end.
--endif.
 
 
 %%
@@ -219,7 +194,14 @@ get_source_from('process', Value) ->
 get_source_from('application', Value) ->
     application:get_env(Value);
 get_source_from('node', Value) ->
-    ux_unidata_server:get_default(Value).
+    case erlang:whereis(ux_unidata_server) of
+    undefined ->
+        ux:start(),
+        ux_unidata_server:get_default(Value);
+    _ -> 
+        ux_unidata_server:get_default(Value) 
+    end.
+    
     
     
 %% Return the list of functions from the server.
@@ -278,13 +260,8 @@ file_owner(FileName) ->
 %% Don't use this function from user code.
 %% Throws {badmatch,{error,key_already_registred}} if self() is already 
 %% registred.
--ifdef(TEST).
-reg_pid(Key, StoreServerPid) when is_pid(StoreServerPid) ->
-    ok.
--else.
 reg_pid(Key, StoreServerPid) when is_pid(StoreServerPid) ->
     ok = gen_server:call(?MODULE, {reg_pid, key_to_filename(Key), StoreServerPid}).
--endif.
 
 %%
 %% Private helper functions.

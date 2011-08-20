@@ -6,7 +6,7 @@
 
 -module(ux_wb).
 -include("ux_char.hrl").
--export([split/1]).
+-export([split/1, words/1]).
 
 
 % Carriage Return
@@ -35,10 +35,60 @@ split(S) ->
     LastType = '',
     Res = do_split(LastType, ColS, ColTypes, Acc),
 
-    expand(Res).
+    {Types, expand(Res)}.
 
     
+words(S) ->
+    {Types, Splitted} = ux_wb:split(S),
+    Mod = false,
+    Word = [],
+    Acc = [],
+    do_words(Mod, Splitted, Types, Word, Acc).
+    
 
+
+%% Extract words.
+
+% Extract word.
+do_words(true, ['-'|ST], TT, Word=[_|_], Acc) ->
+    RWord = lists:reverse(Word),
+    NewAcc = [RWord|Acc],
+
+    Mod = false,
+    NewWord = [],
+    do_words(Mod, ST, TT, NewWord, NewAcc);
+
+% Skip extracting. Not word.
+do_words(_Mod, ['-'|ST], TT, _Word, Acc) ->
+    Mod = false,
+    NewWord = [],
+    do_words(Mod, ST, TT, NewWord, Acc);
+    
+% Word.
+do_words(_Mod, [SH|ST], [TH|TT], Word, Acc) 
+    when TH=:='ALetter' ->
+    Mod = true,
+    NewWord = [SH|Word],
+    do_words(Mod, ST, TT, NewWord, Acc);
+    
+% Maybe word.
+do_words(Mod, [SH|ST], [TH|TT], Word, Acc) ->
+    NewWord = [SH|Word],
+    do_words(Mod, ST, TT, NewWord, Acc);
+
+% End of string.
+do_words(true, [], [], [_|_] = Word, Acc) ->
+    RWord = lists:reverse(Word),
+    NewAcc = [RWord|Acc],
+    lists:reverse(NewAcc);
+
+do_words(false, [], [], _Word, Acc) ->
+    lists:reverse(Acc).
+    
+    
+    
+    
+    
 
 
 % WB4

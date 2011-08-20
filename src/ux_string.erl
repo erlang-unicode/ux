@@ -51,6 +51,8 @@
         length/1, 
         first/2, last/2,
 
+        extract_words/1,
+
         info/1,
         types/1]).
 
@@ -1025,6 +1027,55 @@ reverse_flatten(T, [HH|TT],  Res) ->
     reverse_flatten(T, TT, [HH|Res]);
 reverse_flatten(_, [], Res) ->
     Res.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%
+%% Words
+%%
+
+extract_words(S) ->
+    ux_wb:words(S).
+
+
+
+
+
+
+
+
+
+
 
 
 

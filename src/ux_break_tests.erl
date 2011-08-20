@@ -7,9 +7,7 @@
 parse(S) -> 
     Res = [],
     ResWithDelims = [],
-    io:format(user, "~p~n", [S]),
     P = do_parse(S, Res, ResWithDelims),
-    io:format(user, "~p~n", [P]),
     P.
 
 do_parse([[247]|T], R, RD) ->

@@ -100,7 +100,7 @@ ux_string:explode(["==", "++", "|"], "+++-+=|==|==|=+-+++").
 
 Result:
 
-```
+```erlang
 [[],"+-+=",[],[],[],[],"=+-","+"]
 ```
 
@@ -112,9 +112,15 @@ ux_string:strip_tags("<b>bold text</b>").
 
 Result:
 
-```
+```erlang
 "bold text"
 ```
+
+
+Types function
+--------------
+
+Type is a General Category.
 
 Code:
 
@@ -124,13 +130,13 @@ networks analysis. His early work in scrutinizing the use of local, exchange
 and trunk telephone line usage in a small community, to understand the
 theoretical requirements of an efficient network led to the creation of the
 Erlang formula, which became a foundational element of present day
-telecommunication network studies."
-ux_string:explode_types([zs, lu], Str).
+telecommunication network studies.",
+ux_string:explode_types(['Zs', 'Lu'], Str).
 ```
 
 Result:
 
-```
+```erlang
 [[],"rlang","created","the","field","of","telephone",
  "networks","analysis.",[],"is","early","work","in",
  "scrutinizing","the","use","of","local,","exchange","and",
@@ -146,24 +152,27 @@ ux_string:types(Str).
 
 Result: 
 
+```erlang
+['Lu','Ll','Ll','Ll','Ll','Ll','Zs','Ll','Ll','Ll','Ll',
+ 'Ll','Ll','Ll','Zs','Ll','Ll','Ll','Zs','Ll','Ll','Ll','Ll',
+ 'Ll','Zs','Ll','Ll','Zs','Ll'|...]
 ```
-[lu,ll,ll,ll,ll,ll,zs,ll,ll,ll,ll,ll,ll,ll,zs,ll,ll,ll,zs,
- ll,ll,ll,ll,ll,zs,ll,ll,zs,ll|...]
-```
-Where ``lu`` is Letter, Uppercase; ll is Letter, Lowercase. Read more about
-types from description of ``ux_char:type/1``.
+
+Where atom ``'Lu'`` is Letter, Uppercase; ll is Letter, Lowercase. Read more 
+about types from description of ``ux_char:type/1``.
 
 Code:
 
 ```erlang
-ux_string:delete_types([ll], Str).
+ux_string:delete_types(['Ll'], Str).
 ```
 
 Result:
 
-```
+```erlang
 "E       . H        ,          ,                E ,           ."
 ```
+
 
 ux\_char.erl: Char Functions
 ============================
@@ -175,43 +184,44 @@ ux_char:type($ ).
 
 Result:
 
+```erlang
+'Zs'
 ```
-zs
-```
+
 [List of types](http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category)
 ---------------
 * Normative Categories:
-    * lu  Letter, Uppercase
-    * ll  Letter, Lowercase
-    * lt  Letter, Titlecase
-    * mn  Mark, Non-Spacing
-    * mc  Mark, Spacing Combining
-    * me  Mark, Enclosing
-    * nd  Number, Decimal Digit
-    * nl  Number, Letter
-    * no  Number, Other
-    * zs  Separator, Space
-    * zl  Separator, Line
-    * zp  Separator, Paragraph
-    * cc  Other, Control
-    * cf  Other, Format
-    * cs  Other, Surrogate
-    * co  Other, Private Use
-    * cn  Other, Not Assigned (no characters in the file have this property)
+    * Lu  Letter, Uppercase
+    * Ll  Letter, Lowercase
+    * Lt  Letter, Titlecase
+    * Mn  Mark, Non-Spacing
+    * Mc  Mark, Spacing Combining
+    * Me  Mark, Enclosing
+    * Nd  Number, Decimal Digit
+    * Nl  Number, Letter
+    * No  Number, Other
+    * Zs  Separator, Space
+    * Zl  Separator, Line
+    * Zp  Separator, Paragraph
+    * Cc  Other, Control
+    * Cf  Other, Format
+    * Cs  Other, Surrogate
+    * Co  Other, Private Use
+    * Cn  Other, Not Assigned (no characters in the file have this property)
 * Informative Categories:
-    * lm  Letter, Modifier
-    * lo  Letter, Other
-    * pc  Punctuation, Connector
-    * pd  Punctuation, Dash
-    * ps  Punctuation, Open
-    * pe  Punctuation, Close
-    * pi  Punctuation, Initial quote (may behave like Ps or Pe depending on usage)
-    * pf  Punctuation, Final quote (may behave like Ps or Pe depending on usage)
-    * po  Punctuation, Other
-    * sm  Symbol, Math
-    * sc  Symbol, Currency
-    * sk  Symbol, Modifier
-    * so  Symbol, Other
+    * Lm  Letter, Modifier
+    * Lo  Letter, Other
+    * Pc  Punctuation, Connector
+    * Pd  Punctuation, Dash
+    * Ps  Punctuation, Open
+    * Pe  Punctuation, Close
+    * Pi  Punctuation, Initial quote (may behave like Ps or Pe depending on usage)
+    * Pf  Punctuation, Final quote (may behave like Ps or Pe depending on usage)
+    * Po  Punctuation, Other
+    * Sm  Symbol, Math
+    * Sc  Symbol, Currency
+    * Sk  Symbol, Modifier
+    * So  Symbol, Other
 
 ux\_uca.erl: Unicode Collation Algorithm
 ========================================

@@ -37,7 +37,7 @@ parse(In) ->
                         false -> skip; V -> {Char, V} end}
         ,{is_upper, case Abbr of "Lu" -> {Char}; _ -> skip end}
         ,{is_lower, case Abbr of "Ll" -> {Char}; _ -> skip end}
-        ,{type,     case string:to_lower(Abbr) of
+        ,{type,     case Abbr of
                         [] -> skip; V -> {Char, list_to_atom(V)} end}
         ,{is_compat, case Compat of true -> {Char}; false -> skip end}
         ,{decomp,  case Dec of 

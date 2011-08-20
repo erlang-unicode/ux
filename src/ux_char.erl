@@ -92,13 +92,13 @@ is_acsii(_) -> false.
 
 is_letter(C) ->
     case erlang:atom_to_list(type(C)) of
-    [$l,_] -> true;
+    [$L,_] -> true;
     _      -> false
     end.
 
 is_mark(C) ->
     case erlang:atom_to_list(type(C)) of
-    [$m,_] -> true;
+    [$M,_] -> true;
     _      -> false
     end.
 
@@ -113,7 +113,7 @@ is_decimal(C) -> type(C) == nd.
 
 is_number(C) ->
     case erlang:atom_to_list(type(C)) of
-    [$n,_] -> true;
+    [$N,_] -> true;
     _      -> false
     end.
 
@@ -122,7 +122,7 @@ is_number(C) ->
 
 is_separator(C) ->
     case erlang:atom_to_list(type(C)) of
-    [$z,_] -> true;
+    [$Z,_] -> true;
     _      -> false
     end.
 
@@ -131,7 +131,7 @@ is_separator(C) ->
 
 is_punctuation_mark(C) ->
     case erlang:atom_to_list(type(C)) of
-    [$p,_] -> true;
+    [$P,_] -> true;
     _      -> false
     end.
 

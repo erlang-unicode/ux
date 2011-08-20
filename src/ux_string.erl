@@ -1343,54 +1343,59 @@ tags_to_list_test_() ->
     ,?_assertEqual(F("<i>"), ["i"])
     ].
 
+
+
 delete_types_test_() ->
     M = 'ux_string',
     F = 'delete_types',
-    [?_assertEqual(M:F([ll, lu], "Tom Cat!"), " !")
-    ,?_assertEqual(M:F([ll],     "Tom Cat!"), "T C!")
-    ,?_assertEqual(M:F([po],     "Tom Cat!"), "Tom Cat")
+    [?_assertEqual(M:F(['Ll', 'Lu'], "Tom Cat!"), " !")
+    ,?_assertEqual(M:F(['Ll'],     "Tom Cat!"), "T C!")
+    ,?_assertEqual(M:F(['Po'],     "Tom Cat!"), "Tom Cat")
     ,{"Skip 2 chars (A,B).",
-        ?_assertEqual(M:F([ll], "AaBbCc44ff", -2), "ABbCc44ff")}
+        ?_assertEqual(M:F(['Ll'], "AaBbCc44ff", -2), "ABbCc44ff")}
     ,{"Delete only 2 chars (A,B).",
-        ?_assertEqual(M:F([ll], "AaBbCc44ff",  2), "ABCc44ff")}
-    ,?_assertEqual(M:F([ll], "AaBbCc44ffdsBAF",  4), "ABC44fdsBAF")
-    ,?_assertEqual(M:F([ll], "AaBbCc44ffdsBAF", -4), "ABC44ffdsBAF")
+        ?_assertEqual(M:F(['Ll'], "AaBbCc44ff",  2), "ABCc44ff")}
+    ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffdsBAF",  4), "ABC44fdsBAF")
+    ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffdsBAF", -4), "ABC44ffdsBAF")
     ].
 
 filter_types_test_() ->
     M = 'ux_string',
     F = 'filter_types',
-    [?_assertEqual(M:F([ll, lu], "Tom Cat!"), "TomCat")
-    ,?_assertEqual(M:F([ll],     "Tom Cat!"), "omat")
-    ,?_assertEqual(M:F([po],     "Tom Cat!"), "!")
-    ,?_assertEqual(M:F([ll], "AaBbCc44ffds",  3), "abc44ffds")
-    ,?_assertEqual(M:F([ll], "AaBbCc44ffds",  4), "abcffds")
-    ,?_assertEqual(M:F([ll], "AaBbCc44ffds", -2), "abCc44ffds")
-    ,?_assertEqual(M:F([ll], "AaBbCc44ffds", -4), "abc4ffds")
+    [?_assertEqual(M:F(['Ll', 'Lu'], "Tom Cat!"), "TomCat")
+    ,?_assertEqual(M:F(['Ll'],     "Tom Cat!"), "omat")
+    ,?_assertEqual(M:F(['Po'],     "Tom Cat!"), "!")
+    ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffds",  3), "abc44ffds")
+    ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffds",  4), "abcffds")
+    ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffds", -2), "abCc44ffds")
+    ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffds", -4), "abc4ffds")
     ].
 
 types_test_() ->
     M = 'ux_string',
     F = 'types',
-    [?_assertEqual(M:F("Tom Cat!"), [lu,ll,ll,zs,lu,ll,ll,po])
+    [?_assertEqual(M:F("Tom Cat!"), ['Lu','Ll','Ll','Zs','Lu','Ll','Ll','Po'])
     %,?_assertEqual(M:F(), )
     ].
 
 last_types_test_() ->
     M = 'ux_string',
     F = 'last_types',
-    [?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -5), "99999")
-    ,?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -6), "D99999")
-    ,?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -7), "FD99999")
-    ,?_assertEqual(M:F([ll], "AavbfFDsdfffd9s9999", -8), "AFD99999")
+    [?_assertEqual(M:F(['Ll'], "AavbfFDsdfffd9s9999", -5), "99999")
+    ,?_assertEqual(M:F(['Ll'], "AavbfFDsdfffd9s9999", -6), "D99999")
+    ,?_assertEqual(M:F(['Ll'], "AavbfFDsdfffd9s9999", -7), "FD99999")
+    ,?_assertEqual(M:F(['Ll'], "AavbfFDsdfffd9s9999", -8), "AFD99999")
     ].
 
 first_types_test_() ->
     M = 'ux_string',
     F = 'first_types',
-    [?_assertEqual(M:F([ll], "AavbfFDsdfffds", 4), "avbf")
-    ,?_assertEqual(M:F([ll], "AavbfFDsdfffds", 5), "avbfs")
+    [?_assertEqual(M:F(['Ll'], "AavbfFDsdfffds", 4), "avbf")
+    ,?_assertEqual(M:F(['Ll'], "AavbfFDsdfffds", 5), "avbfs")
     ].
+
+
+
 
 to_graphemes_test_() ->
     M = 'ux_string',

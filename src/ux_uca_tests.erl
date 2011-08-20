@@ -128,11 +128,7 @@ non_ignorable_test_() ->
     {timeout, 600, 
         fun() -> 
             prof(
-               ux_unidata:get_ucadata_dir() ++ "CollationTest/" 
-                    % Slow, with comments.
-%                  ++ "CollationTest_NON_IGNORABLE.txt", 
-                    % Fast version (data from slow version are equal).
-                    ++ "CollationTest_NON_IGNORABLE_SHORT.txt", 
+               ux_unidata:get_test_file('collation_test_non_ignorable'), 
                 ux_uca_options:get_options(non_ignorable), 
                 1000000) 
         end}.
@@ -141,10 +137,7 @@ shifted_test_() ->
     {timeout, 600, 
         fun() -> 
             prof(
-               ux_unidata:get_ucadata_dir() ++ "CollationTest/" 
-                    % Slow, with comments.
-%                   ++ "CollationTest_SHIFTED.txt", 
-                    ++ "CollationTest_SHIFTED_SHORT.txt", 
+               ux_unidata:get_test_file('collation_test_shifted'), 
                 ux_uca_options:get_options(shifted), 
                 1000000) end}.
 

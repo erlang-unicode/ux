@@ -10,7 +10,8 @@
 -export([check_types/2]).
 
 %% Helpers
--export([split/2, hex_to_int/1, from_hex/1, delete_spaces/1]).
+-export([split/2, hex_to_int/1, from_hex/1, 
+        delete_spaces/1, delete_spaces/2, delete_comments/1]).
 
 %% Intermodule export
 -export([expand_table/1]).
@@ -176,7 +177,8 @@ from_hex([$<|Str]) ->
 from_hex(Str) -> 
     lists:map(fun hex_to_int/1, string:tokens(Str, " ")).
 
-delete_spaces(Str) -> [X || X <- Str, X =/= $ ].
+delete_spaces(Str) -> delete_spaces(Str, $ ).
+delete_spaces(Str, C) -> [X || X <- Str, X =/= C].
 
 %%
 %% Helpers

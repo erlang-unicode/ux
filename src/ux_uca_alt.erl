@@ -6,12 +6,11 @@
 
 -spec get_alternate_function(#uca_options{}, fun()) -> fun().
 get_alternate_function(#uca_options{alternate='shifted', strength=4}, D) ->
-    Alt = 'shifted',
     R = D({reassign_function, 4}),
     Common = R(get_common_value), 
     shifted_weight(Common);
 
-get_alternate_function(#uca_options{alternate=Alt}, _D) ->
+get_alternate_function(C=#uca_options{alternate=Alt}, _D) ->
     get_function(Alt).
     
 -spec get_function(Alt :: uca_alternate()) -> fun().
@@ -37,7 +36,7 @@ shifted_weight(Common) ->
     fun([_Var,0,0,0,0]) ->
         {shifted_weight(Common), []}; % [0,0,0,0]
 % If it is a variable, then L4 = Old L1.
-       ([variable,L1|_]) ->
+       (['variable',L1|_]) ->
         {shifted_weight2(Common), [0, 0, 0, L1]};
        ([_|_] = Value) ->
         {shifted_weight(Common), set_l4_to_value(Value, Common)}

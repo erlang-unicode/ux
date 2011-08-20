@@ -1472,8 +1472,8 @@ nfc_test(InFd, Max, StrNum) ->
     end.
 
 nfc_prof(Count) ->
-    {ok, InFd} = file:open(?UNIDATA:get_unidata_dir() 
-        ++ "NormalizationTest.txt", [read]),
+    Filename = ?UNIDATA:get_test_file('normalization_test'),
+    {ok, InFd} = file:open(Filename, [read]),
     io:setopts(InFd,[{encoding,utf8}]),
     nfc_test(InFd, Count, 0),
     file:close(InFd),

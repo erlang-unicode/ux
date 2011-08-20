@@ -217,7 +217,7 @@ sort_array(C, S) ->
     D = get_ducet(),
     % Return always all 4 levels, because
     % if strength=3, alternate=shifted, array will be incorrect.
-    NewC = ux_uca_options:get_opltions(C, [{length, 4}]),
+    NewC = ux_uca_options:get_options(C, [{'strength', 4}]),
     do_sort_array(NewC, D, S, W, A).
 
 do_sort_array(_C, _D, []=_S, []=_W, A) ->
@@ -293,7 +293,10 @@ weights(C=#uca_options{strength=S}, Str) ->
 %% Apply the alternate function for the list of weights.
 do_weights(A, S, [H|T], Acc) ->
     {NewA, Ints} = do_alt(A, H, S),
-    NewAcc = [Ints|Acc],
+    NewAcc = case Ints of
+        [_|_] -> [Ints|Acc];
+        []    -> Acc
+        end,
     do_weights(NewA, S, T, NewAcc);
 do_weights(A, S, [], Acc) ->
     NewAcc = lists:reverse(Acc),

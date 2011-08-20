@@ -46,8 +46,7 @@
 
 -module(ux_unidata).
 -author('Uvarov Michael <freeakk@gmail.com>').
--export([get_source_file/1,
-        get_unidata_dir/0, get_ucadata_dir/0]).
+-export([get_source_file/1, get_test_file/1]).
 -export([char_to_upper/1, char_to_lower/1, is_upper/1, is_lower/1,
         char_comment/1, char_type/1, ccc/1, 
         nfc_qc/1, nfd_qc/1, nfkc_qc/1, nfkd_qc/1, 
@@ -58,19 +57,60 @@
 -include("ux_unidata.hrl").
 -include("ux_char.hrl").
 
+
+
+
+priv_dir() ->
+    case code:priv_dir(ux) of
+        [_|_] = Res -> Res;
+        _ -> "../priv"
+    end.
+
+
+get_dir('ucd') -> priv_dir() ++ "/"  ?UNIDATA_VERSION  "/";
+get_dir('uca') -> priv_dir() ++ "/"  ?UCADATA_VERSION  "/".
+
 -spec get_source_file(Parser::atom()) -> string().
-get_source_file(allkeys) ->
-    code:priv_dir(ux) ++ "/UNIDATA/allkeys.txt";
-get_source_file(blocks) ->
-    code:priv_dir(ux) ++ "/UNIDATA/Blocks.txt";
-get_source_file(comp_exclusions) ->
-    code:priv_dir(ux) ++ "/UNIDATA/CompositionExclusions.txt";
-get_source_file(norm_props) ->
-    code:priv_dir(ux) ++ "/UNIDATA/DerivedNormalizationProps.txt";
-get_source_file(unidata) ->
-    code:priv_dir(ux) ++ "/UNIDATA/UnicodeData.txt";
-get_source_file(grapheme_break_property) ->
-    code:priv_dir(ux) ++ "/UNIDATA/auxiliary/GraphemeBreakProperty.txt".
+get_source_file('allkeys') ->
+    get_dir('ucd') ++ "/allkeys.txt";
+get_source_file('blocks') ->
+    get_dir('ucd') ++ "/Blocks.txt";
+get_source_file('comp_exclusions') ->
+    get_dir('ucd') ++ "/CompositionExclusions.txt";
+get_source_file('norm_props') ->
+    get_dir('ucd') ++ "/DerivedNormalizationProps.txt";
+get_source_file('unidata') ->
+    get_dir('ucd') ++ "/UnicodeData.txt";
+get_source_file('grapheme_break_property') ->
+    get_dir('ucd') ++ "/auxiliary/GraphemeBreakProperty.txt";
+get_source_file('word_break_property') ->
+    get_dir('ucd') ++ "/auxiliary/WordBreakProperty.txt".
+
+
+
+
+get_test_file('normalization_test') ->
+    get_dir('ucd') ++ "NormalizationTest.txt";
+
+get_test_file('collation_test_shifted') ->
+    get_dir('uca') ++ "CollationTest/" 
+                    % Slow, with comments.
+%                   "CollationTest_SHIFTED.txt", 
+                    "CollationTest_SHIFTED_SHORT.txt";
+
+get_test_file('collation_test_non_ignorable') ->
+    get_dir('uca') ++ "CollationTest/" 
+%                   "CollationTest_NON_IGNORABLE.txt", 
+                    % Fast version (data from slow version are equal).
+                    "CollationTest_NON_IGNORABLE_SHORT.txt";
+
+get_test_file('grapheme_break_test') ->
+    get_dir('ucd') ++ "/auxiliary/GraphemeBreakTest.txt";
+get_test_file('word_break_test') ->
+    get_dir('ucd') ++ "/auxiliary/WordBreakTest.txt".
+
+
+
 
 
 -spec char_to_lower(char()) -> char(); 
@@ -202,6 +242,10 @@ char_block(C) ->
 -spec break_props(atom()) -> fun().
 break_props('grapheme') ->
     Name = 'grapheme_break_property',
+    func(Name, Name, 'skip_check');
+
+break_props('word') ->
+    Name = 'word_break_property',
     func(Name, Name, 'skip_check').
     
 
@@ -210,12 +254,4 @@ func(Parser, Type, Value) ->
     F = ux_unidata_filelist:get_source(Parser, Type),
     F(Value).
 
-
-priv_dir() ->
-    case code:priv_dir(ux) of
-        [_|_] = Res -> Res;
-        _ -> "../priv"
-    end.
-get_unidata_dir() -> priv_dir() ++ "/" ++ ?UNIDATA_VERSION ++ "/".
-get_ucadata_dir() -> priv_dir() ++ "/" ++ ?UCADATA_VERSION ++ "/".
 

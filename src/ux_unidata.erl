@@ -51,7 +51,7 @@
         char_comment/1, char_type/1, ccc/1, 
         nfc_qc/1, nfd_qc/1, nfkc_qc/1, nfkd_qc/1, 
         is_comp_excl/1, is_compat/1, decomp/1, comp/2, comp/1,
-        ducet/1, char_block/1,
+        ducet/1, char_block/1, char_script/1,
 
         break_props/1]).
 -include("ux_unidata.hrl").
@@ -75,6 +75,8 @@ get_source_file('allkeys') ->
     get_dir('uca') ++ "/allkeys.txt.gz";
 get_source_file('blocks') ->
     get_dir('ucd') ++ "/Blocks.txt";
+get_source_file('scripts') ->
+    get_dir('ucd') ++ "/Scripts.txt";
 get_source_file('comp_exclusions') ->
     get_dir('ucd') ++ "/CompositionExclusions.txt";
 get_source_file('norm_props') ->
@@ -240,6 +242,13 @@ decomp(C) ->
 
 char_block(C) -> 
     func(blocks, block, C).
+
+
+-spec char_script(C::char()) -> atom();
+        (skip_check) -> fun().
+
+char_script(C) -> 
+    func(scripts, script, C).
 
 
 -spec break_props(atom()) -> fun().

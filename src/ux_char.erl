@@ -27,7 +27,7 @@
 -module(ux_char).
 -author('Uvarov Michael <freeakk@gmail.com>').
 
--export([comment/1, type/1, block/1,
+-export([comment/1, type/1, block/1, script/1,
         to_lower/1, to_upper/1, to_ncr/1,
         is_lower/1, is_upper/1, 
         is_letter/1, is_number/1, is_decimal/1, is_mark/1, 
@@ -172,3 +172,6 @@ is_unified_ideograph(_) -> false.
         (skip_check) -> fun().
 block(V) -> ?UNIDATA:char_block(V).
 
+-spec script(char) -> atom();
+        (skip_check) -> fun().
+script(V) -> ?UNIDATA:char_script(V).

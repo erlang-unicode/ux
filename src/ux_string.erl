@@ -40,8 +40,8 @@
         explode_types/2, split_types/2,
         first_types/3, last_types/3,
 
+        script/1, scripts/1,
 
-% for utf-8
         freq/1, 
         is_nfc/1, is_nfd/1, is_nfkc/1, is_nfkd/1,
         to_nfc/1, to_nfd/1, to_nfkc/1, to_nfkd/1,
@@ -1072,13 +1072,50 @@ extract_words(S) ->
 
 
 
+%%
+%% Script
+%%
+
+script(S) ->
+    F = ux_char:script('skip_check'),
+    do_script(F, S, dict:new()).
+    
+%% @private
+do_script(F, [Char|Str], Dict) -> 
+    Script  = F(Char),
+    NewDict = dict:update_counter(Script, 1, Dict),
+    do_script(F, Str, NewDict);
+do_script(_F, [], Dict) -> 
+    L = dict:to_list(Dict),
+    max(L).
+
+max(L) -> do_max(L, 0, false).
+
+do_max([{S,N}|T], Max, _OldS)
+    when N>Max
+       , S=/='Common' ->
+    do_max(T, N, S);
+do_max([_|T], Max, S) ->
+    do_max(T, Max, S);
+do_max([], _Max, S) ->
+    S.
+    
 
 
 
 
 
-
-
+scripts(S) ->
+    F = ux_char:script('skip_check'),
+    do_scripts(F, S, sets:new()).
+    
+%% @private
+do_scripts(F, [H|T], Acc) -> 
+    Script  = F(H),
+    NewAcc = sets:add_element(Script, Acc),
+    do_scripts(F, T, NewAcc);
+do_scripts(_F, [], Dict) -> 
+    sets:to_list(Dict).
 
 
 

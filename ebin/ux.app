@@ -12,7 +12,7 @@
                         ux_unidata_parser_comp_exclusions,
                         ux_unidata_parser_grapheme_break_property,
                         ux_unidata_parser_norm_props,
-                        ux_unidata_parser_unidata,
+                        ux_unidata_parser_scripts,ux_unidata_parser_unidata,
                         ux_unidata_parser_word_break_property,
                         ux_unidata_server,ux_unidata_store,
                         ux_unidata_store_sup,ux_wb]},

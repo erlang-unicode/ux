@@ -12,6 +12,8 @@
 %% Helpers
 -export([split/2, hex_to_int/1, from_hex/1, 
         delete_spaces/1, delete_spaces/2, delete_comments/1]).
+%% For ux_unidata
+-export([open_file/1]).
 
 %% Intermodule export
 -export([expand_table/1]).
@@ -63,7 +65,12 @@ get_functions(FileType, EtsTables) ->
 %% Return a file descriptor or throw error.
 open_file(FileName) ->
     try
-        {ok, Fd} = file:open(FileName, [read]),
+        {ok, Fd} = case lists:reverse(FileName) of
+            "zg." ++ _List -> % is .gz?
+                file:open(FileName, [read, compressed]);
+            _ ->
+                file:open(FileName, [read]) 
+            end,
         Fd
     catch
         Class:Reason ->

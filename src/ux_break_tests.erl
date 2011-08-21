@@ -33,8 +33,7 @@ do_parse([], R, RD) ->
     {lists:reverse(R), lists:reverse(RD)}.
     
 
-run_test(FileName, Fun, Fun2) ->
-    {ok, Fd} = file:open(FileName, [read]),
+run_test(Fd, Fun, Fun2) ->
     io:setopts(Fd, [{encoding,utf8}]),
     do_test(Fd, Fun, Fun2),
     file:close(Fd).
@@ -59,7 +58,7 @@ grapheme_break_test_() ->
     Fun2 = fun(S) -> 
         [X || X <- S, X=/='-']
         end,
-    File = ux_unidata:get_test_file('grapheme_break_test'),
+    File = ux_unidata:open_test_file('grapheme_break_test'),
     {timeout, 600, 
         fun() -> 
         run_test(File, Fun, Fun2)
@@ -78,7 +77,7 @@ word_break_test_() ->
     Fun2 = fun(S) -> 
         [X || X <- S, X=/='x']
         end,
-    File = ux_unidata:get_test_file('word_break_test'),
+    File = ux_unidata:open_test_file('word_break_test'),
     {timeout, 600, 
         fun() -> 
         run_test(File, Fun, Fun2)

@@ -1465,10 +1465,10 @@ last_test_() ->
 %%      c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4) == NFKD(c5)
 %% @end
 %% @private
-nfc_test(_InFd, 0, StrNum) -> 
+nfc_test(_Fd, 0, StrNum) -> 
     io:format(user, "Only ~w strings were tested. Exit.~n", [StrNum]),
     ok;
-nfc_test(InFd, Max, StrNum) ->
+nfc_test(Fd, Max, StrNum) ->
     % Show message
     case StrNum rem 1000 of
     0 -> io:format(user, "~n~w strings were tested. ", [StrNum]);
@@ -1480,7 +1480,7 @@ nfc_test(InFd, Max, StrNum) ->
     NFKC = fun 'ux_string':to_nfkc/1,
     NFKD = fun 'ux_string':to_nfkd/1,
 
-    case file:read_line(InFd) of
+    case file:read_line(Fd) of
     eof -> ok;
     {ok, Data} -> 
         try
@@ -1523,16 +1523,15 @@ nfc_test(InFd, Max, StrNum) ->
         _ -> next
         catch error:_ -> next
         after 
-            nfc_test(InFd, Max - 1, StrNum + 1)
+            nfc_test(Fd, Max - 1, StrNum + 1)
         end
     end.
 
 nfc_prof(Count) ->
-    Filename = ?UNIDATA:get_test_file('normalization_test'),
-    {ok, InFd} = file:open(Filename, [read]),
-    io:setopts(InFd,[{encoding,utf8}]),
-    nfc_test(InFd, Count, 0),
-    file:close(InFd),
+    Fd = ?UNIDATA:open_test_file('normalization_test'),
+    io:setopts(Fd,[{encoding,utf8}]),
+    nfc_test(Fd, Count, 0),
+    file:close(Fd),
     ok.
 
 nfc_test_() ->

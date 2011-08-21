@@ -128,7 +128,7 @@ non_ignorable_test_() ->
     {timeout, 600, 
         fun() -> 
             prof(
-               ux_unidata:get_test_file('collation_test_non_ignorable'), 
+               ux_unidata:open_test_file('collation_test_non_ignorable'), 
                 ux_uca_options:get_options(non_ignorable), 
                 1000000) 
         end}.
@@ -137,7 +137,7 @@ shifted_test_() ->
     {timeout, 600, 
         fun() -> 
             prof(
-               ux_unidata:get_test_file('collation_test_shifted'), 
+               ux_unidata:open_test_file('collation_test_shifted'), 
                 ux_uca_options:get_options(shifted), 
                 1000000) end}.
 
@@ -161,14 +161,14 @@ natural_sort_long_test_() ->
 %% Parse data files from 
 %% http://www.unicode.org/Public/UCA/latest/
 %% README: http://www.unicode.org/Public/UCA/latest/CollationTest.html
-collation_test(_InFd, _F, _OldVal, StrNum, 0 = _Max, Res) ->
+collation_test(_Fd, _F, _OldVal, StrNum, 0 = _Max, Res) ->
     io:format(user, "Only ~w strings were tested. Exit.~n", [StrNum]),
     Res; % max
 % Read first string with data from file.
-collation_test(InFd, P, false, StrNum, Max, Res) ->
-    OldVal = test_read(InFd, StrNum),
-    collation_test(InFd, P, OldVal, StrNum, Max, Res);
-collation_test(InFd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
+collation_test(Fd, P, false, StrNum, Max, Res) ->
+    OldVal = test_read(Fd, StrNum),
+    collation_test(Fd, P, OldVal, StrNum, Max, Res);
+collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
     % Add new string.
     case StrNum of
     100 -> io:format(user, "~n", []);
@@ -180,7 +180,7 @@ collation_test(InFd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res)
     _ -> boo
     end,
 
-    case test_read(InFd, StrNum) of
+    case test_read(Fd, StrNum) of
     {FullStr, Val, NewStrNum} = Result when is_list(Val) -> 
         % 1. check compare/3.
         Res2 = case ux_uca:compare(Params, Val, OldVal) of % collation compare
@@ -218,17 +218,17 @@ collation_test(InFd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res)
                 true -> Res2
             end,
             
-        collation_test(InFd, Params, Result, NewStrNum, Max - 1, Res3);
+        collation_test(Fd, Params, Result, NewStrNum, Max - 1, Res3);
     _ -> ok
     end.
 
-%% @doc Read line from a testdata file InFd (see CollationTest.html).
+%% @doc Read line from a testdata file Fd (see CollationTest.html).
 %% Return list of codepaints.
 %% Used by test/4.
 %% @end
 %% @private
-test_read(InFd, StrNum) ->
-    case io:get_line(InFd, "") of
+test_read(Fd, StrNum) ->
+    case io:get_line(Fd, "") of
     eof -> ok;
     {error,Mess} -> throw({error, "Error while reading file", Mess});
     Data -> 
@@ -243,15 +243,14 @@ test_read(InFd, StrNum) ->
         catch                   
         error:_Reason -> 
 %            io:format(user, "~w: Data=~w ~n", [Reason, Data]),
-            test_read(InFd, StrNum + 1)
+            test_read(Fd, StrNum + 1)
         end
     end.
 
-prof(File, Params, Count) ->
-    {ok, InFd} = file:open(File, [read]),
-%    io:setopts(InFd,[{encoding,utf8}]),
-    Res = collation_test(InFd, Params, false, 0, Count, ok),
-    file:close(InFd),
+prof(Fd, Params, Count) ->
+%    io:setopts(Fd,[{encoding,utf8}]),
+    Res = collation_test(Fd, Params, false, 0, Count, ok),
+    file:close(Fd),
     ?assertEqual(Res, ok).
 
 

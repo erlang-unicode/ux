@@ -46,7 +46,7 @@
 
 -module(ux_unidata).
 -author('Uvarov Michael <freeakk@gmail.com>').
--export([get_source_file/1, get_test_file/1]).
+-export([get_source_file/1, get_test_file/1, open_test_file/1]).
 -export([char_to_upper/1, char_to_lower/1, is_upper/1, is_lower/1,
         char_comment/1, char_type/1, ccc/1, 
         nfc_qc/1, nfd_qc/1, nfkc_qc/1, nfkd_qc/1, 
@@ -72,15 +72,15 @@ get_dir('uca') -> priv_dir() ++ "/"  ?UCADATA_VERSION  "/".
 
 -spec get_source_file(Parser::atom()) -> string().
 get_source_file('allkeys') ->
-    get_dir('ucd') ++ "/allkeys.txt";
+    get_dir('uca') ++ "/allkeys.txt.gz";
 get_source_file('blocks') ->
     get_dir('ucd') ++ "/Blocks.txt";
 get_source_file('comp_exclusions') ->
     get_dir('ucd') ++ "/CompositionExclusions.txt";
 get_source_file('norm_props') ->
-    get_dir('ucd') ++ "/DerivedNormalizationProps.txt";
+    get_dir('ucd') ++ "/DerivedNormalizationProps.txt.gz";
 get_source_file('unidata') ->
-    get_dir('ucd') ++ "/UnicodeData.txt";
+    get_dir('ucd') ++ "/UnicodeData.txt.gz";
 get_source_file('grapheme_break_property') ->
     get_dir('ucd') ++ "/auxiliary/GraphemeBreakProperty.txt";
 get_source_file('word_break_property') ->
@@ -90,19 +90,19 @@ get_source_file('word_break_property') ->
 
 
 get_test_file('normalization_test') ->
-    get_dir('ucd') ++ "NormalizationTest.txt";
+    get_dir('ucd') ++ "NormalizationTest.txt.gz";
 
 get_test_file('collation_test_shifted') ->
     get_dir('uca') ++ "CollationTest/" 
                     % Slow, with comments.
 %                   "CollationTest_SHIFTED.txt", 
-                    "CollationTest_SHIFTED_SHORT.txt";
+                    "CollationTest_SHIFTED_SHORT.txt.gz";
 
 get_test_file('collation_test_non_ignorable') ->
     get_dir('uca') ++ "CollationTest/" 
 %                   "CollationTest_NON_IGNORABLE.txt", 
                     % Fast version (data from slow version are equal).
-                    "CollationTest_NON_IGNORABLE_SHORT.txt";
+                    "CollationTest_NON_IGNORABLE_SHORT.txt.gz";
 
 get_test_file('grapheme_break_test') ->
     get_dir('ucd') ++ "/auxiliary/GraphemeBreakTest.txt";
@@ -110,6 +110,9 @@ get_test_file('word_break_test') ->
     get_dir('ucd') ++ "/auxiliary/WordBreakTest.txt".
 
 
+open_test_file(Id) ->
+    Filename = get_test_file(Id),
+    ux_unidata_parser:open_file(Filename).
 
 
 

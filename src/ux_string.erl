@@ -53,7 +53,6 @@
 
         extract_words/1,
 
-        info/1,
         types/1]).
 
 -include("ux.hrl").
@@ -1127,115 +1126,6 @@ do_scripts(_F, [], Dict) ->
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%%
-%% ==String information==
-%%
-
-%% Collect information about string.
--spec info(Str::string()) -> #unistr_info {}.
-
-%% @doc Return information about a string.
-info(Rec = #unistr_info {}) ->
-    info1([
-        fun info_comment/1,
-        fun info_nfd/1,
-        fun info_nfc/1,
-        fun info_ducet_simple/1,
-        fun info_ccc/1,
-        fun info_col_sort_array_non_ignorable/1,
-        fun info_col_sort_array_blanked/1,
-        fun info_col_sort_array_shifted/1,
-        fun info_col_sort_array_shift_trimmed/1,
-        fun info_char_block/1
-        ], Rec);
-info([_|_] = Str) -> 
-    info(#unistr_info{str=Str});
-info(Ch) when is_integer(Ch) -> 
-    info(#unistr_info{str=[Ch]}).
-
-%% @private
-info1([F|Tail], Rec) ->
-    NewRec = F(Rec),
-    info1(Tail, NewRec);
-info1([], Rec) ->
-    Rec.
-
-%% @private
-info_comment(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{
-        comment=lists:map(fun ux_char:comment/1, Str)
-    }.
-
-%% @private
-info_ducet_simple(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{ 
-        ducet=lists:map(fun ux_col:ducet/1, [[Ch] || Ch <- Str])
-    }.
-
-%% @private
-info_ccc(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{
-        ccc=lists:map(fun ccc/1, [Ch || Ch <- Str])
-    }.
-
-%% @private
-info_nfd(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{nfd=to_nfd(Str)}.
-
-%% @private
-info_nfc(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{nfc=to_nfc(Str)}.
-
-%% @private
-info_col_sort_array_non_ignorable(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{ 
-        col_sort_array_non_ignorable=ux_col:sort_array_non_ignorable(Str)
-    }.
-
-%% @private
-info_col_sort_array_blanked(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{ 
-        col_sort_array_blanked=ux_col:sort_array_blanked(Str)
-    }.
-
-%% @private
-info_col_sort_array_shifted(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{ 
-        col_sort_array_shifted=ux_col:sort_array_shifted(Str)
-    }.
-
-%% @private
-info_col_sort_array_shift_trimmed(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{ 
-        col_sort_array_shift_trimmed=ux_col:sort_array_shift_trimmed(Str)
-    }.
-
-%% @private
-info_char_block(Obj = #unistr_info{str=Str}) ->
-    Obj#unistr_info{ 
-        blocks=lists:map(fun ux_char:block/1, [Ch || Ch <- Str])
-    }.
-
-% String Info End.
 
 
 

@@ -54,17 +54,3 @@
  (Ch>=?HANGUL_TBASE) and (Ch=<?HANGUL_TLAST)
 )).
 
-% Records
--record(unistr_info, {
-        str,            % Input string
-        comment,        % Array of char's comments
-        nfd,            % Normal Form D
-        nfc,            % Normal Form C
-        ducet,          % Weight's from ducet for each symbol
-        ccc,            % Canonical Combining Classes 
-        col_sort_array_non_ignorable, % Collation sort array
-        col_sort_array_blanked, % Collation sort array
-        col_sort_array_shifted, % Collation sort array
-        col_sort_array_shift_trimmed, % Collation sort array
-        blocks          % Blocks from Unicode Character Database
-        }).

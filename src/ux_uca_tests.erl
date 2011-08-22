@@ -7,13 +7,13 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-include("ux_tests.hrl").
     
 
 simple_sort_test_() ->
     F = fun ux_uca:sort/1,
-    {timeout, 30,
-        [{"Simple input data.",
-            ?_assertEqual(F(["A", "C", "B"]), ["A", "B", "C"])}]}.
+    {"Simple input data.",
+        ?_assertEqualTO(F(["A", "C", "B"]), ["A", "B", "C"])}.
 
 natural_sort_test_() ->
     Unsorted = ["1000X Radonius Maximus",
@@ -110,13 +110,12 @@ natural_sort_test_() ->
     F = fun ux_uca:sort/2,
 
 
-    {timeout, 60, [
-        {"Using official test strings from Dave Koelle", 
-            ?_assertEqual(F(C1, Unsorted), Sorted)},
+    [{"Using official test strings from Dave Koelle", 
+        ?_assertEqualTO(F(C1, Unsorted), Sorted)},
 
-        {"Case and natural sort hacks together.", 
-            ?_test(F(C2, Unsorted))}
-        ]}.
+     {"Case and natural sort hacks together.", 
+        ?_testTO(F(C2, Unsorted))}
+    ].
 
 
 
@@ -127,8 +126,7 @@ natural_sort_test_() ->
 non_ignorable_test_() ->
     {timeout, 600, 
         fun() -> 
-            prof(
-               ux_unidata:open_test_file('collation_test_non_ignorable'), 
+            prof(ux_unidata:open_test_file('collation_test_non_ignorable'), 
                 ux_uca_options:get_options(non_ignorable), 
                 1000000) 
         end}.
@@ -136,8 +134,7 @@ non_ignorable_test_() ->
 shifted_test_() ->
     {timeout, 600, 
         fun() -> 
-            prof(
-               ux_unidata:open_test_file('collation_test_shifted'), 
+            prof(ux_unidata:open_test_file('collation_test_shifted'), 
                 ux_uca_options:get_options(shifted), 
                 1000000) end}.
 

@@ -7,6 +7,8 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-include("ux_tests.hrl").
+
 
 
 explode_test_() ->
@@ -25,15 +27,29 @@ explode_test_() ->
     ,?_assertEqual(M:F($c, "dfsawcddcs"), ["dfsaw", "dd", "s"])
     ,?_assertEqual(M:F($c, "dfsawcddcs",2 ), ["dfsaw", "ddcs"])
 
-    % empty delimeter
-    ,?_assertEqual(M:F("", "test"), false)
-    % limit >0
-    ,?_assertEqual(M:F("|", "one|two|three|four", 2), ["one", "two|three|four"])
+    ,{"Limit>0"
+     ,?_assertEqual(M:F("|", "one|two|three|four", 2), ["one", "two|three|four"])}
 
-    % limit <0
-    ,?_assertEqual(M:F("|", "one|two|three|four", -1), ["one", "two", "three"])
-    ,?_assertEqual(M:F("-", "one|two|three|four", -1), [])
-    ,?_assertEqual(M:F("-", "one|two|three|four"), ["one|two|three|four"])
+    ,{"Limit<0"
+     ,[?_assertEqual(M:F("|", "one|two|three|four", -1), ["one", "two", "three"])
+      ,?_assertEqual(M:F("-", "one|two|three|four", -1), [])
+      ,?_assertEqual(M:F("-", "one|two|three|four"), ["one|two|three|four"])
+      ]}
+
+    ,?_assertEqual(M:F("-", ""), [])
+    % Empty delimeter. 
+    % PHP behaviour: return false.
+    % Erlang behaviour: throw error.
+    ,{"Check an error in matching.",
+        [?_assertException(error, function_clause, M:F("", "test"))
+        ,?_assertException(error, function_clause, M:F("", ""))
+        ,?_assertException(error, function_clause, M:F("", "", 0))
+        ,?_assertException(error, function_clause, M:F("", "", 1))
+        ,?_assertException(error, function_clause, M:F("", "", -1))
+        ,?_assertException(error, function_clause, M:F("", "test", 0))
+        ,?_assertException(error, function_clause, M:F("", "test", 1))
+        ,?_assertException(error, function_clause, M:F("", "test", -1))
+        ]}
     ].
 
 html_special_chars_test_() ->
@@ -41,6 +57,8 @@ html_special_chars_test_() ->
     F = 'html_special_chars',
     [?_assertEqual(M:F("ddf2#$\""), "ddf2#$&quot;")
     ,?_assertEqual(M:F("test1 & test2"), "test1 &amp; test2")
+
+    ,?_assertEqual(M:F(""), "")
     ].
 
 strip_tags_test_() ->
@@ -76,6 +94,12 @@ strip_tags_test_() ->
          ,?_assertEqual(M:F("<span>a b c</span>", "<b><span>"), "<span>a b c</span>")
          ,?_assertEqual(M:F("<a><b>test<a", "a"), "<a>test")
          ,?_assertEqual(M:F("<a ><b>test<a", "<a>"), "<a >test")]}
+
+    ,{"Empty string."
+        ,[?_assertEqual(M:F("", ""), "")
+         ,?_assertEqual(M:F("", "<b><span>"), "")
+         ,?_assertEqual(M:F("", "a"), "")
+         ,?_assertEqual(M:F("<", "<a>"), "")]}
     ].
 
 
@@ -108,83 +132,91 @@ strip_tags_test_() ->
 %%
 %% With Unidata
 %%
--define(TO(X), {timeout, 30, X}).
 
 to_lower_test_() ->
     M = 'ux_string',
     F = 'to_lower',
-    ?TO(
-        [?_assertEqual(M:F("small BIG"), "small big")
-        ,?_assertEqual(M:F(    "You want your freedom?"), 
-                    "you want your freedom?")
-        % Russian text
-        ,?_assertEqual(M:F(    [1069,1056,1051,1040,1053,1043]), 
-                    [1101,1088,1083,1072,1085,1075])
-        ]).
+    [?_assertEqualTO(M:F("small BIG"), "small big")
+    ,?_assertEqualTO(M:F("You want your freedom?"), 
+                         "you want your freedom?")
+    % Russian text
+    ,?_assertEqualTO(M:F([1069,1056,1051,1040,1053,1043]), 
+                         [1101,1088,1083,1072,1085,1075])
+
+    ,?_assertEqualTO(M:F(""), "")
+    ].
 
 to_upper_test_() ->
     M = 'ux_string',
     F = 'to_upper',
-    ?TO(
-        [?_assertEqual(M:F("small BIG"), "SMALL BIG")
-        ,?_assertEqual(M:F(    "I'm making a note here: HUGE SUCCESS."), 
-                    "I'M MAKING A NOTE HERE: HUGE SUCCESS.")
-        ,?_assertEqual(M:F(    [1101,1088,1083,1072,1085,1075]),
-                    [1069,1056,1051,1040,1053,1043])
-        ]).
+    [?_assertEqualTO(M:F("small BIG"), "SMALL BIG")
+    ,?_assertEqualTO(M:F("I'm making a note here: HUGE SUCCESS."), 
+                         "I'M MAKING A NOTE HERE: HUGE SUCCESS.")
+    ,?_assertEqualTO(M:F([1101,1088,1083,1072,1085,1075]),
+                         [1069,1056,1051,1040,1053,1043])
+
+    ,?_assertEqualTO(M:F(""), "")
+    ].
 
 delete_types_test_() ->
     M = 'ux_string',
     F = 'delete_types',
-    ?TO(
-        [?_assertEqual(M:F(['Ll', 'Lu'], "Tom Cat!"), " !")
-        ,?_assertEqual(M:F(['Ll'],     "Tom Cat!"), "T C!")
-        ,?_assertEqual(M:F(['Po'],     "Tom Cat!"), "Tom Cat")
-        ,{"Skip 2 chars (A,B).",
-            ?_assertEqual(M:F(['Ll'], "AaBbCc44ff", -2), "ABbCc44ff")}
-        ,{"Delete only 2 chars (A,B).",
-            ?_assertEqual(M:F(['Ll'], "AaBbCc44ff",  2), "ABCc44ff")}
-        ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffdsBAF",  4), "ABC44fdsBAF")
-        ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffdsBAF", -4), "ABC44ffdsBAF")
-        ]).
+    [?_assertEqualTO(M:F(['Ll', 'Lu'], "Tom Cat!"), " !")
+    ,?_assertEqualTO(M:F(['Ll'], "Tom Cat!"), "T C!")
+    ,?_assertEqualTO(M:F(['Po'], "Tom Cat!"), "Tom Cat")
+    ,{"Skip 2 chars (A,B).",
+        ?_assertEqualTO(M:F(['Ll'], "AaBbCc44ff", -2), "ABbCc44ff")}
+    ,{"Delete only 2 chars (A,B).",
+        ?_assertEqualTO(M:F(['Ll'], "AaBbCc44ff",  2), "ABCc44ff")}
+    ,?_assertEqualTO(M:F(['Ll'], "AaBbCc44ffdsBAF",  4), "ABC44fdsBAF")
+    ,?_assertEqualTO(M:F(['Ll'], "AaBbCc44ffdsBAF", -4), "ABC44ffdsBAF")
+
+    ,?_assertEqualTO(M:F(['Ll'], "cat"), "")
+    ,?_assertEqualTO(M:F(['Ll'], ""), "")
+    ,?_assertEqualTO(M:F([], ""), "")
+    ].
 
 filter_types_test_() ->
     M = 'ux_string',
     F = 'filter_types',
-    ?TO(
-        [?_assertEqual(M:F(['Ll', 'Lu'], "Tom Cat!"), "TomCat")
-        ,?_assertEqual(M:F(['Ll'],     "Tom Cat!"), "omat")
-        ,?_assertEqual(M:F(['Po'],     "Tom Cat!"), "!")
-        ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffds",  3), "abc44ffds")
-        ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffds",  4), "abcffds")
-        ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffds", -2), "abCc44ffds")
-        ,?_assertEqual(M:F(['Ll'], "AaBbCc44ffds", -4), "abc4ffds")
-        ]).
+    [?_assertEqualTO(M:F(['Ll', 'Lu'], "Tom Cat!"), "TomCat")
+    ,?_assertEqualTO(M:F(['Ll'], "Tom Cat!"), "omat")
+    ,?_assertEqualTO(M:F(['Po'], "Tom Cat!"), "!")
+    ,?_assertEqualTO(M:F(['Ll'], "AaBbCc44ffds",  3), "abc44ffds")
+    ,?_assertEqualTO(M:F(['Ll'], "AaBbCc44ffds",  4), "abcffds")
+    ,?_assertEqualTO(M:F(['Ll'], "AaBbCc44ffds", -2), "abCc44ffds")
+    ,?_assertEqualTO(M:F(['Ll'], "AaBbCc44ffds", -4), "abc4ffds")
+
+    ,?_assertEqualTO(M:F(['Lu'], "cat"), "")
+    ,?_assertEqualTO(M:F(['Lu'], ""), "")
+    ,?_assertEqualTO(M:F([], ""), "")
+    ].
 
 types_test_() ->
     M = 'ux_string',
     F = 'types',
-    ?TO([?_assertEqual(M:F("Tom Cat!"), ['Lu','Ll','Ll','Zs','Lu','Ll','Ll','Po'])
-        %,?_assertEqual(M:F(), )
-        ]).
+    [?_assertEqualTO(M:F("Tom Cat!"), ['Lu','Ll','Ll','Zs','Lu','Ll','Ll','Po'])
+    ,?_assertEqualTO(M:F(""), [])
+    %,?_assertEqual(M:F(), )
+    ].
 
 last_types_test_() ->
     M = 'ux_string',
     F = 'last_types',
-    ?TO(
-        [?_assertEqual(M:F(['Ll'], "AavbfFDsdfffd9s9999", -5), "99999")
-        ,?_assertEqual(M:F(['Ll'], "AavbfFDsdfffd9s9999", -6), "D99999")
-        ,?_assertEqual(M:F(['Ll'], "AavbfFDsdfffd9s9999", -7), "FD99999")
-        ,?_assertEqual(M:F(['Ll'], "AavbfFDsdfffd9s9999", -8), "AFD99999")
-        ]).
+    [?_assertEqualTO(M:F(['Ll'], "AavbfFDsdfffd9s9999", -5), "99999")
+    ,?_assertEqualTO(M:F(['Ll'], "AavbfFDsdfffd9s9999", -6), "D99999")
+    ,?_assertEqualTO(M:F(['Ll'], "AavbfFDsdfffd9s9999", -7), "FD99999")
+    ,?_assertEqualTO(M:F(['Ll'], "AavbfFDsdfffd9s9999", -8), "AFD99999")
+    ,?_assertEqualTO(M:F([], "", -5), [])
+    ].
 
 first_types_test_() ->
     M = 'ux_string',
     F = 'first_types',
-    ?TO(
-        [?_assertEqual(M:F(['Ll'], "AavbfFDsdfffds", 4), "avbf")
-        ,?_assertEqual(M:F(['Ll'], "AavbfFDsdfffds", 5), "avbfs")
-        ]).
+    [?_assertEqualTO(M:F(['Ll'], "AavbfFDsdfffds", 4), "avbf")
+    ,?_assertEqualTO(M:F(['Ll'], "AavbfFDsdfffds", 5), "avbfs")
+    ,?_assertEqualTO(M:F([], "", 5), [])
+    ].
 
 
 
@@ -192,39 +224,109 @@ first_types_test_() ->
 to_graphemes_test_() ->
     M = 'ux_string',
     F = 'to_graphemes',
-    ?TO(
-        [{"Simple example", 
-            ?_assertEqual(M:F("Octocat!"), ["O","c","t","o","c","a","t","!"])},
-         {"U+1EE5 LATIN SMALL LETTER U WITH DOT BELOW, U+031B COMBINING HORN, a, b",
-            ?_assertEqual(M:F([16#1EE5, 16#031B, $a, $b]), [[7909,795],"a","b"])}
-        ]).
+    [{"Simple example", 
+        ?_assertEqualTO(M:F("Octocat!"), ["O","c","t","o","c","a","t","!"])},
+     {"U+1EE5 LATIN SMALL LETTER U WITH DOT BELOW, U+031B COMBINING HORN, a, b",
+        ?_assertEqualTO(M:F([16#1EE5, 16#031B, $a, $b]), [[7909,795],"a","b"])},
+     ?_assertEqualTO(M:F(""), [])
+    ].
 
 first_test_() ->
     M = 'ux_string',
     F = 'first',
-    ?TO(
-        [?_assertEqual(M:F("Octocat!", 4), "Octo")
-        ]).
+    [?_assertEqualTO(M:F("Octocat!", 4), "Octo")
+    ,?_assertEqualTO(M:F("", 4), "")
+    ,?_assertEqualTO(M:F("cat", 4), "cat")
+    ].
 
 last_test_() ->
     M = 'ux_string',
     F = 'last',
-    ?TO(
-        [?_assertEqual(M:F("Octocat!", 4), "cat!")
-        ]).
+    [?_assertEqualTO(M:F("Octocat!", 4), "cat!")
+    ,?_assertEqualTO(M:F("", 4), "")
+    ,?_assertEqualTO(M:F("cat", 4), "cat")
+    ].
+
+length_test_() ->
+    M = 'ux_string',
+    F = 'length',
+    [?_assertEqualTO(M:F("Octo"), 4)
+    ,?_assertEqualTO(M:F(""), 0)
+    ].
+
+
+script_test_() ->
+    M = 'ux_string',
+    F = 'script',
+    [?_assertEqualTO(M:F("Octocat!"), 'Latin')
+    ,?_assertEqualTO(M:F([1086,1082,1090,1086,1082,1101,1090]), 'Cyrillic')
+    ,?_assertEqualTO(M:F(""), false)
+    ].
+
+
+
+scripts_test_() ->
+    M = 'ux_string',
+    F = 'scripts',
+    S = fun lists:sort/1,
+    [?_assertEqualTO(S(M:F("Octocat!")), S(['Latin','Common']))
+    ,?_assertEqualTO(M:F([1086,1082,1090,1086,1082,1101,1090]), ['Cyrillic'])
+    ,?_assertEqualTO(M:F(""), [])
+    ].
+
+
+
+to_nfc_test_() ->
+    M = 'ux_string',
+    F = 'to_nfc',
+    [?_assertEqualTO(M:F(""), "")
+    ].
+
+to_nfd_test_() ->
+    M = 'ux_string',
+    F = 'to_nfd',
+    [?_assertEqualTO(M:F(""), "")
+    ].
+
+to_nfkc_test_() ->
+    M = 'ux_string',
+    F = 'to_nfkc',
+    [?_assertEqualTO(M:F(""), "")
+    ].
+
+to_nfkd_test_() ->
+    M = 'ux_string',
+    F = 'to_nfkd',
+    [?_assertEqualTO(M:F(""), "")
+    ].
 
 
 
 
 
+is_nfc_test_() ->
+    M = 'ux_string',
+    F = 'is_nfc',
+    [?_assertEqualTO(M:F(""), 'yes')
+    ].
 
+is_nfd_test_() ->
+    M = 'ux_string',
+    F = 'is_nfd',
+    [?_assertEqualTO(M:F(""), 'yes')
+    ].
 
+is_nfkc_test_() ->
+    M = 'ux_string',
+    F = 'is_nfkc',
+    [?_assertEqualTO(M:F(""), 'yes')
+    ].
 
-
-
-
-
-
+is_nfkd_test_() ->
+    M = 'ux_string',
+    F = 'is_nfkd',
+    [?_assertEqualTO(M:F(""), 'yes')
+    ].
 
 
 
@@ -282,10 +384,10 @@ nfc_test(Fd, Max, StrNum) ->
     _ -> next
     end,
 
-    NFC  = fun 'ux_string':to_nfc/1,
-    NFD  = fun 'ux_string':to_nfd/1,
-    NFKC = fun 'ux_string':to_nfkc/1,
-    NFKD = fun 'ux_string':to_nfkd/1,
+    NFC  = fun ux_string:to_nfc/1,
+    NFD  = fun ux_string:to_nfd/1,
+    NFKC = fun ux_string:to_nfkc/1,
+    NFKD = fun ux_string:to_nfkd/1,
 
     case file:read_line(Fd) of
     eof -> ok;

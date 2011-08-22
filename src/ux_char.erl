@@ -105,7 +105,7 @@ is_mark(C) ->
 %% @doc Return true, if C is a decimal number.
 -spec is_decimal(C::char()) -> boolean().
 
-is_decimal(C) -> type(C) == nd.
+is_decimal(C) -> type(C) == 'Nd'.
 
 
 %% @doc Returns true, if is C is a number.

@@ -4,6 +4,51 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
+grapheme_break_test_() ->
+    Fun = fun(S) -> 
+        ux_gb:split('extended', S) 
+        end,
+    Fun2 = fun(S) -> 
+        [X || X <- S, X=/='-']
+        end,
+    File = ux_unidata:open_test_file('grapheme_break_test'),
+    {timeout, 600, 
+        fun() -> 
+        run_test(File, Fun, Fun2)
+        end}.
+
+
+
+word_break_test_() ->
+    Fun = fun(S) -> 
+        {_Types, R} = ux_wb:split(S),
+        case R of
+        [] -> [];
+        [_|_] -> ['-'] ++ R ++ ['-']
+        end
+        end,
+    Fun2 = fun(S) -> 
+        [X || X <- S, X=/='x']
+        end,
+    File = ux_unidata:open_test_file('word_break_test'),
+    {timeout, 600, 
+        fun() -> 
+        run_test(File, Fun, Fun2)
+        end}.
+
+
+
+
+
+
+
+
+
+
+%%
+%% Helpers
+%%
+
 parse(S) -> 
     Res = [],
     ResWithDelims = [],
@@ -50,38 +95,6 @@ do_test(Fd, Fun, Fun2) ->
         do_test(Fd, Fun, Fun2)
     end.
     
-
-grapheme_break_test_() ->
-    Fun = fun(S) -> 
-        ux_gb:split('extended', S) 
-        end,
-    Fun2 = fun(S) -> 
-        [X || X <- S, X=/='-']
-        end,
-    File = ux_unidata:open_test_file('grapheme_break_test'),
-    {timeout, 600, 
-        fun() -> 
-        run_test(File, Fun, Fun2)
-        end}.
-
-
-
-word_break_test_() ->
-    Fun = fun(S) -> 
-        {_Types, R} = ux_wb:split(S),
-        case R of
-        [] -> [];
-        [_|_] -> ['-'] ++ R ++ ['-']
-        end
-        end,
-    Fun2 = fun(S) -> 
-        [X || X <- S, X=/='x']
-        end,
-    File = ux_unidata:open_test_file('word_break_test'),
-    {timeout, 600, 
-        fun() -> 
-        run_test(File, Fun, Fun2)
-        end}.
 
 
 -endif.

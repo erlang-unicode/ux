@@ -13,7 +13,7 @@ __Author__: Uvarov Michael ([`freeakk@gmail.com`](mailto:freeakk@gmail.com))
 Module for working with strings.
 A string is a flatten list of Unicode characters.
 
-All actions with Unicode were described in [Unicode Standards](http://www.unicode.org/reports/).
+All actions with Unicode were described in the [Unicode Standards](http://www.unicode.org/reports/).
 
 [![Build Status](http://travis-ci.org/freeakk/ux.png?branch=master)](http://travis-ci.org/freeakk/ux)
 

@@ -332,9 +332,9 @@ do_freq([], Dict)         -> Dict.
 %%
 
 %% @doc Splits the string by delimeters.
--spec explode([string()], string()) -> [string()];
+-spec explode([nonempty_string()], string()) -> [string()];
         (char(), string()) -> [string()];
-        (string(), string()) -> [string()].
+        (nonempty_string(), string()) -> [string()].
 
 explode([Delimeter], [_|_] = Str) when is_integer(Delimeter) -> 
     explode_simple(Delimeter, lists:reverse(Str), [], []);
@@ -345,14 +345,15 @@ explode([_|_] = Delimeter, [_|_] = Str) ->
     false -> [Str];
     Res -> explode_reverse(Res)
     end;
-explode([], _) -> false;
-explode(_, []) -> [].
+explode([_|_], []) -> [];
+explode(Char, []) 
+    when is_integer(Char) -> [].
 
 
 
--spec explode([string()], string(), integer()) -> string();
+-spec explode([nonempty_string()], string(), integer()) -> string();
         (char(), string(), integer()) -> [string()];
-        (string(), string(), integer()) -> [string()].
+        (nonempty_string(), string(), integer()) -> [string()].
 
 explode(Delimeter, [_|_] = Str, Limit) when is_integer(Delimeter) ->
     explode([Delimeter], [_|_] = Str, Limit); 
@@ -364,8 +365,9 @@ explode([_|_] = Delimeter, [_|_] = Str, Limit) when Limit < 0 ->
     Res -> explode_reverse(lists:nthtail(-Limit, Res))
     end;
 explode([_|_] = Delimeter, [_|_] = Str, 0) -> explode(Delimeter, Str);
-explode([], _, _) -> false;
-explode(_, [], _) -> [].
+explode([_|_], [], _) -> [];
+explode(Char, [], _) 
+    when is_integer(Char) -> [].
 
 
 
@@ -417,19 +419,88 @@ explode_cycle_pos(Delimeter, [_|_] = Str, Buf, Result, Limit) ->
 %%      If (Str = Delimeter + Tail), return a Tail, else return 'false'.
 %% @end
 %% @private
-explode_check([], Tail) ->
-    Tail;
-explode_check([Delimeter], Str) when is_list(Delimeter) ->
-    explode_check(Delimeter, Str);    
-explode_check([Delimeter|DelArr], Str) when is_list(Delimeter) ->
-    case explode_check(Delimeter, Str) of
-    false  -> explode_check(DelArr, Str);
+explode_check([[_|_]|_]=Delimeters, Str) ->
+    explode_check1(Delimeters, Str);
+explode_check([_|_]=Delimeter, Str) ->
+    explode_check2(Delimeter, Str).
+    
+%% Delimeter is a list of a string().
+explode_check1([[_|_]=Delimeter|T], [_|_]=Str) ->
+    case explode_check2(Delimeter, Str) of
+    false  -> explode_check1(T, Str);
     Result -> Result 
     end;
-explode_check([DelHead|DelTail], [Head|Tail]) when (DelHead == Head) ->
-    explode_check(DelTail, Tail);
-explode_check(_, _) ->
+explode_check1([], [_|_]) ->
     false.
+
+
+-spec explode_check2(string(), string()) -> 
+        false | string().
+
+%% Delimeter is a string().
+explode_check2([Head|DelTail], [Head|Tail]) 
+    when is_integer(Head) ->
+    explode_check2(DelTail, Tail);
+% Full match.
+explode_check2([], Tail) ->
+    Tail;
+% No match
+% End of string
+explode_check2(_, _) ->
+    false.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 %% @doc Converts characters of a string to a lowercase format.
 -spec to_lower(string()) -> string().
@@ -965,12 +1036,15 @@ to_ncr([         ], Res) -> Res.
 to_graphemes(Str) ->
     explode_reverse(to_graphemes_raw(Str)).
 
-to_graphemes_raw(S) ->
+to_graphemes_raw([_|_]=S) ->
     [H|T] = ux_gb:split('extended', S),
     Buf = [H],
     Res = [],
     
-    to_graphemes_raw(T, Buf, Res).
+    to_graphemes_raw(T, Buf, Res);
+
+to_graphemes_raw([]) ->
+    [].
     
 %% @doc Returns not reversed result.
 %% @private
@@ -983,8 +1057,10 @@ to_graphemes_raw([H|T], Buf, Res) ->
     NewBuf = [H],
     NewRes = [Buf|Res],
     to_graphemes_raw(T, NewBuf, NewRes);
-to_graphemes_raw([], Buf, Res) ->
-    [Buf|Res].
+to_graphemes_raw([], [_|_]=Buf, Res) ->
+    [Buf|Res];
+to_graphemes_raw([], []=_Buf, Res) ->
+    Res.
     
     
     

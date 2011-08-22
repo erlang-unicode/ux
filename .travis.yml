@@ -1,0 +1,14 @@
+language: erlang
+branches:
+  only:
+    - master
+notifications:
+  email: freeakk@gmail.com
+  irc:
+env:
+  - R14B03
+  - R14B02
+  - R14B01
+  - R14A
+  - R13B04
+

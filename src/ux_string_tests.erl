@@ -27,28 +27,28 @@ explode_test_() ->
     ,?_assertEqual(M:F($c, "dfsawcddcs"), ["dfsaw", "dd", "s"])
     ,?_assertEqual(M:F($c, "dfsawcddcs",2 ), ["dfsaw", "ddcs"])
 
-    ,{"Limit>0"
-     ,?_assertEqual(M:F("|", "one|two|three|four", 2), ["one", "two|three|four"])}
+    ,{"Limit>0",
+        ?_assertEqual(M:F("|", "one|two|three|four", 2), ["one", "two|three|four"])}
 
-    ,{"Limit<0"
-     ,[?_assertEqual(M:F("|", "one|two|three|four", -1), ["one", "two", "three"])
-      ,?_assertEqual(M:F("-", "one|two|three|four", -1), [])
-      ,?_assertEqual(M:F("-", "one|two|three|four"), ["one|two|three|four"])
-      ]}
+    ,{"Limit<0",
+        [?_assertEqual(M:F("|", "one|two|three|four", -1), ["one", "two", "three"])
+        ,?_assertEqual(M:F("-", "one|two|three|four", -1), [])
+        ,?_assertEqual(M:F("-", "one|two|three|four"), ["one|two|three|four"])
+        ]}
 
     ,?_assertEqual(M:F("-", ""), [])
     % Empty delimeter. 
     % PHP behaviour: return false.
     % Erlang behaviour: throw error.
     ,{"Check an error in matching.",
-        [?_assertException(error, function_clause, M:F("", "test"))
-        ,?_assertException(error, function_clause, M:F("", ""))
-        ,?_assertException(error, function_clause, M:F("", "", 0))
-        ,?_assertException(error, function_clause, M:F("", "", 1))
-        ,?_assertException(error, function_clause, M:F("", "", -1))
-        ,?_assertException(error, function_clause, M:F("", "test", 0))
-        ,?_assertException(error, function_clause, M:F("", "test", 1))
-        ,?_assertException(error, function_clause, M:F("", "test", -1))
+        [?_assertError(function_clause, M:F("", "test"))
+        ,?_assertError(function_clause, M:F("", ""))
+        ,?_assertError(function_clause, M:F("", "", 0))
+        ,?_assertError(function_clause, M:F("", "", 1))
+        ,?_assertError(function_clause, M:F("", "", -1))
+        ,?_assertError(function_clause, M:F("", "test", 0))
+        ,?_assertError(function_clause, M:F("", "test", 1))
+        ,?_assertError(function_clause, M:F("", "test", -1))
         ]}
     ].
 
@@ -347,7 +347,7 @@ is_nfkd_test_() ->
 -ifdef(SLOW_TESTS).
 
 nfc_test_() ->
-    {timeout, 600, 
+    {timeout, 300, 
         {"Normalization Conformance Test", 
             fun() -> 
                 nfc_prof(1000000),
@@ -402,7 +402,7 @@ nfc_test(Fd, Max, StrNum) ->
             ux_string:explode(";", LineWithoutComment))
         of 
         [C1,C2,C3,C4,C5,_] ->
-            % start body
+            % start of the body
             % {Test info atom, Result from function, From, To}
             %NFD
             ?assertEqual({c3__nfd_c1, C3, C1, C3}, {c3__nfd_c1, NFD(C1), C1, C3}),
@@ -410,25 +410,29 @@ nfc_test(Fd, Max, StrNum) ->
             ?assertEqual({c3__nfd_c3, C3, C3, C3}, {c3__nfd_c3, NFD(C3), C3, C3}),
             ?assertEqual({c3__nfd_c4, C5, C4, C5}, {c3__nfd_c4, NFD(C4), C4, C5}),
             ?assertEqual({c3__nfd_c5, C5, C5, C5}, {c3__nfd_c5, NFD(C5), C5, C5}),
+
             %NFC
             ?assertEqual({c2__nfc_c1, C2, C1, C2}, {c2__nfc_c1, NFC(C1), C1, C2}),
             ?assertEqual({c2__nfc_c2, C2, C2, C2}, {c2__nfc_c2, NFC(C2), C2, C2}),
             ?assertEqual({c2__nfc_c3, C2, C3, C2}, {c2__nfc_c3, NFC(C3), C3, C2}),
             ?assertEqual({c2__nfc_c4, C4, C4, C4}, {c2__nfc_c4, NFC(C4), C4, C4}),
             ?assertEqual({c2__nfc_c5, C4, C5, C4}, {c2__nfc_c5, NFC(C5), C5, C4}),
+
             %NFKC
             ?assertEqual({c4__nfkc_c1, C4, C1}, {c4__nfkc_c1, NFKC(C1), C1}),
             ?assertEqual({c4__nfkc_c2, C4, C2}, {c4__nfkc_c2, NFKC(C2), C2}),
             ?assertEqual({c4__nfkc_c3, C4, C3}, {c4__nfkc_c3, NFKC(C3), C3}),
             ?assertEqual({c4__nfkc_c4, C4, C4}, {c4__nfkc_c4, NFKC(C4), C4}),
             ?assertEqual({c4__nfkc_c5, C4, C5}, {c4__nfkc_c5, NFKC(C5), C5}),
+
             %NFKD
             ?assertEqual({c5__nfkd_c1, C5, C1}, {c5__nfkd_c1, NFKD(C1), C1}),
             ?assertEqual({c5__nfkd_c2, C5, C2}, {c5__nfkd_c2, NFKD(C2), C2}),
             ?assertEqual({c5__nfkd_c3, C5, C3}, {c5__nfkd_c3, NFKD(C3), C3}),
             ?assertEqual({c5__nfkd_c4, C5, C4}, {c5__nfkd_c4, NFKD(C4), C4}),
             ?assertEqual({c5__nfkd_c5, C5, C5}, {c5__nfkd_c5, NFKD(C5), C5});
-            % end body
+
+            % end of the body
         _ -> next
         catch error:_ -> next
         after 

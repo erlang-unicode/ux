@@ -78,14 +78,6 @@ strip_tags_test_() ->
          ,?_assertEqual(M:F("<a ><b>test<a", "<a>"), "<a >test")]}
     ].
 
-tags_to_list_test_() ->
-    F = fun ux_string:tags_to_list/1,
-    [?_assertEqual(F("<a><b>"), ["b", "a"])
-    ,?_assertEqual(F("<span>"), ["span"])
-    ,?_assertEqual(F("<b><span>"), ["span", "b"])
-    ,?_assertEqual(F("<i>"), ["i"])
-    ].
-
 
 
 

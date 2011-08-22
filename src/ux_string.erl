@@ -1270,6 +1270,22 @@ info_char_block(Obj = #unistr_info{str=Str}) ->
 
 
 
+%%
+%% Tests
+%%
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
 
 
+tags_to_list_test_() ->
+    F = fun tags_to_list/1,
+    [?_assertEqual(F("<a><b>"), ["b", "a"])
+    ,?_assertEqual(F("<span>"), ["span"])
+    ,?_assertEqual(F("<b><span>"), ["span", "b"])
+    ,?_assertEqual(F("<i>"), ["i"])
+    ].
+
+
+-endif.
 

@@ -38,13 +38,21 @@ split(T,S) when
 
 %% http://unicode.org/reports/tr29/#Table_Combining_Char_Sequences_and_Grapheme_Clusters
 
+% GB1
+% sot -
+
+% GB2
+% - sot
+
 % GB3
+% CR x LF
 do_split(T, [_CR,_LF|ST], 
             ['CR','LF'|TT], Acc) ->
     NewAcc = [?LF,'x',?CR|Acc],
     do_split(T, ST, TT, NewAcc);
 
 % GB4
+% ( Control | CR | LF ) -
 do_split(T, [SH|ST], 
             [_|TT = [TH|_]], Acc) 
     when TH=:='Control'
@@ -53,7 +61,7 @@ do_split(T, [SH|ST],
     NewAcc = [SH|Acc],
     do_split(T, ST, TT, NewAcc);
 
-% GB5
+% GB5 - ( Control | CR | LF ) 
 do_split(T, [SH|ST], 
             [TH|TT], ['x'|Acc]) 
     when TH=:='Control'
@@ -62,7 +70,6 @@ do_split(T, [SH|ST],
     NewAcc = [SH|Acc],
     do_split(T, ST, TT, NewAcc);
 
-% GB5
 do_split(T, [SH|ST], 
             [TH|TT], Acc) 
     when TH=:='Control'
@@ -72,6 +79,7 @@ do_split(T, [SH|ST],
     do_split(T, ST, TT, NewAcc);
     
 % GB6
+% L x ( L | V | LV | LVT )
 do_split(T, [SH|ST], 
             ['L'|TT = [TH2|_]], Acc) 
     when TH2=:='L'
@@ -82,6 +90,7 @@ do_split(T, [SH|ST],
     do_split(T, ST, TT, NewAcc);
 
 % GB7
+% ( LV | V ) x ( V | T )
 do_split(T, [SH|ST], 
             [TH1|TT = [TH2|_]], Acc) 
     when (TH2=:='V'  orelse TH2=:='T')
@@ -90,6 +99,7 @@ do_split(T, [SH|ST],
     do_split(T, ST, TT, NewAcc);
 
 % GB8
+% ( LVT | T) x T
 do_split(T, [SH|ST], 
             [TH1|TT = ['T'|_]], Acc) 
     when TH1=:='LVT'
@@ -99,12 +109,14 @@ do_split(T, [SH|ST],
 
  
 % GB 9
+% x Extend
 do_split(T, [SH|ST], 
             [_|TT = ['Extend'|_]], Acc) ->
     NewAcc = ['x',SH|Acc],
     do_split(T, ST, TT, NewAcc);
 
 % GB 9a
+% x SpacingMark
 do_split('extended'=T, 
             [SH|ST], 
             [_|TT = ['SpacingMark'|_]], Acc)
@@ -113,13 +125,15 @@ do_split('extended'=T,
     do_split(T, ST, TT, NewAcc);
 
 % GB 9b
+% Prepend x
 do_split('extended'=T, 
             [SH|ST], 
             ['Prepend'|TT = [_|_]], Acc) ->
     NewAcc = ['x',SH|Acc],
     do_split(T, ST, TT, NewAcc);
 
-% Any
+% GB 10
+% Any - Any
 do_split(T, 
             [SH|ST], 
             [_|TT], Acc) ->

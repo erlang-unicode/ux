@@ -109,7 +109,7 @@ Result:
 Code:
 
 ```erlang
-ux_string:strip_tags("<b>bold text</b>").
+ux_html:strip_tags("<b>bold text</b>").
 ```
 
 Result:

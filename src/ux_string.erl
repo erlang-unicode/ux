@@ -28,13 +28,11 @@
 -author('Uvarov Michael <freeakk@gmail.com>').
 
 -export([
-        html_special_chars/1,
 
         explode/2, explode/3,
         split/2, split/3,
 
         to_lower/1, to_upper/1, to_string/1,
-        strip_tags/1, strip_tags/2, strip_tags/3,
         delete_types/2, delete_types/3, 
         filter_types/2, filter_types/3, 
         explode_types/2, split_types/2,
@@ -86,6 +84,11 @@ is_compat(V) -> ?UNIDATA:is_compat(V).
 comp(V1, V2) -> ?UNIDATA:comp(V1, V2).
 comp('skip_check') -> ?UNIDATA:comp('skip_check').
 decomp(V) -> ?UNIDATA:decomp(V).
+
+
+
+%% @private
+not_in_array(X,Y) -> not lists:member(X,Y).
 
 
 
@@ -516,159 +519,6 @@ to_lower(Str) ->
 to_upper(Str) ->
     Fun = ux_char:to_upper(skip_check),
     lists:map(Fun, Str).
-
-%% @doc Encodes html special chars.
--spec html_special_chars(string()) -> string().
-
-html_special_chars(Str) -> hsc(Str).
-
-%% @see ux_string:htmlspecialchars/1
-%% @private
--spec hsc(string()) -> string().
-
-hsc(Str) -> hsc(Str, []).
-
-%% @private
-hsc([      ], Buf) -> lists:reverse(Buf);
-hsc([$" | T], Buf) -> hsc(T, lists:reverse("&quot;", Buf));
-hsc([$' | T], Buf) -> hsc(T, lists:reverse("&#39;", Buf));
-hsc([$& | T], Buf) -> hsc(T, lists:reverse("&amp;", Buf));
-hsc([$< | T], Buf) -> hsc(T, lists:reverse("&lt;", Buf));
-hsc([$> | T], Buf) -> hsc(T, lists:reverse("&gt;", Buf));
-hsc([H  | T], Buf) -> hsc(T, [H|Buf]).
-
-%% @doc Deletes tags from the string.
-%%
-%%      Example: 
-%%   ```> ux_string:strip_tags("<b>some string</b>").
-%%      "some string"
-%%      > ux_string:strip_tags("<h1>Head</h1><p>and paragraf</p>", ["h1"]).        
-%%      "<h1>Head</h1>and paragraf"
-%%      ux_string:strip_tags("<h1>Head</h1><p><!-- and paragraf --></p>", ["!--"]).
-%%      "Head<!-- and paragraf -->"
-%%      ux_string:st("a<br />b", [], " ").
-%%      "a b"'''
-%% @end
--spec strip_tags(string()) -> string().
-
-strip_tags(Str) -> 
-    st(Str, []).
-
-
--spec strip_tags(string, [string() | atom() | char()]) -> string().
-
-strip_tags(Str, Allowed) -> 
-    st(Str, Allowed).
-
-
-
--spec strip_tags(string, [string() | atom() | char()], string()) -> string().
-
-strip_tags(Str, Allowed, Alt) -> 
-    st(Str, Allowed, Alt).
-
-
-
-
-%% @see ux_string:strip_tags/1
-%% @private
-st(Str) -> st_cycle(Str, [], 0, []).
-%% @see ux_string:strip_tags/2
-%% @private
-st(Str, []) -> st(Str); 
-st(Str, [$<|Allowed]) -> st(Str, tags_to_list(Allowed));
-st(Str, Allowed) -> st(Str, Allowed, []). 
-%% @see ux_string:strip_tags/3
-%% @private
-st(Str, [], []) -> st(Str); 
-st(Str, [$<|Allowed], Alt) -> st(Str, tags_to_list(Allowed), Alt);
-st(Str, [], Alt) -> st_cycle(Str, [], 0, lists:reverse(Alt)); 
-st(Str, Allowed, Alt) -> 
-    Fun = ux_char:to_lower(skip_check),
-    st_cycle_with_allowed(Str, [],
-        lists:map(fun lists:reverse/1,
-            lists:map(Fun,
-                lists:map(fun to_string/1, Allowed))), 
-        lists:reverse(Alt)).
-
-%% @doc Drops all tags from the string.
-%%   ```Cnt is a count of not closed <
-%%      If we found <, then Cnt++
-%%      If we found >, then Cnt--'''
-%% @end
-%% @private
-st_cycle([$<| Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt + 1, Alt);
-st_cycle([$>| Tail], Buf, 1,   Alt) -> st_cycle(Tail, Alt ++ Buf, 0,       Alt);
-st_cycle([$>| Tail], Buf, 0,   Alt) -> st_cycle(Tail,        Buf, 0,       Alt);
-st_cycle([$>| Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt - 1, Alt);
-st_cycle([H | Tail], Buf, 0,   Alt) -> st_cycle(Tail, [H | Buf] , 0,       Alt);
-st_cycle([_ | Tail], Buf, Cnt, Alt) -> st_cycle(Tail,        Buf, Cnt,     Alt);
-st_cycle([        ], Buf, _,   _  ) -> lists:reverse(Buf).
-
-%% @doc Is used by st_cycle_with_allowed
-%% @private
-%% If Flag = false, then don't append chars (as name of a tag <name>).
-%% If Flag = true (default), then append chars (as the body of the tag).
-%% Cnt is a level of subtag (`<a> Cnt=1 <b> Cnt=2 </b> Cnt=1</a>')
-%% Returns: {tag_name, tag_body, string_tail}
-st_get_tag([$>|T], Buf, Tag, _Flag, 1) ->
-    {Tag, [$>|Buf], T};
-st_get_tag([$>|T], Buf, Tag, _Flag, Cnt) ->
-    st_get_tag(T, Buf, Tag, false, Cnt - 1);
-st_get_tag([$<|T], Buf, Tag, false, Cnt) ->
-    st_get_tag(T, Buf, Tag, false, Cnt + 1);
-st_get_tag([$ |T], Buf, Tag, _, Cnt) ->
-    st_get_tag(T, [$ |Buf], Tag, false, Cnt);
-st_get_tag([$/|T], Buf, Tag, true, Cnt) ->
-    st_get_tag(T, [$/|Buf], Tag, true, Cnt);
-st_get_tag([H|T], Buf, Tag, true, Cnt) ->
-    st_get_tag(T, [H|Buf], [H|Tag], true, Cnt);
-% TODO: control atributes (onclick, for example. xss fix!)
-st_get_tag([H|T], Buf, Tag, false, Cnt) ->
-    st_get_tag(T, [H|Buf], Tag, false, Cnt);
-st_get_tag([], _, _, _, _) -> false; 
-st_get_tag(_, [], _, _, _) -> false. 
-
-%% @doc Drops tags, but saves tags in the Allowed list.
-%% @private
-st_cycle_with_allowed([$<|T], Res, Allowed, Alt) ->
-    case st_get_tag(T, [$<], [], true, 1) of 
-    {Tag, SubStr, Tail} -> 
-        case lists:member(string:to_lower(Tag), Allowed) of 
-        true  -> st_cycle_with_allowed(Tail, 
-            SubStr ++ Res, Allowed, Alt); % Allowed tag
-        false -> st_cycle_with_allowed(Tail,
-            Alt ++ Res, Allowed, Alt)  % Alt is replacement
-       end;
-    _ -> lists:reverse(Res) % deletes unclosed string 
-    end;
-st_cycle_with_allowed([$>|T], Res, Allowed, Alt) ->
-    st_cycle_with_allowed(T, Res, Allowed, Alt);
-st_cycle_with_allowed([Ch|T], Res, Allowed, Alt) ->
-    st_cycle_with_allowed(T, [Ch | Res], Allowed, Alt);
-st_cycle_with_allowed([], Res, _, _) -> lists:reverse(Res).
-
-%% @doc Convert string of tags to list
-%%      Example:
-%%   ```> tags_to_list("<a><b>").
-%%      ["a", "b"]'''
-%% @end
-%% @private
-tags_to_list(Str) -> tags_to_list(Str, [], []).
-
-%% @private
-tags_to_list([$<|Str], Res, Buf) -> tags_to_list(Str, Res, Buf);
-tags_to_list([$/|Str], Res, Buf) -> tags_to_list(Str, Res, Buf);
-tags_to_list([$>|Str], Res, Buf) -> tags_to_list(Str, 
-        [lists:reverse(Buf)|Res], []);
-tags_to_list([Ch|Str], Res, Buf) -> tags_to_list(Str, Res, [Ch|Buf]);
-tags_to_list([], Res, _) -> Res. 
-
-
-%% @private
-not_in_array(X,Y) -> not lists:member(X,Y).
-
-
 
 
 
@@ -1192,67 +1042,3 @@ do_scripts(F, [H|T], Acc) ->
     do_scripts(F, T, NewAcc);
 do_scripts(_F, [], Dict) -> 
     sets:to_list(Dict).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%%
-%% Tests
-%%
-
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
-
-
-tags_to_list_test_() ->
-    F = fun tags_to_list/1,
-    [?_assertEqual(F("<a><b>"), ["b", "a"])
-    ,?_assertEqual(F("<span>"), ["span"])
-    ,?_assertEqual(F("<b><span>"), ["span", "b"])
-    ,?_assertEqual(F("<i>"), ["i"])
-    ].
-
-
--endif.
-

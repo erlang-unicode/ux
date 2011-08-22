@@ -52,56 +52,6 @@ explode_test_() ->
         ]}
     ].
 
-html_special_chars_test_() ->
-    M = 'ux_string',
-    F = 'html_special_chars',
-    [?_assertEqual(M:F("ddf2#$\""), "ddf2#$&quot;")
-    ,?_assertEqual(M:F("test1 & test2"), "test1 &amp; test2")
-
-    ,?_assertEqual(M:F(""), "")
-    ].
-
-strip_tags_test_() ->
-    M = 'ux_string',
-    F = 'strip_tags',
-    [?_assertEqual(M:F("<b>a</b>"), "a")
-    ,?_assertEqual(M:F("<b>a b c</b>"), "a b c")
-    ,?_assertEqual(M:F("<b >a b c</b>"), "a b c")
-    ,?_assertEqual(M:F("<b>a b c</b >"), "a b c")
-    ,{"Check a long tag."
-        ,[?_assertEqual(M:F("<H1>A B C</H1>"), "A B C")
-         ,?_assertEqual(M:F("a<img src='i.img' />b"), "ab")]}
-    ,{"Check allowed tags."
-        ,[?_assertEqual(M:F("<b>a b c</b>", ["b"]), "<b>a b c</b>")
-         ,?_assertEqual(M:F("<B>a b c</B>", ["b"]), "<B>a b c</B>")
-         ,?_assertEqual(M:F("<code>a b c</code>", ["b"]), "a b c")
-         ,?_assertEqual(M:F("<code>a b c</code>", ["b", "code"]), "<code>a b c</code>")
-         ,?_assertEqual(M:F("<span>a b c</span>", ["b", "span"]), "<span>a b c</span>")
-         ]}
-    ,{"Check a tag with an attribute."
-        ,[?_assertEqual(M:F("a<img src='i.gif' />b", ["b"]), "ab")
-         ,?_assertEqual(M:F("a<img src='i.gif' />b", ["img"]), "a<img src='i.gif' />b")
-         ,?_assertEqual(M:F("a<br/>b", ["br"]), "a<br/>b")]}
-    ,{"Check an atom in the list allowed tags."
-        ,[?_assertEqual(M:F("a<br/>b", [br]), "a<br/>b")
-         ,?_assertEqual(M:F("a<br/><b>b</b>", [br]), "a<br/>b")]}
-    ,{"Check a replacement argument."
-        ,[?_assertEqual(M:F("<b>a b c</b>", [], " "), " a b c ")
-         ,?_assertEqual(M:F("<b>a b c</b>", [], "tag"), "taga b ctag")
-         ,?_assertEqual(M:F("<b>a b c</b>", [test], "tag"), "taga b ctag")]}
-    ,{"PHP format."
-        ,[?_assertEqual(M:F("<b>a b c</b>", "<b>"), "<b>a b c</b>")
-         ,?_assertEqual(M:F("<span>a b c</span>", "<b><span>"), "<span>a b c</span>")
-         ,?_assertEqual(M:F("<a><b>test<a", "a"), "<a>test")
-         ,?_assertEqual(M:F("<a ><b>test<a", "<a>"), "<a >test")]}
-
-    ,{"Empty string."
-        ,[?_assertEqual(M:F("", ""), "")
-         ,?_assertEqual(M:F("", "<b><span>"), "")
-         ,?_assertEqual(M:F("", "a"), "")
-         ,?_assertEqual(M:F("<", "<a>"), "")]}
-    ].
-
 
 
 

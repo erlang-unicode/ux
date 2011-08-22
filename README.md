@@ -10,12 +10,13 @@ __Author__: Uvarov Michael ([`freeakk@gmail.com`](mailto:freeakk@gmail.com))
 
 [Read edoc documentation](https://github.com/freeakk/ux/blob/master/doc/README.md)
 
-Module for working strings.
+Module for working with strings.
 A string is a flatten list of Unicode characters.
+
+All actions with Unicode were described in [Unicode Standards](http://www.unicode.org/reports/).
 
 [![Build Status](http://travis-ci.org/freeakk/ux.png?branch=master)](http://travis-ci.org/freeakk/ux)
 
-All actions with Unicode was described in [Unicode Standards](http://www.unicode.org/reports/).
 This library realized only these documents:
 ------------------------------------------
 * [UAX 15](http://www.unicode.org/reports/tr15/)  Unicode Normalization Forms

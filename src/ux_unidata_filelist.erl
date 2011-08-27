@@ -124,7 +124,7 @@ set_source(Level, Parser, Types, FileName) ->
                 'undefined' -> 
                     set_source('node', Parser, [Type], FileName),
                     NewFun = get_source(Parser, Type),
-                    NewFun('get_table')
+                    NewFun('get_table');
                 _ -> 
                     Ets
                 end;
@@ -249,7 +249,7 @@ get_application_pid(Name) ->
 %% from the Key-file.
 %% Also, try to monitor ClientPid on the server.
 get_pid(Key, ClientPid) when is_pid(ClientPid) ->
-    case file_owner(key_to_filename(Key)) of
+    case file_owner(key_to_id(Key)) of
         error -> 
             {ok, StoreServerPid} = ux_unidata_store_sup:read_file(Key, ClientPid),
             StoreServerPid;
@@ -272,16 +272,16 @@ file_owner(FileName) ->
 %% Throws {badmatch,{error,key_already_registred}} if self() is already 
 %% registred.
 reg_pid(Key, StoreServerPid) when is_pid(StoreServerPid) ->
-    ok = gen_server:call(?MODULE, {reg_pid, key_to_filename(Key), StoreServerPid}).
+    ok = gen_server:call(?MODULE, {reg_pid, key_to_id(Key), StoreServerPid}).
 
 %%
 %% Private helper functions.
 %%
 
-key_to_filename({_Parser, _Types, FileName}) ->
+key_to_id({Parser, _Types, FileName} = Key) ->
     % Get client enviroment:
     Env = ux_unidata_store:get_env(Key),
-    FileName.
+    {Parser, FileName, Env}.
 
 key_to_types({_Parser, Types, _FileName}) ->
     Types.

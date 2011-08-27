@@ -12,6 +12,7 @@ get_alternate_function(#uca_options{alternate='shifted', strength=4}, D) ->
 
 get_alternate_function(C=#uca_options{alternate=Alt}, _D) ->
     get_function(Alt).
+
     
 -spec get_function(Alt :: uca_alternate()) -> fun().
 get_function(non_ignorable) ->

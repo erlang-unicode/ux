@@ -1,6 +1,6 @@
 -module(ux_cldr).
 
--export([set_value/3, get_value/2]).
+-export([set_value/3, get_value/1]).
 
 
 
@@ -29,6 +29,19 @@ set_value(Level, Key, Value) ->
     ok.
 
 
+get_value(Key) ->
+    case get_value('process', Key) of
+    'undefined' ->
+        case get_value('application', Key) of
+        'undefined' ->
+            get_value('node', Key);
+        Value ->
+            Value
+        end;
+    Value ->
+        Value
+    end.
+            
 
 get_value('process', Value) ->
     erlang:get(Value);
@@ -56,29 +69,25 @@ get_application_pid(Name) ->
 
 
 
+%%
+%% This functions are used in CLDR parsers.
+%%
+
+get_env() ->
+    lists:map(fun(X) ->
+        {X, get_value(X)}
+        end, ['locale']).
+
+
+set_env(Env) ->
+    lists:map(fun({Key, Value}) ->
+        set_value('process', Key, Value)
+        end, Env).
 
 
 
 
 
-
-
-
-
-
-
-
-
-%% Read CLDR, get some UNIDATA and run convertor from an ETS table with UNIDATA.
-%% This function must be running from the client code, but not by a client directly.
-generate_function(Type) ->
-    L = get_value('locale'),
-    Options = 
-        case element(1, Type) of
-        'collation' ->
-            D = ux_unidata_filelist:get_source('allkeys', 'ducet'),
-            [{'ducet', D}]
-        end,
 
     
         

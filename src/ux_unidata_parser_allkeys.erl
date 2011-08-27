@@ -11,7 +11,7 @@
     , after_parse/1 % comment to disable post processing
     ]).
 
-types() -> [ducet, allkeys].
+types() -> [ducet].
 
 parse(In) ->
     case ux_unidata_parser:split($;, In) of
@@ -25,7 +25,6 @@ parse(In) ->
                                      _ -> {InEl, OutEl} end,
         {ok,
             [{ducet,   Res}
-            ,{allkeys, Res} 
             ]
         };
     _ -> skip

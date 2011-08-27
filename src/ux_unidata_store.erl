@@ -245,4 +245,4 @@ get_env(File) ->
     ux_unidata_parser:get_env(File).
 
 set_env(File, Env) ->
-    ux_unidata_parser:get_env(File, Env).
+    ux_unidata_parser:set_env(File, Env).

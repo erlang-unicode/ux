@@ -22,7 +22,7 @@
 
 
 get_env({ParserType, Types, FileName} = File) ->
-    Mod = filetype_to_module(FileType),
+    Mod = filetype_to_module(ParserType),
     try
         Mod:bootstrap(File)
     catch error:_ ->
@@ -32,7 +32,7 @@ get_env({ParserType, Types, FileName} = File) ->
 set_env(_File, 'undefined'=_Env) ->
     ok;
 set_env({ParserType, Types, FileName} = File, Env) ->
-    Mod = filetype_to_module(FileType),
+    Mod = filetype_to_module(ParserType),
     Mod:init(File, Env).
 
 
@@ -54,19 +54,34 @@ check_filename(FileName) ->
     {ok, _Info} = file:read_file_info(FileName),
     ok.
 
+file_format(Mod) ->
+    try
+        Mod:format()
+    catch error:_ ->
+        'read_by_line'
+    end.
+
+
 -spec run(tuple()) -> ok.
 run({FileType, all, FileName}) ->
     Mod = filetype_to_module(FileType),
     run({FileType, Mod:types(), FileName});
 run({FileType, DataTypes, FileName}) ->
-    Fd = open_file(FileName),
     Mod = filetype_to_module(FileType),
     AllowedTypes = Mod:types(),
     true = check_types(DataTypes, AllowedTypes),
     Ets = create_tables(DataTypes),
     SortedEtsTables = lists:sort(Ets),
-    read_file({Fd, SortedEtsTables, Mod}),
-    file:close(FileName),
+
+    % Check how to work with file.
+    case file_format(Mod) of
+    'read_by_line' ->
+        Fd = open_file(FileName),
+        read_file({Fd, SortedEtsTables, Mod}),
+        file:close(FileName);
+    'manual' ->
+        Mod:parse(FileName, SortedEtsTables)
+    end,
 
     % Some parsers need post-hacks.
     ok = run_after_parse(Mod, SortedEtsTables),

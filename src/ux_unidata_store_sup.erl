@@ -17,7 +17,7 @@ init([]) ->
 
 %% @doc Read file with UNIDATA.
 %%      Filename is {parser, types, filename}
-read_file(Filename, ClientPid) when is_pid(ClientPid) ->
+read_file({_,_,_} = Filename, ClientPid) when is_pid(ClientPid) ->
     SupervisorName = ?MODULE,
     Ret = supervisor:start_child(SupervisorName, [Filename, ClientPid]),
     {ok, ServerPid} = Ret.

@@ -27,7 +27,17 @@ get_options() -> #uca_options{}.
 %% Sort Key Functions
 %%
 
-split_levels(W) -> do_split_levels(W, [], []).
+% L2 is backward.
+-spec split_levels(integer(), boolean(), [[integer()]]) -> 
+        {[integer()], [[integer()]]}.
+
+split_levels(_L=2, _B=true, W) -> 
+    {Res, Rem} = do_split_levels(W, [], []),
+    {Res, lists:reverse(Rem)};
+split_levels(_L, _B, W) -> 
+    {Res, Rem} = do_split_levels(W, [], []),
+    {lists:reverse(Res), lists:reverse(Rem)}.
+    
 do_split_levels([WH|WT], Res, Rem) ->
     case WH of
     [0] -> do_split_levels(WT, Res, Rem);
@@ -36,7 +46,7 @@ do_split_levels([WH|WT], Res, Rem) ->
     [H|T] -> do_split_levels(WT, [H|Res], [T|Rem])
     end;
 do_split_levels([], Res, Rem) ->
-    {lists:reverse(Res), lists:reverse(Rem)}.
+    {Res, Rem}.
     
 get_reassign_function(D, L) ->
     D({reassign_function, L}).

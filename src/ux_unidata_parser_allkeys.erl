@@ -3,6 +3,7 @@
 %%% @private
 -module(ux_unidata_parser_allkeys).
 -include("ux.hrl").
+-include("ux_string.hrl").
 -include("ux_unidata_server.hrl").
 
 
@@ -10,7 +11,7 @@
     , after_parse/1 % comment to disable post processing
     ]).
 
-types() -> [ducet].
+types() -> [ducet, allkeys].
 
 parse(In) ->
     case ux_unidata_parser:split($;, In) of
@@ -19,9 +20,12 @@ parse(In) ->
                         string:tokens(Code, " ")),
         OutEl = parse_el(ux_unidata_parser:delete_spaces(Element)),
         %io:format("String: ~ts, From reversed: ~w, To: ~w~n", [In, InEl, OutEl]),
+
+        Res = case InEl of [] -> skip; 
+                                     _ -> {InEl, OutEl} end,
         {ok,
-            [{ducet,   case InEl of [] -> skip; 
-                                     _ -> {InEl, OutEl} end} 
+            [{ducet,   Res}
+            ,{allkeys, Res} 
             ]
         };
     _ -> skip
@@ -75,6 +79,11 @@ get_val(Table, Val) ->
     [{_, Res}] = ets:lookup(Table, Val),
     Res.
 
+
+
+
+
+
 %%
 %% Hacks.
 %%
@@ -97,7 +106,7 @@ do_after([_ | Tail]) ->
 do_after([]) -> ok.
 
 
-
+%% @doc Add a table that contains all keys of the elements.
 do_after_lookup(Table, LTable) ->
 %   ets:safe_fixtable(Table, true),
     case ets:first(Table) of
@@ -128,7 +137,7 @@ add_lookup(LTable, Index) ->
 
 
 
-
+%% @doc Add `more' to empty space beetween the elements.
 do_after_ducet(Table, MTable) ->
 %   ets:safe_fixtable(Table, true),
     case ets:first(Table) of
@@ -183,7 +192,7 @@ do_ducet_more(LF, IF, [_Last|ReversedBody] = _Codes) ->
 
 
 
-
+%% @doc Add max, min, common values.
 do_after_ranges(Table) ->
 %   ets:safe_fixtable(Table, true),
     case ets:first(Table) of
@@ -222,6 +231,14 @@ do_after_ranges_next(Table, PrevIndex, Min, Max) ->
         do_after_ranges_next(Table, Index, NewMin, NewMax)
     end.
         
+
+
+
+
+
+%%
+%% do_after helpers
+%%
 
 zip2fun(F) ->
     fun(L1, L2) -> lists:zipwith(F, L1, L2) end.

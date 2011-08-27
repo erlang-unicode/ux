@@ -6,7 +6,7 @@
 -include("ux.hrl").
 -include("ux_unidata_server.hrl").
 
--export([run/1, check/1, get_functions/2]).
+-export([run/1, check/1, get_functions/2, get_env/1, set_env/2]).
 -export([check_types/2]).
 
 %% Helpers
@@ -17,7 +17,24 @@
 
 %% Intermodule export
 -export([expand_table/1]).
--export([expand_fun/2, expand_opt_fun/2, ets_fun/2, bool_fun/1]).
+-export([expand_fun/2, expand_opt_fun/2, expand_meta_fun/2, ets_fun/2, bool_fun/1]).
+
+
+
+get_env({ParserType, Types, FileName} = File) ->
+    Mod = filetype_to_module(FileType),
+    try
+        Mod:bootstrap(File)
+    catch error:_ ->
+        'undefined'
+    end.
+
+set_env(_File, 'undefined'=_Env) ->
+    ok;
+set_env({ParserType, Types, FileName} = File, Env) ->
+    Mod = filetype_to_module(FileType),
+    Mod:init(File, Env).
+
 
 -spec check(tuple()) -> ok.
 check({FileType, all, FileName}) ->
@@ -257,6 +274,140 @@ ets_fun(Table, DefaultValue) ->
         [{Key, Val}] -> Val
         end
     end.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%% Expand table with two colums: [{Key, Value} or {{From, To}, Value}].
+expand_meta_fun(Table, DefaultValue) ->
+    % Name is a function name in the ux_unidata_meta module.
+    {ok, Name, Handler} = metamodule:new_fun('ux_unidata_meta'),
+    Body = do_fun_def(Name, DefaultValue),
+    NewBody = do_expand_fun(Table, Name, Body, DefaultValue),
+
+    
+    {ok, Value} = Handler(NewBody),
+    Value.
+
+
+
+-spec do_expand_fun(Table::integer(), Name::atom(), Body::string(), DefaultValue::term()) 
+    -> string().
+do_expand_fun(Table, Name, Body, DefaultValue) ->
+    case ets:first(Table) of
+    '$end_of_table' ->
+        Body;
+    Key -> NewBody = case ets:lookup(Table, Key) of
+            [{Key, DefaultValue}] -> Body;
+            [{Key, Val}] -> do_fun_meta(Name, Key, Val) ++ Body
+            end,
+        do_expand_fun_next(Table, Name, NewBody, DefaultValue, Key)
+    end.
+
+-spec do_expand_fun_next(Table::integer(), Name::atom(), Body::string(), 
+    DefaultValue::term(), Prev::term()) -> string().
+do_expand_fun_next(Table, Name, Body, DefaultValue, Prev)  ->
+    case ets:next(Table, Prev) of
+    '$end_of_table' ->
+        Body;
+    Key -> NewBody = case ets:lookup(Table, Key) of
+            [{Key, DefaultValue}] -> Body;
+            [{Key, Val}] -> do_fun_meta(Name, Key, Val) ++ Body
+            end,
+        do_expand_fun_next(Table, Name, NewBody, DefaultValue, Key)
+    end.
+
+
+
+-spec do_fun_meta(Name::atom(), Key::term(), Value::term()) -> string().
+do_fun_meta(Name, {From, To}, Val) ->
+    io_lib:format("~ts(V) when V >= ~w andalso V =< ~w -> ~w; ",
+            [Name, From, To, Val]);
+do_fun_meta(Name, Key, Val) ->
+    io_lib:format("~ts(~w) -> ~w; ",
+            [Name, Key, Val]).
+
+-spec do_fun_def(Name::atom(), Value::term()) -> string().
+do_fun_def(Name, 'noop') ->
+    Name ++ "(C) -> C.";
+do_fun_def(Name, Val) ->
+    io_lib:format("~ts(_) -> ~w.",
+            [Name, Val]).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 bool_fun(Table) ->
     fun(Key) ->

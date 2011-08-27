@@ -54,6 +54,11 @@ get_options(C=#uca_options{},
     get_options(NewC, T);
 
 get_options(C=#uca_options{}, 
+    [{backwards, Val}|T]) ->
+    NewC = C#uca_options{ backwards=Val },
+    get_options(NewC, T);
+
+get_options(C=#uca_options{}, 
     [{case_sensitive, Val}|T]) ->
     NewC = C#uca_options{ case_sensitive=Val },
     get_options(NewC, T);

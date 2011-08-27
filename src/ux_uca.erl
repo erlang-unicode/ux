@@ -323,6 +323,28 @@ generator(C=#uca_options{}, S) ->
 %% @param W::[int()]    ListOfWeights 
 %% @param R::[[int()]]  Remain weights
 
+
+%% ==Normal version:==
+%%
+%% ```
+%% do_generator    L1 -> L1 -> L1 ->
+%% reverse         <----------------
+%% do_generator2   L2 -> L2 -> L2 ->
+%% reverse         <----------------
+%% do_generator2   L3 -> L3 -> L3 ->
+%% reverse         <----------------
+%% do_generator2   L4 -> L4 -> L4 '''
+
+
+%% ==Backward version:==
+%%
+%% ```
+%% do_generator    L1 -> L1 -> L1 ->
+%% do_generator3   L2 <- L2 <- L2 <-
+%% do_generator2   L3 -> L3 -> L3 ->
+%% reverse         <----------------
+%% do_generator2   L4 -> L4 -> L4 '''
+
 -spec do_generator(#uca_options{}, string(), fun(), fun(), uca_array(),
     [[uca_weight()]]) -> {uca_weight(), fun()}|stop.
 
@@ -344,15 +366,18 @@ do_generator(#uca_options{}=C, S, D, A, [WH|WT], R) ->
     _ -> % [] try extract next
         do_generator(C, S, D, NewA, WT, R)
     end;
-do_generator(#uca_options{strength=S}, []=_S, _D, _A, []=_W, R) ->
+do_generator(#uca_options{strength=S, backwards=false}, []=_S, _D, _A, []=_W, R) ->
     F = fun() -> do_generator2(S-1, lists:reverse(R), []) end,
+    {0, F}; %% All weights were extracted. Try get weights from LVL=2.
+% reverse L2
+do_generator(#uca_options{strength=S, backwards=true}, []=_S, _D, _A, []=_W, R) ->
+    F = fun() -> do_generator3(S-1, R, []) end,
     {0, F}; %% All weights were extracted. Try get weights from LVL=2.
 do_generator(C=#uca_options{}, [_|_]=S, D, A, []=_W, R) ->
     {NewW, NewS} = do_extract(C, S, D),
     do_generator(C, NewS, D, A, NewW, R).
 
 %% @param S::integer() Strength (not string).
-
 -spec do_generator2(0..4, [[uca_weight()]],
     [[uca_weight()]]) -> {uca_weight(), fun()}|stop.
 
@@ -377,6 +402,31 @@ do_generator2(S, [[WH]|WT], R) ->
 do_generator2(S, [[WH|WR]|WT], R) ->
     F = fun() -> do_generator2(S, WT, [WR|R]) end,
     {WH, F}.
+
+
+%% backward version
+do_generator3(0, _W, _R) ->
+    stop;
+do_generator3(1, []=_W, _R) ->
+    stop;
+do_generator3(_S, []=_W, []=_R) ->
+    stop;
+do_generator3(S, []=_W, R) ->
+    F = fun() -> % not reverse
+            do_generator2(S-1, R, []) 
+        end,
+    {0, F};
+do_generator3(S, [[0=_WH]|WT], R) ->
+    do_generator3(S, WT, R);
+do_generator3(S, [[0=_WH|WR]|WT], R) ->
+    do_generator3(S, WT, [WR|R]);
+do_generator3(S, [[WH]|WT], R) ->
+    F = fun() -> do_generator3(S, WT, R) end,
+    {WH, F};
+do_generator3(S, [[WH|WR]|WT], R) ->
+    F = fun() -> do_generator3(S, WT, [WR|R]) end,
+    {WH, F}.
+
     
 %% 1|x|x  => 1|x|x
 %% 1|1|x  => 1|x|x
@@ -729,9 +779,15 @@ delete_tail_test_() ->
     ].
 
 split_levels_test_() ->
-    F = fun split_levels/1,
-    [?_assertEqual(F([[1,2,3],[4,5,6],[7,8,9]]), {[1,4,7], [[2,3],[5,6],[8,9]]})
-    ,?_assertEqual(F([[1,2,3],[4],[7,8]]), {[1,4,7], [[2,3],[8]]})
+    F = fun(W) -> split_levels(1, false, W) end,
+    F2 = fun(W) -> split_levels(2, true, W) end,
+    [{"Test common behavior.", 
+        [?_assertEqual(F([[1,2,3],[4,5,6],[7,8,9]]), {[1,4,7], [[2,3],[5,6],[8,9]]})
+        ,?_assertEqual(F([[1,2,3],[4],[7,8]]), {[1,4,7], [[2,3],[8]]})
+        ]}
+    ,{"Test backwards.",
+        [?_assertEqual(F2([[1,2,3],[4],[7,8]]), {[7,4,1], [[2,3],[8]]})
+        ]}
     ].
 
 

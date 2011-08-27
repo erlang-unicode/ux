@@ -44,15 +44,10 @@ do_extract(#uca_options {
     R1 = do_extract0(S, D),
     {W1, S1} = R1,
     
+    % Form function for proxy.
+    F = do_proxy(C,D,S1),
     {W2,S2} = 
-      case has_mod(W1, NS) of
-      true ->
-         % Form function for proxy.
-         F = do_proxy(C,D,S1),
-         mod_weights(F, W1, NS, []);
-      false ->
-         R1
-      end,
+         mod_weights(F, W1, NS, []),
 
 
     W3 = case CF of
@@ -133,18 +128,6 @@ case_sensitive_hack([Var,L1,L2,L3,L4]) ->
     [Var,L3,L2,L1,L4].
         
 
-% Hack for numbers.
-has_mod([[_Var,L1|_]|T], _NS=true) 
-    when ?IS_L1_OF_DECIMAL(L1) ->
-    true;
-has_mod([[_Var,L1|_]|_], _NS) 
-    when ?IS_L1_OF_HANGUL_L(L1) ->
-    true;
-has_mod([[_|_]|T], NS) ->
-    has_mod(T, NS);
-has_mod([], _NS) ->
-    false. 
-
 % 7.1.5 Hangul Collation
 % Interleaving Method
 % MANUAL:
@@ -175,15 +158,16 @@ has_mod([], _NS) ->
 % Hack for Hangul.
 -spec mod_weights(fun(), uca_array(), boolean(), uca_array()) -> result().
 % Hack for numbers.
-mod_weights(E, [[Var,L1|LOther]=H|T], NS=true, Acc) 
-    when ?IS_L1_OF_DECIMAL(L1) ->
+mod_weights(E, [{decimal, Num, [Var,L1|LOther]=H}|T], NS=true, Acc) ->
     F = fun(W) -> [Var,W|LOther] end, % define F.
-    Num = ?COL_WEIGHT_TO_DECIMAL(L1),
     do_decimal(E, F, Num, T, Acc);
-mod_weights(E, [[Var,L1|_]=H|T], _NS, Acc) 
-    when ?IS_L1_OF_HANGUL_L(L1) ->
+mod_weights(E, [{hangul, l, H}|T], _NS, Acc) ->
     do_hangul(E, l, T, [H|Acc]);
-mod_weights(E, [H|T], NS, Acc) ->
+mod_weights(E, [{hangul, l, H}|T], _NS, Acc) ->
+    do_hangul(E, l, T, [H|Acc]);
+mod_weights(E, [[_|_]=H|T], NS, Acc) ->
+    mod_weights(E, T, NS, [H|Acc]);
+mod_weights(E, [{_, _, H}|T], NS, Acc) ->
     mod_weights(E, T, NS, [H|Acc]);
 mod_weights(E, [], _NS, Acc) ->
     E(Acc). % L1 is not found. There is no hangul jamo in this string.
@@ -202,9 +186,8 @@ mod_weights(E, [], _NS, Acc) ->
 -spec do_decimal(fun(), fun(), boolean(), uca_array(), uca_array()) -> result().
 do_decimal(E, F, N, [[_,0|_]=H|T]=_W, Acc) ->
     do_decimal(E, F, N, T, [H|Acc]); % skip an ignorable element.
-do_decimal(E, F, N, [[_,L1|_]=H|T]=_W, Acc) 
-    when ?IS_L1_OF_DECIMAL(L1) -> 
-    NewN = (N * 10) + ?COL_WEIGHT_TO_DECIMAL(L1),
+do_decimal(E, F, N, [{decimal, Num, H}|T]=_W, Acc) ->
+    NewN = (N * 10) + Num,
     ?DBG("old ~w; new ~w~n", [N, NewN]),
     do_decimal(E, F, NewN, T, Acc); 
 do_decimal(E, F, N, []=_W, Acc) -> 
@@ -259,25 +242,16 @@ do_decimal_result(F, N, Acc) ->
 do_hangul(E, Mod, [[_,0|_]=H|T], Acc) ->
    % skip an ignorable element.
    do_hangul(E, Mod, T, [H|Acc]); 
-do_hangul(E, l, [[_,L1|_]=H|T], Acc) 
-    when ?IS_L1_OF_HANGUL_L(L1) -> % L2 is found. LL*
+do_hangul(E, l, [{hangul, l, H}|T], Acc) -> % L2 is found. LL*
     do_hangul(E, ll, T, [H|Acc]); 
-do_hangul(E, l, [[_,L1|_] = H|T], Acc) 
-    when ?IS_L1_OF_HANGUL_V(L1) -> % V1 is found. LV*
+do_hangul(E, l, [{hangul, v, H}|T], Acc) -> % V1 is found. LV*
     do_hangul(E, lv, T, [H|Acc]); 
-do_hangul(E, lv, [[_,L1|_]=H|T], Acc) 
-    when ?IS_L1_OF_HANGUL_T(L1) -> % T1 is found. LVT
+do_hangul(E, lv, [{hangul, t, H}|T], Acc) -> % T1 is found. LVT
     hangul_result(E, T, [H|Acc]); 
-do_hangul(E, lv, [[_,L1|_]=H|T], Acc) 
-    when ?IS_L1_OF_HANGUL_V(L1) -> % V2 is found. LVV
+do_hangul(E, lv, [{hangul, v, H}|T], Acc) -> % V2 is found. LVV
     hangul_result(E, T, [H|Acc]); 
-do_hangul(E, ll, [[_,L1|_]=H|T], Acc) 
-    when ?IS_L1_OF_HANGUL_V(L1) -> % V1 is found. LLV
+do_hangul(E, ll, [{hangul, v, H}|T], Acc) -> % V1 is found. LLV
     hangul_result(E, T, [H|Acc]); 
-do_hangul(E, _Mod, [_|_]=W, Acc) ->
-    % Skip and try to found other L. LX
-    Restarter=E(restart),
-    Restarter(W, Acc);
 do_hangul(E, Mod, [], Acc) -> 
     case E(get_more) of
     {NewW, NewE} ->
@@ -285,8 +259,10 @@ do_hangul(E, Mod, [], Acc) ->
     no_more ->
         E(Acc)
     end;
-do_hangul(E, _Mod, [], Acc) -> % L
-    E(Acc).
+do_hangul(E, _Mod, W, Acc) ->
+    % Skip and try to found other L. LX
+    Restarter=E(restart),
+    Restarter(W, Acc).
 
 %% @private
 -spec hangul_result(fun(), uca_array(), uca_array()) -> result().
@@ -303,31 +279,6 @@ hangul_result(E, T, Acc) ->
 do_extract0([], _) -> % No Any Char
     {[], []};
 
-% Table 18. Values for Base
-% -----------------------------------------------------------------------------
-% Range 1: Unified_Ideograph=True AND
-% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
-% Base  1: FB40
-% Range 2: Unified_Ideograph=True AND NOT
-% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
-% Base  2: FB80
-% Base  3: FBC0 Any other code point
-% Range 3: Ideographic AND NOT Unified_Ideograph
-% -----------------------------------------------------------------------------
-do_extract0([H|T], _)  
-    when ?CHAR_IS_UNIFIED_IDEOGRAPH(H) 
-     and (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(H) 
-       or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(H)) ->
-    W = implicit_weight(H, 16#FB40),
-    {W, T};
-    
-do_extract0([H|T], _)  
-    when ?CHAR_IS_UNIFIED_IDEOGRAPH(H) 
-      and (not (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(H) 
-             or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(H))) ->
-    W = implicit_weight(H, 16#FB80),
-    {W, T};
-
 % Try extract from ducet.
 %% var DFn:fun() Ducet function
 %% var CFn:fun() CCC function
@@ -339,6 +290,7 @@ do_extract0([H], D) -> % Last Char
     _ ->
         {[], []}
     end;    
+
 do_extract0([H|T]=S, DFn) ->
     % Max ccc among ccces of skipped chars beetween the starter char 
     % and the processed char. If there are no skipped chars, then 
@@ -358,10 +310,12 @@ do_extract0([H|T]=S, DFn) ->
     ?DBG("W:~w T: ~w~n", [W, T2]),
         {W, T2};
     not_found ->
-        W = implicit_weight(H, 16#FBC0),
+        do_implicit(H),
     ?DBG("W:~w not_found~n", [W]),
         {W, T}
     end.
+
+
 
 %% @param S:string() String
 %% Res is a last good Key.
@@ -416,7 +370,37 @@ do_extract1([]=_S, MFn, Key, OldCCC, Skipped, Res)
     {result, do_extract1_return(Res), lists:reverse(Skipped)}.
 
 
+
+
+
+% Table 18. Values for Base
+% -----------------------------------------------------------------------------
+% Range 1: Unified_Ideograph=True AND
+% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
+% Base  1: FB40
+% Range 2: Unified_Ideograph=True AND NOT
+% ((Block=CJK_Unified_Ideograph) OR (Block=CJK_Compatibility_Ideographs))
+% Base  2: FB80
+% Base  3: FBC0 Any other code point
+% Range 3: Ideographic AND NOT Unified_Ideograph
+% -----------------------------------------------------------------------------
+do_implicit(H)  
+    when ?CHAR_IS_UNIFIED_IDEOGRAPH(H) 
+     and (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(H) 
+       or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(H)) ->
+    implicit_weight(H, 16#FB40);
+    
+do_implicit(H)  
+    when ?CHAR_IS_UNIFIED_IDEOGRAPH(H) 
+      and (not (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(H) 
+             or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(H))) ->
+    implicit_weight(H, 16#FB80);
+
+do_implicit(H) ->
+    implicit_weight(H, 16#FBC0).
+
         
+
 
 %% After skiping a character, we set OldCCC = NewCCC.
 -spec select_ccc(false|ux_ccc(), ux_ccc()) -> false|ux_ccc().
@@ -485,6 +469,6 @@ implicit_weight(CP, BASE) when is_integer(CP) and is_integer(BASE) ->
     AAAA = BASE + (CP bsr 15),
     BBBB = (CP band 16#7FFF) bor 16#8000,
     [[non_variable, AAAA, 32, 2, 0], 
-     [non_variable, BBBB, 32, 2, 0]]. % reversed
+     [non_variable, BBBB, 0, 0, 0]]. % reversed
 
 

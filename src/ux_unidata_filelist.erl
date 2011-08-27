@@ -118,11 +118,22 @@ set_source(Level, Parser, Types, FileName) ->
                 _ -> true
                 end;
 
+            %% Get an ETS table (need for CLDR).
+            ('get_table') ->
+                case ets:info(Ets, 'owner') of
+                'undefined' -> 
+                    set_source('node', Parser, [Type], FileName),
+                    NewFun = get_source(Parser, Type),
+                    NewFun('get_table')
+                _ -> 
+                    Ets
+                end;
+
             ('reload') ->
                 case ets:info(Ets, 'owner') of
                 'undefined' -> 
                     set_source('node', Parser, [Type], FileName),
-                   NewFun = get_source(Parser, Type),
+                    NewFun = get_source(Parser, Type),
                     ok;
                 _ -> ok
                 end;
@@ -268,6 +279,9 @@ reg_pid(Key, StoreServerPid) when is_pid(StoreServerPid) ->
 %%
 
 key_to_filename({_Parser, _Types, FileName}) ->
+    % Get client enviroment:
+    Env = ux_unidata_store:get_env(Key),
     FileName.
+
 key_to_types({_Parser, Types, _FileName}) ->
     Types.

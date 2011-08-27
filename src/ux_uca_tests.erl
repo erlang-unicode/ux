@@ -128,7 +128,7 @@ non_ignorable_test_() ->
         fun() -> 
             prof(ux_unidata:open_test_file('collation_test_non_ignorable'), 
                 ux_uca_options:get_options(non_ignorable), 
-                1000000) 
+                10) 
         end}.
 
 shifted_test_() ->
@@ -136,7 +136,49 @@ shifted_test_() ->
         fun() -> 
             prof(ux_unidata:open_test_file('collation_test_shifted'), 
                 ux_uca_options:get_options(shifted), 
-                1000000) end}.
+                10) end}.
+
+
+
+
+cldr_non_ignorable_test_() ->
+    {spawn, 
+        [{timeout, 600, 
+            fun() -> 
+                Filename = ux_unidata:get_source_file('cldr_allkeys'),
+                ux_unidata_filelist:set_source('process', 'allkeys', ['ducet'], Filename),
+
+                prof(ux_unidata:open_test_file('cldr_collation_test_non_ignorable'), 
+                    ux_uca_options:get_options(non_ignorable), 
+                    1000000) 
+            end}
+        ]
+    }.
+
+cldr_shifted_test_() ->
+    {spawn,
+        [{timeout, 600, 
+            fun() -> 
+                Filename = ux_unidata:get_source_file('cldr_allkeys'),
+                ux_unidata_filelist:set_source('process', 'allkeys', ['ducet'], Filename),
+
+                prof(ux_unidata:open_test_file('cldr_collation_test_shifted'), 
+                    ux_uca_options:get_options(shifted), 
+                    1000000) end}
+        ]
+    }.
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 natural_sort_long_test_() ->

@@ -31,6 +31,7 @@ get_function('grapheme_break_property', Table) ->
     DefValue = 'Any',
 %   ux_unidata_parser:expand_fun(Table, DefValue).
     ux_unidata_parser:expand_opt_fun(Table, DefValue).
+%   ux_unidata_parser:expand_meta_fun(Table, DefValue).
 
 
 

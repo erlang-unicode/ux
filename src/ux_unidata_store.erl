@@ -10,6 +10,10 @@
 % First argument is a server pid.
 -export([check_types/2, table_list/1, remove_type/2]).
 
+% This functions are not connected to process directly, 
+% but called from different processes.
+-export([get_env/1]).
+
 -behavior(gen_server).
 -record(state, {
     clients = [] :: [pid()],
@@ -24,15 +28,24 @@
 %% Exported Client Functions
 %% Operation & Maintenance API
 start_link(File, ClientPid) ->
-    Arguments = [File, ClientPid],
-    Opts = [],
-    Ret = gen_server:start_link(?MODULE, Arguments, Opts).
-
-init([{ParserType, Types, FileName} = File, ClientPid]) ->
     % Check a parser module and types.
     ok = ux_unidata_parser:check(File),
 
+    % We in the client code
+    % Move some env variables from the client dictionary to the store dicntionary.
+    ClientEnv = get_env(File),
+    Arguments = [File, ClientPid, ClientEnv],
+    Opts = [],
+    Ret = gen_server:start_link(?MODULE, Arguments, Opts).
+
+
+init([{ParserType, Types, FileName} = File, ClientPid, ClientEnv]) ->
+    % We in the process code: extract client data.
+
+    set_env(File, ClientEnv),
+
     % Registrate pid of this server.
+    % PS: reg_pid uses env.
     ux_unidata_filelist:reg_pid(File, self()),
 
     set_monitor(ClientPid),
@@ -221,3 +234,15 @@ set_monitor(ClientPid) ->
         [?MODULE, self(), ClientPid]),
     erlang:monitor(process, ClientPid).
     
+
+
+
+%%
+%% Helpers
+%%
+
+get_env(File) ->
+    ux_unidata_parser:get_env(File).
+
+set_env(File, Env) ->
+    ux_unidata_parser:get_env(File, Env).

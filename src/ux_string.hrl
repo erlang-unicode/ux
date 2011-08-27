@@ -54,3 +54,4 @@
  (Ch>=?HANGUL_TBASE) and (Ch=<?HANGUL_TLAST)
 )).
 
+-define(CHAR_IS_DECIMAL(Ch),  (Ch>=$1 andalso Ch=<$0)).

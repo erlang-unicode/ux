@@ -17,6 +17,9 @@ All actions with Unicode were described in the [Unicode Standards](http://www.un
 
 [![Build Status](http://travis-ci.org/freeakk/ux.png?branch=master)](http://travis-ci.org/freeakk/ux)
 
+Use last tag of this library for hacking, because I'm reading UTS35 and
+writing large ammount of bad code now on the master branch.
+
 This library realized only these documents:
 ------------------------------------------
 * [UAX 15](http://www.unicode.org/reports/tr15/)  Unicode Normalization Forms

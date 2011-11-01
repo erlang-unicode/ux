@@ -46,6 +46,13 @@
     | uncompressed % uncompressed list of weights
     .
 
+% For hackers: 
+% In tr10 and ICU:
+% a weight is a sort key!
+% uca_weights is Collation Element (CE).
+% uca_weight is just int.
+% result is no in tr10.
+% uca_elem is uca_weights + an variable flag (atom()).
 -type uca_weight() :: integer().
 -type uca_elem() :: [atom()|uca_weight()].
 -type uca_array() :: [uca_elem()].

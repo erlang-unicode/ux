@@ -34,21 +34,11 @@ init([]) ->
         {ux_unidata_server, start_link, []},
         permanent, 10000, worker, [ux_unidata_server]},
 
-    % Provide a global dictionary for this node.
-    DefaultCldrWorker = {ux_cldr_server, 
-        {ux_cldr_server, start_link, []},
-        permanent, 10000, worker, [ux_cldr_server]},
-
     % Can add functions to a module on the fly
     MetaWorker = {ux_unidata_meta, 
         {metamodule, start_link, [ux_unidata_meta]},
         permanent, 10000, worker, [metamodule]},
 
-    % Store models from erlsom.
-    XsdWorker = {ux_erlsom_model_server, 
-        {ux_erlsom_model_server, start_link, []},
-        permanent, 10000, worker, [ux_erlsom_model_server]},
-
     Strategy = {one_for_one, 10, 10},
-    {ok, {Strategy, [StoreSup, FileListWorker, DefaultUnidataWorker, DefaultCldrWorker, MetaWorker, XsdWorker]}}.
+    {ok, {Strategy, [StoreSup, FileListWorker, DefaultUnidataWorker, MetaWorker]}}.
 

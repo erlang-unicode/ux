@@ -47,7 +47,6 @@
 -module(ux_unidata).
 -author('Uvarov Michael <freeakk@gmail.com>').
 -export([get_source_file/1, get_test_file/1, open_test_file/1]).
--export([get_xsd_file/1]).
 -export([char_to_upper/1, char_to_lower/1, is_upper/1, is_lower/1,
         char_comment/1, char_type/1, ccc/1, 
         nfc_qc/1, nfd_qc/1, nfkc_qc/1, nfkd_qc/1, 
@@ -69,16 +68,11 @@ priv_dir() ->
 
 
 get_dir('ucd') -> priv_dir() ++ "/"  ?UNIDATA_VERSION  "/";
-get_dir('uca') -> priv_dir() ++ "/"  ?UCADATA_VERSION  "/";
-get_dir('cldr') -> priv_dir() ++ "/CLDR/".
+get_dir('uca') -> priv_dir() ++ "/"  ?UCADATA_VERSION  "/".
 
 -spec get_source_file(Parser::atom()) -> string().
 get_source_file('allkeys') ->
     get_dir('uca') ++ "/allkeys.txt.gz";
-get_source_file('cldr_allkeys') ->
-    get_dir('uca') ++ "/CollationAuxiliary/allkeys_CLDR.txt.gz";
-get_source_file('cldr_core') ->
-    get_dir('cldr') ++ "/core.zip";
 get_source_file('blocks') ->
     get_dir('ucd') ++ "/Blocks.txt";
 get_source_file('scripts') ->
@@ -94,9 +88,6 @@ get_source_file('grapheme_break_property') ->
 get_source_file('word_break_property') ->
     get_dir('ucd') ++ "/auxiliary/WordBreakProperty.txt".
 
-% xsd
-get_xsd_file('ldml') ->
-    get_dir('cldr') ++ "/schema/ldml.xsd".
 
 
 
@@ -117,14 +108,6 @@ get_test_file('collation_test_non_ignorable') ->
 
 
 
-
-get_test_file('cldr_collation_test_shifted') ->
-    get_dir('uca') ++ "CollationAuxiliary/" 
-                    "CollationTest_CLDR_SHIFTED_SHORT.txt.gz";
-
-get_test_file('cldr_collation_test_non_ignorable') ->
-    get_dir('uca') ++ "CollationAuxiliary/" 
-                    "CollationTest_CLDR_NON_IGNORABLE_SHORT.txt.gz";
 
 
 

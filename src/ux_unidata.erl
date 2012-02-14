@@ -55,7 +55,7 @@
 
         break_props/1]).
 -include("ux_unidata.hrl").
--include("ux_char.hrl").
+-type ux_ccc() :: ux_types:ux_ccc().
 
 
 

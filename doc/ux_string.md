@@ -1,10 +1,8 @@
-Module ux_string
-================
 
 
-<h1>Module ux_string</h1>
-
+#Module ux_string#
 * [Description](#description)
+* [Data Types](#types)
 * [Function Index](#index)
 * [Function Details](#functions)
 
@@ -16,31 +14,41 @@ String functions.
 Copyright (c) 2010-2011 Michael Uvarov
 
 __Authors:__ Michael Uvarov ([`freeakk@gmail.com`](mailto:freeakk@gmail.com)).
+<a name="types"></a>
 
-<h2><a name="index">Function Index</a></h2>
+##Data Types##
 
+
+
+
+###<a name="type-char_type">char_type()</a>##
+
+
+
+<pre>char_type() = <a href="ux_types.md#type-char_type">ux_types:char_type()</a></pre>
+<a name="index"></a>
+
+##Function Index##
 
 
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#delete_types-2">delete_types/2</a></td><td>Returns a new string which is made from the chars of Str
 which are not a type from Types list.</td></tr><tr><td valign="top"><a href="#delete_types-3">delete_types/3</a></td><td>Stops delete_type/2 after Limit deleted chars.</td></tr><tr><td valign="top"><a href="#explode-2">explode/2</a></td><td>Splits the string by delimeters.</td></tr><tr><td valign="top"><a href="#explode-3">explode/3</a></td><td></td></tr><tr><td valign="top"><a href="#explode_types-2">explode_types/2</a></td><td>Returns a new list of strings which are parts of Str splited
-by separator chars of a type from Types list.</td></tr><tr><td valign="top"><a href="#filter_types-2">filter_types/2</a></td><td>Returns a new string which is made from the chars of Str
+by separator chars of a type from Types list.</td></tr><tr><td valign="top"><a href="#extract_words-1">extract_words/1</a></td><td></td></tr><tr><td valign="top"><a href="#filter_types-2">filter_types/2</a></td><td>Returns a new string which is made from the chars of Str
 which are a type from Types list.</td></tr><tr><td valign="top"><a href="#filter_types-3">filter_types/3</a></td><td>Stops after -Limit skipped chars.</td></tr><tr><td valign="top"><a href="#first-2">first/2</a></td><td>Return Len chars from the beginning of the string.</td></tr><tr><td valign="top"><a href="#first_types-3">first_types/3</a></td><td>If Len<0, then gets first Len chars of type, which is in Types
-If Len>0, then gets first -Len chars of type, which is NOT in Types.</td></tr><tr><td valign="top"><a href="#freq-1">freq/1</a></td><td>Counts how many identical chars in the string.</td></tr><tr><td valign="top"><a href=".md_special_chars-1">html_special_chars/1</a></td><td>Encodes html special chars.</td></tr><tr><td valign="top"><a href="#info-1">info/1</a></td><td>Return information about a string.</td></tr><tr><td valign="top"><a href="#is_nfc-1">is_nfc/1</a></td><td></td></tr><tr><td valign="top"><a href="#is_nfd-1">is_nfd/1</a></td><td></td></tr><tr><td valign="top"><a href="#is_nfkc-1">is_nfkc/1</a></td><td></td></tr><tr><td valign="top"><a href="#is_nfkd-1">is_nfkd/1</a></td><td></td></tr><tr><td valign="top"><a href="#last-2">last/2</a></td><td>Return Len chars from the beginning of the string.</td></tr><tr><td valign="top"><a href="#last_types-3">last_types/3</a></td><td>If Len<0, then gets last Len chars of type, which is in Types
-If Len>0, then gets last -Len chars of type, which is NOT in Types.</td></tr><tr><td valign="top"><a href="#length-1">length/1</a></td><td>Compute count of graphemes in the string.</td></tr><tr><td valign="top"><a href="#reverse-1">reverse/1</a></td><td>Reverses the string graphemes.</td></tr><tr><td valign="top"><a href="#split-2">split/2</a></td><td></td></tr><tr><td valign="top"><a href="#split-3">split/3</a></td><td></td></tr><tr><td valign="top"><a href="#split_types-2">split_types/2</a></td><td>Returns a new list of strings which are parts of Str splited
-by separator chars of a type from Types list.</td></tr><tr><td valign="top"><a href="#strip_tags-1">strip_tags/1</a></td><td>Deletes tags from the string.</td></tr><tr><td valign="top"><a href="#strip_tags-2">strip_tags/2</a></td><td></td></tr><tr><td valign="top"><a href="#strip_tags-3">strip_tags/3</a></td><td></td></tr><tr><td valign="top"><a href="#to_graphemes-1">to_graphemes/1</a></td><td>Split unicode string into  
+If Len>0, then gets first -Len chars of type, which is NOT in Types.</td></tr><tr><td valign="top"><a href="#freq-1">freq/1</a></td><td>Counts how many identical chars in the string.</td></tr><tr><td valign="top"><a href="#is_nfc-1">is_nfc/1</a></td><td></td></tr><tr><td valign="top"><a href="#is_nfd-1">is_nfd/1</a></td><td></td></tr><tr><td valign="top"><a href="#is_nfkc-1">is_nfkc/1</a></td><td></td></tr><tr><td valign="top"><a href="#is_nfkd-1">is_nfkd/1</a></td><td></td></tr><tr><td valign="top"><a href="#last-2">last/2</a></td><td>Return Len chars from the beginning of the string.</td></tr><tr><td valign="top"><a href="#last_types-3">last_types/3</a></td><td>If Len<0, then gets last Len chars of type, which is in Types
+If Len>0, then gets last -Len chars of type, which is NOT in Types.</td></tr><tr><td valign="top"><a href="#length-1">length/1</a></td><td>Compute count of graphemes in the string.</td></tr><tr><td valign="top"><a href="#reverse-1">reverse/1</a></td><td>Reverses the string graphemes.</td></tr><tr><td valign="top"><a href="#script-1">script/1</a></td><td></td></tr><tr><td valign="top"><a href="#scripts-1">scripts/1</a></td><td></td></tr><tr><td valign="top"><a href="#split-2">split/2</a></td><td></td></tr><tr><td valign="top"><a href="#split-3">split/3</a></td><td></td></tr><tr><td valign="top"><a href="#split_types-2">split_types/2</a></td><td>Returns a new list of strings which are parts of Str splited
+by separator chars of a type from Types list.</td></tr><tr><td valign="top"><a href="#to_graphemes-1">to_graphemes/1</a></td><td>Split unicode string into  
 [graphemes](http://en.wikipedia.org/wiki/Grapheme).</td></tr><tr><td valign="top"><a href="#to_lower-1">to_lower/1</a></td><td>Converts characters of a string to a lowercase format.</td></tr><tr><td valign="top"><a href="#to_ncr-1">to_ncr/1</a></td><td>Convert everything from utf-8 into an NCR (Numeric Character Reference).</td></tr><tr><td valign="top"><a href="#to_nfc-1">to_nfc/1</a></td><td></td></tr><tr><td valign="top"><a href="#to_nfd-1">to_nfd/1</a></td><td></td></tr><tr><td valign="top"><a href="#to_nfkc-1">to_nfkc/1</a></td><td></td></tr><tr><td valign="top"><a href="#to_nfkd-1">to_nfkd/1</a></td><td></td></tr><tr><td valign="top"><a href="#to_string-1">to_string/1</a></td><td>Converts something to string (list).</td></tr><tr><td valign="top"><a href="#to_upper-1">to_upper/1</a></td><td>Converts characters of a string to a uppercase format.</td></tr><tr><td valign="top"><a href="#types-1">types/1</a></td><td>Returns various "character types" which can be used
 as a default categorization in implementations.</td></tr></table>
 
 
+<a name="functions"></a>
 
-
-<h2><a name="functions">Function Details</a></h2>
-
+##Function Details##
 
 <a name="delete_types-2"></a>
 
-<h3>delete_types/2</h3>
-
+###delete_types/2##
 
 
 
@@ -54,8 +62,7 @@ as a default categorization in implementations.</td></tr></table>
 Returns a new string which is made from the chars of Str
 which are not a type from Types list.<a name="delete_types-3"></a>
 
-<h3>delete_types/3</h3>
-
+###delete_types/3##
 
 
 
@@ -69,13 +76,12 @@ which are not a type from Types list.<a name="delete_types-3"></a>
 Stops delete_type/2 after Limit deleted chars. If Limit < 0, then
 stops after -Limit skipped chars.<a name="explode-2"></a>
 
-<h3>explode/2</h3>
+###explode/2##
 
 
 
 
-
-<pre>explode(Delimeter::[string()], Str::string()) -> [string()]</pre>
+<pre>explode(Delimeter::[nonempty_string()], Str::string()) -&gt; [string()]</pre>
 <br></br>
 
 
@@ -83,20 +89,18 @@ stops after -Limit skipped chars.<a name="explode-2"></a>
 
 Splits the string by delimeters.<a name="explode-3"></a>
 
-<h3>explode/3</h3>
+###explode/3##
 
 
 
 
-
-<pre>explode(Delimeter::[string()], Str::string(), Limit::integer()) -> string()</pre>
+<pre>explode(Delimeter::[nonempty_string()], Str::string(), Limit::integer()) -&gt; string()</pre>
 <br></br>
 
 
 <a name="explode_types-2"></a>
 
-<h3>explode_types/2</h3>
-
+###explode_types/2##
 
 
 
@@ -108,10 +112,18 @@ Splits the string by delimeters.<a name="explode-3"></a>
 
 
 Returns a new list of strings which are parts of Str splited
-by separator chars of a type from Types list.<a name="filter_types-2"></a>
+by separator chars of a type from Types list.<a name="extract_words-1"></a>
 
-<h3>filter_types/2</h3>
+###extract_words/1##
 
+
+
+
+`extract_words(S) -> any()`
+
+<a name="filter_types-2"></a>
+
+###filter_types/2##
 
 
 
@@ -125,8 +137,7 @@ by separator chars of a type from Types list.<a name="filter_types-2"></a>
 Returns a new string which is made from the chars of Str
 which are a type from Types list.<a name="filter_types-3"></a>
 
-<h3>filter_types/3</h3>
-
+###filter_types/3##
 
 
 
@@ -139,8 +150,7 @@ which are a type from Types list.<a name="filter_types-3"></a>
 
 Stops after -Limit skipped chars.<a name="first-2"></a>
 
-<h3>first/2</h3>
-
+###first/2##
 
 
 
@@ -151,8 +161,7 @@ Stops after -Limit skipped chars.<a name="first-2"></a>
 
 Return Len chars from the beginning of the string.<a name="first_types-3"></a>
 
-<h3>first_types/3</h3>
-
+###first_types/3##
 
 
 
@@ -166,13 +175,12 @@ Return Len chars from the beginning of the string.<a name="first_types-3"></a>
 If Len<0, then gets first Len chars of type, which is in Types
 If Len>0, then gets first -Len chars of type, which is NOT in Types<a name="freq-1"></a>
 
-<h3>freq/1</h3>
+###freq/1##
 
 
 
 
-
-<pre>freq(Str::string()) -> dict()</pre>
+<pre>freq(Str::string()) -&gt; dict()</pre>
 <br></br>
 
 
@@ -183,86 +191,53 @@ Returns a dict.
 Example:
 <pre>  >dict:to_list(ux_string:freq("FFDF")).
   [{70,3},{68,1}]</pre>
-<a name="html_special_chars-1"></a>
+<a name="is_nfc-1"></a>
 
-<h3>html_special_chars/1</h3>
-
-
-
-
-
-<pre>html_special_chars(Str::string()) -> string()</pre>
-<br></br>
+###is_nfc/1##
 
 
 
 
-Encodes html special chars.<a name="info-1"></a>
-
-<h3>info/1</h3>
-
-
-
-
-
-<pre>info(Str::string()) -> #unistr_info{}</pre>
-<br></br>
-
-
-
-
-Return information about a string.<a name="is_nfc-1"></a>
-
-<h3>is_nfc/1</h3>
-
-
-
-
-
-<pre>is_nfc(Str::list()) -> yes | no | maybe</pre>
+<pre>is_nfc(Str::list()) -&gt; yes | no | maybe</pre>
 <br></br>
 
 
 <a name="is_nfd-1"></a>
 
-<h3>is_nfd/1</h3>
+###is_nfd/1##
 
 
 
 
-
-<pre>is_nfd(Str::list()) -> yes | no | maybe</pre>
+<pre>is_nfd(Str::list()) -&gt; yes | no | maybe</pre>
 <br></br>
 
 
 <a name="is_nfkc-1"></a>
 
-<h3>is_nfkc/1</h3>
+###is_nfkc/1##
 
 
 
 
-
-<pre>is_nfkc(Str::list()) -> yes | no | maybe</pre>
+<pre>is_nfkc(Str::list()) -&gt; yes | no | maybe</pre>
 <br></br>
 
 
 <a name="is_nfkd-1"></a>
 
-<h3>is_nfkd/1</h3>
+###is_nfkd/1##
 
 
 
 
-
-<pre>is_nfkd(Str::list()) -> yes | no | maybe</pre>
+<pre>is_nfkd(Str::list()) -&gt; yes | no | maybe</pre>
 <br></br>
 
 
 <a name="last-2"></a>
 
-<h3>last/2</h3>
-
+###last/2##
 
 
 
@@ -273,8 +248,7 @@ Return information about a string.<a name="is_nfc-1"></a>
 
 Return Len chars from the beginning of the string.<a name="last_types-3"></a>
 
-<h3>last_types/3</h3>
-
+###last_types/3##
 
 
 
@@ -288,20 +262,18 @@ Return Len chars from the beginning of the string.<a name="last_types-3"></a>
 If Len<0, then gets last Len chars of type, which is in Types
 If Len>0, then gets last -Len chars of type, which is NOT in Types<a name="length-1"></a>
 
-<h3>length/1</h3>
+###length/1##
 
 
 
 
-
-`length(Str) -> any()`
+`length(S) -> any()`
 
 
 
 Compute count of graphemes in the string.<a name="reverse-1"></a>
 
-<h3>reverse/1</h3>
-
+###reverse/1##
 
 
 
@@ -310,10 +282,27 @@ Compute count of graphemes in the string.<a name="reverse-1"></a>
 
 
 
-Reverses the string graphemes.<a name="split-2"></a>
+Reverses the string graphemes.<a name="script-1"></a>
 
-<h3>split/2</h3>
+###script/1##
 
+
+
+
+`script(S) -> any()`
+
+<a name="scripts-1"></a>
+
+###scripts/1##
+
+
+
+
+`scripts(S) -> any()`
+
+<a name="split-2"></a>
+
+###split/2##
 
 
 
@@ -322,8 +311,7 @@ Reverses the string graphemes.<a name="split-2"></a>
 
 <a name="split-3"></a>
 
-<h3>split/3</h3>
-
+###split/3##
 
 
 
@@ -332,8 +320,7 @@ Reverses the string graphemes.<a name="split-2"></a>
 
 <a name="split_types-2"></a>
 
-<h3>split_types/2</h3>
-
+###split_types/2##
 
 
 
@@ -346,60 +333,9 @@ Reverses the string graphemes.<a name="split-2"></a>
 
 Returns a new list of strings which are parts of Str splited
 by separator chars of a type from Types list. Parts can not be
-empty.<a name="strip_tags-1"></a>
+empty.<a name="to_graphemes-1"></a>
 
-<h3>strip_tags/1</h3>
-
-
-
-
-
-<pre>strip_tags(Str::string()) -> string()</pre>
-<br></br>
-
-
-
-
-
-
-Deletes tags from the string.
-
-Example:
-<pre>       > ux_string:strip_tags("<b>some string</b>").
-       "some string"
-       > ux_string:strip_tags("<h1>Head</h1><p>and paragraf</p>", ["h1"]).
-       "<h1>Head</h1>and paragraf"
-       ux_string:strip_tags("<h1>Head</h1><p><!-- and paragraf --></p>", ["!--"]).
-       "Head<!-- and paragraf -->"
-       ux_string:st("a<br />b", [], " ").
-       "a b"</pre><a name="strip_tags-2"></a>
-
-<h3>strip_tags/2</h3>
-
-
-
-
-
-<pre>strip_tags(Str::string, Allowed::[string() | atom() | char()]) -> string()</pre>
-<br></br>
-
-
-<a name="strip_tags-3"></a>
-
-<h3>strip_tags/3</h3>
-
-
-
-
-
-<pre>strip_tags(Str::string, Allowed::[string() | atom() | char()], Alt::string()) -> string()</pre>
-<br></br>
-
-
-<a name="to_graphemes-1"></a>
-
-<h3>to_graphemes/1</h3>
-
+###to_graphemes/1##
 
 
 
@@ -428,13 +364,12 @@ by two Unicode code points. These user-perceived characters are
 approximated by what is called a grapheme cluster, which can be
 determined programmatically.<a name="to_lower-1"></a>
 
-<h3>to_lower/1</h3>
+###to_lower/1##
 
 
 
 
-
-<pre>to_lower(Str::string()) -> string()</pre>
+<pre>to_lower(Str::string()) -&gt; string()</pre>
 <br></br>
 
 
@@ -442,8 +377,7 @@ determined programmatically.<a name="to_lower-1"></a>
 
 Converts characters of a string to a lowercase format.<a name="to_ncr-1"></a>
 
-<h3>to_ncr/1</h3>
-
+###to_ncr/1##
 
 
 
@@ -454,61 +388,56 @@ Converts characters of a string to a lowercase format.<a name="to_ncr-1"></a>
 
 Convert everything from utf-8 into an NCR (Numeric Character Reference).<a name="to_nfc-1"></a>
 
-<h3>to_nfc/1</h3>
+###to_nfc/1##
 
 
 
 
-
-<pre>to_nfc(Str::list()) -> list()</pre>
+<pre>to_nfc(Str::list()) -&gt; list()</pre>
 <br></br>
 
 
 <a name="to_nfd-1"></a>
 
-<h3>to_nfd/1</h3>
+###to_nfd/1##
 
 
 
 
-
-<pre>to_nfd(Str::list()) -> list()</pre>
+<pre>to_nfd(Str::list()) -&gt; list()</pre>
 <br></br>
 
 
 <a name="to_nfkc-1"></a>
 
-<h3>to_nfkc/1</h3>
+###to_nfkc/1##
 
 
 
 
-
-<pre>to_nfkc(Str::list()) -> list()</pre>
+<pre>to_nfkc(Str::list()) -&gt; list()</pre>
 <br></br>
 
 
 <a name="to_nfkd-1"></a>
 
-<h3>to_nfkd/1</h3>
+###to_nfkd/1##
 
 
 
 
-
-<pre>to_nfkd(Str::list()) -> list()</pre>
+<pre>to_nfkd(Str::list()) -&gt; list()</pre>
 <br></br>
 
 
 <a name="to_string-1"></a>
 
-<h3>to_string/1</h3>
+###to_string/1##
 
 
 
 
-
-<pre>to_string(Str::string() | atom() | integer()) -> string()</pre>
+<pre>to_string(Str::string() | atom() | integer()) -&gt; string()</pre>
 <br></br>
 
 
@@ -516,13 +445,12 @@ Convert everything from utf-8 into an NCR (Numeric Character Reference).<a name=
 
 Converts something to string (list).<a name="to_upper-1"></a>
 
-<h3>to_upper/1</h3>
+###to_upper/1##
 
 
 
 
-
-<pre>to_upper(Str::string()) -> string()</pre>
+<pre>to_upper(Str::string()) -&gt; string()</pre>
 <br></br>
 
 
@@ -530,8 +458,7 @@ Converts something to string (list).<a name="to_upper-1"></a>
 
 Converts characters of a string to a uppercase format.<a name="types-1"></a>
 
-<h3>types/1</h3>
-
+###types/1##
 
 
 

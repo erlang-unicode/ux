@@ -1,9 +1,6 @@
-Module ux_uca
-=============
 
 
-<h1>Module ux_uca</h1>
-
+#Module ux_uca#
 * [Description](#description)
 * [Data Types](#types)
 * [Function Index](#index)
@@ -17,16 +14,14 @@ see Unicode Technical Standard #10.
 
 Copyright (c) 2010-2011 Michael Uvarov
 
-__Authors:__ Michael Uvarov ([`freeakk@gmail.com`](mailto:freeakk@gmail.com)).
+__Authors:__ Michael Uvarov ([`freeakk@gmail.com`](mailto:freeakk@gmail.com)).<a name="description"></a>
 
-<h2><a name="description">Description</a></h2>
-
-
+##Description##
 
 
 
-<h3><a name="Additional_information_(and_links)">Additional information (and links)</a></h3>
 
+###<a name="Additional_information_(and_links)">Additional information (and links)</a>##
 
 
 
@@ -79,8 +74,7 @@ For hangul collation:
 
 
 
-<h3><a name="Levels">Levels</a></h3>
-
+###<a name="Levels">Levels</a>##
 
 
    
@@ -100,14 +94,12 @@ Example using levels:
 
 
 
-<h3><a name="Common_configurations">Common configurations</a></h3>
+###<a name="Common_configurations">Common configurations</a>##
 
 
 
 
-
-<h4><a name="Non-ignorable">Non-ignorable</a></h4>
-
+####<a name="Non-ignorable">Non-ignorable</a>##
 
 
    
@@ -127,8 +119,7 @@ Example:
 
 
 
-<h4><a name="Blanked">Blanked</a></h4>
-
+####<a name="Blanked">Blanked</a>##
 
 
    
@@ -151,8 +142,7 @@ Example:
 
 
 
-<h4><a name="Shifted">Shifted</a></h4>
-
+####<a name="Shifted">Shifted</a>##
 
 
    
@@ -175,8 +165,7 @@ Example:
 
 
 
-<h4><a name="Shift-trimmed">Shift-trimmed</a></h4>
-
+####<a name="Shift-trimmed">Shift-trimmed</a>##
 
 
    
@@ -189,16 +178,22 @@ Example:
    ux_uca:sort_key(C, "Shift-trimmed collation sort key").</pre>
 
 
+<a name="types"></a>
+
+##Data Types##
 
 
-<h2><a name="types">Data Types</a></h2>
+
+
+###<a name="type-result">result()</a>##
 
 
 
+<pre>result() = {[<a href="#type-uca_elem">uca_elem()</a>], string()}</pre>
 
 
-<h3 class="typedecl"><a name="type-search_result">search_result()</a></h3>
 
+###<a name="type-search_result">search_result()</a>##
 
 
 
@@ -206,31 +201,91 @@ Example:
 
 
 
-<h3 class="typedecl"><a name="type-uca_compare_result">uca_compare_result()</a></h3>
+###<a name="type-uca_alternate">uca_alternate()</a>##
 
+
+
+<pre>uca_alternate() = shifted | shift_trimmed | non_ignorable | blanked</pre>
+
+
+
+###<a name="type-uca_array">uca_array()</a>##
+
+
+
+<pre>uca_array() = [<a href="#type-uca_elem">uca_elem()</a>]</pre>
+
+
+
+###<a name="type-uca_case_first">uca_case_first()</a>##
+
+
+
+<pre>uca_case_first() = lower | upper | off</pre>
+
+
+
+###<a name="type-uca_compare_result">uca_compare_result()</a>##
 
 
 
 <pre>uca_compare_result() = lower | greater | equal</pre>
 
 
-<h2><a name="index">Function Index</a></h2>
 
+###<a name="type-uca_elem">uca_elem()</a>##
+
+
+
+<pre>uca_elem() = [atom() | <a href="#type-uca_weight">uca_weight()</a>]</pre>
+
+
+
+###<a name="type-uca_sort_key_format">uca_sort_key_format()</a>##
+
+
+
+<pre>uca_sort_key_format() = binary | list | uncompressed</pre>
+
+
+
+###<a name="type-uca_strength">uca_strength()</a>##
+
+
+
+<pre>uca_strength() = 1 | 2 | 3 | 4</pre>
+
+
+
+###<a name="type-uca_weight">uca_weight()</a>##
+
+
+
+<pre>uca_weight() = integer()</pre>
+
+
+
+###<a name="type-uca_weights">uca_weights()</a>##
+
+
+
+<pre>uca_weights() = [<a href="#type-uca_weight">uca_weight()</a>]</pre>
+<a name="index"></a>
+
+##Function Index##
 
 
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#compare-2">compare/2</a></td><td>Compare two strings and return: lower, greater or equal.</td></tr><tr><td valign="top"><a href="#compare-3">compare/3</a></td><td></td></tr><tr><td valign="top"><a href="#search-2">search/2</a></td><td></td></tr><tr><td valign="top"><a href="#search-3">search/3</a></td><td></td></tr><tr><td valign="top"><a href="#search-4">search/4</a></td><td></td></tr><tr><td valign="top"><a href="#sort-1">sort/1</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort-2">sort/2</a></td><td>Sort a list of strings.</td></tr><tr><td valign="top"><a href="#sort_array-1">sort_array/1</a></td><td>Convert the unicode string to the
 <a href="http://unicode.org/reports/tr10/#Step_2" target="_top">collation element array</a></td></tr><tr><td valign="top"><a href="#sort_array-2">sort_array/2</a></td><td></td></tr><tr><td valign="top"><a href="#sort_key-1">sort_key/1</a></td><td>Convert the unicode string to the sort key.</td></tr><tr><td valign="top"><a href="#sort_key-2">sort_key/2</a></td><td></td></tr></table>
 
 
+<a name="functions"></a>
 
-
-<h2><a name="functions">Function Details</a></h2>
-
+##Function Details##
 
 <a name="compare-2"></a>
 
-<h3>compare/2</h3>
-
+###compare/2##
 
 
 
@@ -243,8 +298,7 @@ Example:
 
 Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
-<h3>compare/3</h3>
-
+###compare/3##
 
 
 
@@ -255,8 +309,7 @@ Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
 <a name="search-2"></a>
 
-<h3>search/2</h3>
-
+###search/2##
 
 
 
@@ -267,8 +320,7 @@ Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
 <a name="search-3"></a>
 
-<h3>search/3</h3>
-
+###search/3##
 
 
 
@@ -279,8 +331,7 @@ Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
 <a name="search-4"></a>
 
-<h3>search/4</h3>
-
+###search/4##
 
 
 
@@ -291,13 +342,12 @@ Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
 <a name="sort-1"></a>
 
-<h3>sort/1</h3>
+###sort/1##
 
 
 
 
-
-<pre>sort(Strings::[string()]) -> [string()]</pre>
+<pre>sort(Strings::[string()]) -&gt; [string()]</pre>
 <br></br>
 
 
@@ -305,13 +355,12 @@ Compare two strings and return: lower, greater or equal.<a name="compare-3"></a>
 
 Sort a list of strings.<a name="sort-2"></a>
 
-<h3>sort/2</h3>
+###sort/2##
 
 
 
 
-
-<pre>sort(Uca_options::#uca_options{}, Strings::[string()]) -> [string()]</pre>
+<pre>sort(Uca_options::#uca_options{}, Strings::[string()]) -&gt; [string()]</pre>
 <br></br>
 
 
@@ -319,8 +368,7 @@ Sort a list of strings.<a name="sort-2"></a>
 
 Sort a list of strings.<a name="sort_array-1"></a>
 
-<h3>sort_array/1</h3>
-
+###sort_array/1##
 
 
 
@@ -332,8 +380,7 @@ Sort a list of strings.<a name="sort_array-1"></a>
 Convert the unicode string to the
 [collation element array](http://unicode.org/reports/tr10/#Step_2)<a name="sort_array-2"></a>
 
-<h3>sort_array/2</h3>
-
+###sort_array/2##
 
 
 
@@ -342,8 +389,7 @@ Convert the unicode string to the
 
 <a name="sort_key-1"></a>
 
-<h3>sort_key/1</h3>
-
+###sort_key/1##
 
 
 
@@ -354,8 +400,7 @@ Convert the unicode string to the
 
 Convert the unicode string to the sort key.<a name="sort_key-2"></a>
 
-<h3>sort_key/2</h3>
-
+###sort_key/2##
 
 
 

@@ -5,7 +5,7 @@
 %%% @end
 
 -module(ux_gb).
--include("ux_char.hrl").
+-include("ux.hrl").
 -export([split/2]).
 
 

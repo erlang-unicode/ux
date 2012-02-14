@@ -1,5 +1,0 @@
--ifdef(UNIDATA_DEBUG).
--define(DBG(X,Y), error_logger:info_msg(X,Y)).
--else.
--define(DBG(X,Y), ok).
--endif.

@@ -38,8 +38,10 @@
         is_unified_ideograph/1, 
         is_hangul_precomposed/1 
         ]).
--include("ux_char.hrl").
--include("ux_unidata.hrl").
+-include("ux.hrl").
+
+-type char_type() :: ux_types:char_type().
+
 
 -spec to_lower(char()) -> char(); 
         (skip_check) -> fun().

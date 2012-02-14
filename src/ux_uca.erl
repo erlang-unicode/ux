@@ -160,10 +160,62 @@
 %       get_options/2
         ]).
 
+-import(ux_uca_utils, [
+    do_alt/2, 
+    do_alt/3, 
+    do_extract/3, 
+    get_ducet/0, 
+    get_options/0, 
+    split_levels/3, 
+    get_reassign_function/2]).
 
--include("ux.hrl").
--include("ux_uca.hrl").
--include("ux_uca_common.hrl").
+
+-type uca_alternate() ::
+      shifted
+    | shift_trimmed
+    | non_ignorable
+    | blanked
+    .
+
+
+-type uca_case_first() ::
+      lower
+    | upper
+    | off
+    .
+
+-type uca_strength() ::
+     1 | 2 | 3 | 4.
+
+-type uca_sort_key_format() ::
+      binary
+    | list % comressed list of weights
+    | uncompressed % uncompressed list of weights
+    .
+
+% For hackers: 
+% In tr10 and ICU:
+% a weight is a sort key!
+% uca_weights is Collation Element (CE).
+% uca_weight is just int.
+% result is no in tr10.
+% uca_elem is uca_weights + an variable flag (atom()).
+-type uca_weight() :: integer().
+-type uca_elem() :: [atom()|uca_weight()].
+-type uca_array() :: [uca_elem()].
+-type result() :: {[uca_elem()], string()}.
+-type uca_weights() :: [uca_weight()].
+
+-export_type([uca_alternate/0,
+    uca_case_first/0,
+    uca_strength/0,
+    uca_sort_key_format/0,
+    uca_weight/0,
+    uca_elem/0,
+    uca_array/0,
+    result/0,
+    uca_weights/0]).
+
 
 -type uca_compare_result() ::
       lower
@@ -172,6 +224,9 @@
     .
 
 -type uca_generator() :: fun().
+
+-include("ux.hrl").
+-include("uca/ux_uca.hrl").
 
 
 -spec compare(string(), string()) -> uca_compare_result().

@@ -5,7 +5,7 @@
 %%% @end
 
 -module(ux_wb).
--include("ux_char.hrl").
+-include("ux.hrl").
 -export([split/1, words/1]).
 
 

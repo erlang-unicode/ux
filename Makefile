@@ -10,7 +10,7 @@ all:
 edoc:
 	@$(REBAR) skip_deps=true doc
 
-test:
+eunit:
 	@$(REBAR) skip_deps=true eunit
 
 clean:

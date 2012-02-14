@@ -55,9 +55,7 @@
 
 
 -include("ux.hrl").
--include("ux_string.hrl").
--include("ux_unidata.hrl").
--include("ux_char.hrl").
+-type char_type() :: ux_types:char_type().
 
 
 

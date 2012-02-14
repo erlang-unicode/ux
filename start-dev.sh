@@ -5,5 +5,5 @@ make
 exec erl -pa $PWD/ebin edit $PWD/deps/*/ebin -boot start_sasl \
     -sname ux \
     -s ux \
-    -s reloader
+#   -s reloader
 

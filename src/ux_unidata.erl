@@ -54,7 +54,9 @@
         ducet/1, char_block/1, char_script/1,
 
         break_props/1]).
--include("ux_unidata.hrl").
+
+-include("ux.hrl").
+
 -type ux_ccc() :: ux_types:ux_ccc().
 
 
@@ -67,8 +69,21 @@ priv_dir() ->
     end.
 
 
+%% Return path to directory with testing data files.
+test_dir() ->
+    case code:lib_dir(ux, testing) of
+        [_|_] = Res -> Res;
+        _ -> "../testing"
+    end.
+
+
 get_dir('ucd') -> priv_dir() ++ "/"  ?UNIDATA_VERSION  "/";
 get_dir('uca') -> priv_dir() ++ "/"  ?UCADATA_VERSION  "/".
+
+
+get_test_dir('ucd') -> test_dir() ++ "/"  ?UNIDATA_VERSION  "/";
+get_test_dir('uca') -> test_dir() ++ "/"  ?UCADATA_VERSION  "/".
+
 
 -spec get_source_file(Parser::atom()) -> string().
 get_source_file('allkeys') ->
@@ -92,16 +107,16 @@ get_source_file('word_break_property') ->
 
 
 get_test_file('normalization_test') ->
-    get_dir('ucd') ++ "NormalizationTest.txt.gz";
+    get_test_dir('ucd') ++ "NormalizationTest.txt.gz";
 
 get_test_file('collation_test_shifted') ->
-    get_dir('uca') ++ "CollationTest/" 
+    get_test_dir('uca') ++ "CollationTest/" 
                     % Slow, with comments.
 %                   "CollationTest_SHIFTED.txt", 
                     "CollationTest_SHIFTED_SHORT.txt.gz";
 
 get_test_file('collation_test_non_ignorable') ->
-    get_dir('uca') ++ "CollationTest/" 
+    get_test_dir('uca') ++ "CollationTest/" 
 %                   "CollationTest_NON_IGNORABLE.txt", 
                     % Fast version (data from slow version are equal).
                     "CollationTest_NON_IGNORABLE_SHORT.txt.gz";

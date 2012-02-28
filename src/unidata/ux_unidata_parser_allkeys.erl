@@ -10,6 +10,10 @@
     , after_parse/1 % comment to disable post processing
     ]).
 
+%% For ux_uca_decomp 
+-export([el_to_bin/1]).
+
+
 types() -> [ducet].
 
 parse(In) ->
@@ -304,7 +308,7 @@ split_large_weights([Type, 0, 0, 0, 0], Res) -> Res;
 split_large_weights([Type, L1, L2, L3, L4], Res) ->
     L1Max = 16#FFDD,
     L2Max = 16#DD,
-    L3Max = 16#DD,
+    L3Max = 16#DD, % 1F?
     L4Max = 16#FFDD,
     split_large_weights(
         [Type, 

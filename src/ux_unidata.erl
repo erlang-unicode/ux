@@ -53,7 +53,7 @@
         is_comp_excl/1, is_compat/1, decomp/1, comp/2, comp/1,
         ducet/1, char_block/1, char_script/1,
 
-        break_props/1]).
+        break_props/1, tertiary_weight/1]).
 
 -include("ux.hrl").
 
@@ -112,7 +112,7 @@ get_test_file('normalization_test') ->
 get_test_file('collation_test_shifted') ->
     get_test_dir('uca') ++ "CollationTest/" 
                     % Slow, with comments.
-%                   "CollationTest_SHIFTED.txt", 
+%                   "CollationTest_SHIFTED.txt";
                     "CollationTest_SHIFTED_SHORT.txt.gz";
 
 get_test_file('collation_test_non_ignorable') ->
@@ -290,3 +290,63 @@ func(Parser, Type, Value) ->
     F(Value).
 
 
+% Case or Kana Subtype
+w3(C) when 16#FF67 >= C, C >= 16#FF6F -> small_narrow_katakana;
+w3(C) when 16#FF71 >= C, C >= 16#FF9D -> narrow_katakana;
+w3(C) when 16#FFA0 >= C, C >= 16#FFDF -> narrow_hangul;
+w3(C) when 16#32D0 >= C, C >= 16#32FE -> circled_katakana;
+w3(C) -> 
+    case func(unidata, w3, C) of 
+        false ->
+            case is_upper(C) of
+                true -> upper;
+                false -> false end;
+            
+        Type -> type end.
+
+
+% Decomposition Type
+comp_tag(C) -> func(unidata, comp_tag, C).
+
+
+% http://unicode.org/reports/tr10/#Tertiary_Weight_Table
+tertiary_weight(C) ->
+    Type = comp_tag(C),
+    SubType = w3(C),
+
+    case {Type, SubType} of
+        {false,     false}                  -> 16#02;
+        {wide,      false}                  -> 16#03;
+        {compat,    false}                  -> 16#04;
+        {font,      false}                  -> 16#05;
+        {circle,    false}                  -> 16#06;
+                                      
+        {false,     upper}                  -> 16#08;
+        {wide,      upper}                  -> 16#09;
+        {compat,    upper}                  -> 16#0A;
+        {font,      upper}                  -> 16#0B;
+        {circle,    upper}                  -> 16#0C;
+
+        {small,     small_hiragana}         -> 16#0D;
+        {false,     normal_hiragana}        -> 16#0E;
+        {small,     small_katakana}         -> 16#0F;
+        {narrow,    small_narrow_katakana}  -> 16#10;
+        {false,     normal_katakana}        -> 16#11;
+        {narrow,    narrow_katakana}        -> 16#12;
+        {narrow,    narrow_hangul}          -> 16#12;
+        {circle,    circled_katakana}       -> 16#13;
+        {super,     false}                  -> 16#14;
+        {sub,       false}                  -> 16#15;
+        {vertical,  false}                  -> 16#16;
+        {initial,   false}                  -> 16#17;
+        {medial,    false}                  -> 16#18;
+        {final,     false}                  -> 16#19;
+        {isolated,  false}                  -> 16#1A;
+        {noBreak,   false}                  -> 16#1D;
+        {square,    false}                  -> 16#1C;
+        {square,    upper}                  -> 16#1D;
+        {super,     upper}                  -> 16#1D;
+        {sub,       upper}                  -> 16#1D;
+        {fraction,  false}                  -> 16#1E;
+        {_,         _}                      -> 16#1F
+    end.

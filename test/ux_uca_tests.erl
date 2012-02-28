@@ -127,7 +127,7 @@ non_ignorable_test_() ->
         fun() -> 
             prof(ux_unidata:open_test_file('collation_test_non_ignorable'), 
                 ux_uca_options:get_options(non_ignorable), 
-                10) 
+                10000) 
         end}.
 
 shifted_test_() ->
@@ -135,7 +135,7 @@ shifted_test_() ->
         fun() -> 
             prof(ux_unidata:open_test_file('collation_test_shifted'), 
                 ux_uca_options:get_options(shifted), 
-                10) end}.
+                10000) end}.
 
 
 
@@ -177,7 +177,7 @@ collation_test(_Fd, _F, _OldVal, StrNum, 0 = _Max, Res) ->
     Res; % max
 % Read first string with data from file.
 collation_test(Fd, P, false, StrNum, Max, Res) ->
-    OldVal = test_read(Fd, StrNum),
+    OldVal = read_line(Fd, StrNum),
     collation_test(Fd, P, OldVal, StrNum, Max, Res);
 collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
     % Add new string.
@@ -191,7 +191,7 @@ collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) -
     _ -> boo
     end,
 
-    case test_read(Fd, StrNum) of
+    case read_line(Fd, StrNum) of
     {FullStr, Val, NewStrNum} = Result when is_list(Val) -> 
         % 1. check compare/3.
         Res2 = case ux_uca:compare(Params, Val, OldVal) of % collation compare
@@ -233,30 +233,10 @@ collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) -
     _ -> ok
     end.
 
-%% @doc Read line from a testdata file Fd (see CollationTest.html).
-%% Return list of codepaints.
-%% Used by test/4.
-%% @end
-%% @private
-test_read(Fd, StrNum) ->
-    case io:get_line(Fd, "") of
-    eof -> ok;
-    {error,Mess} -> throw({error, "Error while reading file", Mess});
-    Data -> 
-        try % parse Data
-            [Value|_] = ux_string:split(["#", ";", "\n"], Data), 
-            %% Converts "0009 0021" to [16#0009, 16#0021]
-            Parsed = lists:map(fun ux_unidata_parser:hex_to_int/1, 
-                      string:tokens(Value, " ")),
-            %% Delete false values.
-            [X || X <- Parsed, X] 
-        of Res -> {Data, Res, StrNum + 1} % {FullStr, Codepaints}
-        catch                   
-        error:_Reason -> 
-%            io:format(user, "~w: Data=~w ~n", [Reason, Data]),
-            test_read(Fd, StrNum + 1)
-        end
-    end.
+
+read_line(Fd, StrNum) ->
+    ux_uca_testdata:read_line(Fd, StrNum).
+
 
 prof(Fd, Params, Count) ->
 %    io:setopts(Fd,[{encoding,utf8}]),

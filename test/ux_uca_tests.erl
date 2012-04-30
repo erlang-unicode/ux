@@ -153,14 +153,14 @@ shifted_test_() ->
 
 
 
-natural_sort_long_test_() ->
-    {timeout, 600,
-        fun() ->
-            nat_prof(lists:seq(1, 10000, 1)),
-            nat_prof(lists:seq(1, 10000000, 1000)),
-            nat_prof(lists:seq(1, 100000000000000, 9999999999)),
-            io:format(user, "~n", [])
-        end}.
+%natural_sort_long_test_() ->
+%    {timeout, 600,
+%        fun() ->
+%            nat_prof(lists:seq(1, 10000, 1)),
+%            nat_prof(lists:seq(1, 10000000, 1000)),
+%            nat_prof(lists:seq(1, 100000000000000, 9999999999)),
+%            io:format(user, "~n", [])
+%        end}.
 
 -endif.
 

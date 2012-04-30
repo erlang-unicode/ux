@@ -34,7 +34,9 @@ weight([_Var|L]) -> L.
 %% @private
 % If it is a tertiary ignorable, then L4 = 0.
 shifted_weight(Common) ->
-    fun([_Var,0,0,0,0]) ->
+    fun(['variable',0,0,0,_]) ->
+        {shifted_weight2(Common), []}; % [0,0,0,0]
+       (['non_variable',0,0,0,_]) ->
         {shifted_weight(Common), []}; % [0,0,0,0]
 % If it is a variable, then L4 = Old L1.
        (['variable',L1|_]) ->
@@ -50,7 +52,7 @@ shifted_weight(Common) ->
 %% @private
 % If it is a ignorable, then L4 = 0.
 shifted_weight2(Common) ->
-    fun([_Var,0,0,0,0]) ->
+    fun([_Var,0,_,_,_]) ->
         {shifted_weight2(Common), []}; % [0,0,0,0]
 % If it is a variable, then L4 = Old L1.
        ([variable,L1|_]) ->
@@ -66,7 +68,7 @@ shifted_weight2(Common) ->
 
 %% @private
 % If it is a tertiary ignorable, then L4 = 0.
-short_shifted_weight([_Var,0,0,0|_]) ->
+short_shifted_weight(['non_variable',0,0,0|_]) ->
     {fun short_shifted_weight/1, []}; % [0,0,0,0]
 % If it is a variable, then L4 = Old L1.
 short_shifted_weight(['variable'|_]) ->
@@ -80,7 +82,7 @@ short_shifted_weight([_|T]) ->
 %% @end
 %% @private
 % If it is a ignorable, then L4 = 0.
-short_shifted_weight2([_Var,0,0,0|_]) ->
+short_shifted_weight2([_Var,0,_,_|_]) ->
     {fun short_shifted_weight2/1, []}; % [0,0,0,0]
 % If it is a variable, then L4 = Old L1.
 short_shifted_weight2(['variable'|_]) ->

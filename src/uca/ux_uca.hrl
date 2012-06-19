@@ -24,7 +24,7 @@
 %%% =====================================================================
 
 % TERMINATOR < T < V < L
--define(COL_HANGUL_TERMINATOR, 6089). 
+-define(COL_HANGUL_TERMINATOR, 6139). 
 
 % Records
 -record(uca_options, {

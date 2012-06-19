@@ -33,25 +33,12 @@ extract(C=#uca_options{},D,S) when is_list(S), is_function(D) ->
 -spec do_extract(string(), #uca_options{}, fun()) ->
     result().
 do_extract(#uca_options {
-        natural_sort=NS,
         case_sensitive=CS,
         case_first=CF
     } = C,D,S) ->
     R1 = do_extract0(S, D),
-    {W1, S1} = R1,
-    
-    {W2,S2} =
-      case has_mod(W1, NS) of
-      true ->
-         ?DBG("Run post processing.~n", []),
-         % Form function for proxy.
-         F = do_proxy(C,D,S1),
-         mod_weights(F, W1, NS, []);
-      false ->
-         ?DBG("Skip post processing.~n", []),
-         R1
-      end,
-
+    {W1,S1} = R1,
+    {W2,S2} = check_mod(C, W1, D, S1),
 
     W3 = case CF of
         off -> W2;
@@ -67,6 +54,20 @@ do_extract(#uca_options {
 % ok = check_weights(W4),
 
     {W4, S2}.
+
+
+check_mod(#uca_options{natural_sort=NS} = C, W1, D, S1) ->
+    case has_mod(W1, NS) of
+    true ->
+       ?DBG("Run post processing.~n", []),
+       % Form function for proxy.
+       F = do_proxy(C,D,S1),
+       mod_weights(F, W1, NS, []);
+    false ->
+       ?DBG("Skip post processing.~n", []),
+       {W1, S1}
+    end.
+
 
 check_weights(W) -> do_check_weights(W).
 do_check_weights([[variable,_,_,_,_]|T]) ->
@@ -92,6 +93,13 @@ do_proxy(C,D,S) ->
             fun(W, Acc) ->
                 do_mod(C,F,W,Acc)
             end;
+       %% One hangul sequance was found, restart check_mod
+       (mod_continue) ->
+            fun(W, Acc) -> 
+                {W1, S1} = check_mod(C, W, D, S),
+                %% lists:reverse(Acc) ++ W1
+                {lists:reverse(Acc, W1), S1} 
+                end;
        (Result) -> {lists:reverse(Result),S}
         end.
 
@@ -105,7 +113,7 @@ do_mod(#uca_options {
 -spec get_terminator(#uca_options{}) -> uca_weight().
 get_terminator(#uca_options {
         hangul_terminator=Term
-    }) -> Term.
+    }) -> [non_variable, Term, 0,0,0].
 
 %% @doc Uppercase to sort before lowercase. Remap L3.
 %% @private
@@ -219,7 +227,6 @@ do_decimal(E, F, N, []=_W, Acc) ->
 do_decimal(E, F, N, W, Acc) ->
     NewAcc = decimal_result(F, N, Acc),
     Restarter = E(restart),
-    
     Restarter(W, NewAcc).
 
 
@@ -269,27 +276,34 @@ do_hangul(E, lv, [[_,L1|_]=H|T], Acc)
 do_hangul(E, lv, [[_,L1|_]=H|T], Acc)
     when ?IS_L1_OF_HANGUL_V(L1) -> % V2 is found. LVV
     hangul_result(E, T, [H|Acc]);
+do_hangul(E, lv, [_|_] = W, Acc) -> % X is found. LVX
+    hangul_result_and_continue(E, W, Acc);
 do_hangul(E, ll, [[_,L1|_]=H|T], Acc)
     when ?IS_L1_OF_HANGUL_V(L1) -> % V1 is found. LLV
     hangul_result(E, T, [H|Acc]);
-do_hangul(E, _Mod, [_|_]=W, Acc) ->
-    % Skip and try to found other L. LX
-    Restarter=E(restart),
-    Restarter(W, Acc);
 do_hangul(E, Mod, [], Acc) ->
     case E(get_more) of
     {NewW, NewE} ->
-        do_hangul(E, Mod, NewW, Acc);
+        do_hangul(NewE, Mod, NewW, Acc);
     no_more ->
         E(Acc)
     end;
-do_hangul(E, _Mod, [], Acc) -> % L
-    E(Acc).
+do_hangul(E, _Mod, W, Acc) -> % L
+    Continue = E(mod_continue),
+    Continue(W, Acc).
+
 
 %% @private
 -spec hangul_result(fun(), uca_array(), uca_array()) -> result().
 hangul_result(E, T, Acc) ->
-    E(Acc).
+    TermWeight = E(term),
+    E([TermWeight | Acc]).
+
+
+hangul_result_and_continue(E, W, Acc) ->
+    TermWeight = E(term),
+    Continue = E(mod_continue),
+    Continue(W, [TermWeight|Acc]).
 
 
 %% Step 0: try extract derived weights.
@@ -329,10 +343,10 @@ do_extract0([H|T]=S, DFn) ->
     case do_extract1(S, MFn, Key, OldCCC, Skipped, Res) of
     {result, Key2, T2} ->
         W = DFn(Key2),
-    ?DBG("W:~w T: ~w~n", [W, T2]),
+        ?DBG("W:~w T: ~w~n", [W, T2]),
         {W, T2};
     not_found ->
-        do_implicit(H) 
+        {do_implicit(H), T}
     end.
 
 

@@ -1,4 +1,8 @@
 % vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
+%%%
+%%% @copyright 2010-2011 Michael Uvarov
+%%% @author Michael Uvarov <freeakk@gmail.com>
+%%%
 %%% =====================================================================
 %%% This library is free software; you can redistribute it and/or modify
 %%% it under the terms of the GNU Lesser General Public License as
@@ -16,9 +20,6 @@
 %%% USA
 %%%
 %%% $Id$
-%%%
-%%% @copyright 2010-2011 Michael Uvarov
-%%% @author Michael Uvarov <freeakk@gmail.com>
 %%% =====================================================================
 
 %%% =====================================================================
@@ -37,9 +38,6 @@
 %%%   limitations under the License.
 %%%
 %%% $Id$
-%%%
-%%% @copyright 2010-2011 Michael Uvarov
-%%% @author Michael Uvarov <freeakk@gmail.com>
 %%% =====================================================================
 
 

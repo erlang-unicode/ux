@@ -37,15 +37,6 @@ reassign_fun(Lvl, Min, OldMax) ->
          GapSize, TopSize, BottomSize,
          MaxBottom, MinTop, OldMax]),
 
-%% If a synthetic high weight would be less than BOUND, use a 
-%% sequence of high weights of the form (BOUND)..(BOUND)(MAXBOTTOM - 
-%% remainder).
-%%
-%% If a synthetic low weight would not be less than BOUND, use a sequence 
-%% of low weights of the form (BOUND-1)..(BOUND-1)(MINTOP + remainder) to 
-%% express the length of the sequence.
-%%    
-
 %% Reassign the weights in the collation element table at level n to create
 %% a gap of size GAP above COMMON. Typically for secondaries or tertiaries 
 %% this is done after the values have been reduced to a byte range by the 
@@ -57,14 +48,24 @@ reassign_fun(Lvl, Min, OldMax) ->
               (W) when W > Common -> W + NewMax - Max
            end,
 
-    SynFn = fun(Cnt, List) when Cnt < Bound -> 
-                {Remainder, NewList} = do_seq(Bound, Cnt, List),
+%% If a synthetic high weight would be less than BOUND, use a 
+%% sequence of high weights of the form (BOUND)..(BOUND)(MAXBOTTOM - 
+%% remainder).
+    SynFn = fun(high, SynWeight, List) when SynWeight < Bound -> 
+                {Remainder, NewList} = do_seq(Bound, SynWeight, List),
                 [(MaxBottom - Remainder) | NewList];
-               (Cnt, List) -> 
-                {Remainder, NewList} = do_seq(Bound - 1, Cnt, List),
+
+%% If a synthetic low weight would not be less than BOUND, use a sequence 
+%% of low weights of the form (BOUND-1)..(BOUND-1)(MINTOP + remainder) to 
+%% express the length of the sequence.
+               (low, SynWeight, List) -> 
+                {Remainder, NewList} = do_seq(Bound - 1, SynWeight, List),
                 [(MinTop + Remainder) | NewList]
             end,
         
+%% When generating a sort key, look for maximal sequences of m COMMON values 
+%% in a row. Let W be the weight right after the sequence.
+
     Capacity = Max - Min,
     Result = [],
 
@@ -100,10 +101,14 @@ get_bits_len(Max) ->
 %% frequency of synthetic low weights versus high weights for the 
 %% particular collation element table.
 
+
+%% When generating a sort key, look for maximal sequences of 
+%% m (Cnt) COMMON values in a row. 
 do_reassign(Common, SynFn, RaFn, [W|WT], R) 
     when (W =:= Common) -> 
     {Cnt, NewWT} = do_common(W, WT, 1),
-    NewR = SynFn(Cnt, R),
+    Type = syn_weight_type(NewWT, Common),
+    NewR = SynFn(Type, Cnt, R),
     do_reassign(Common, SynFn, RaFn, NewWT, NewR) ;
 do_reassign(Common, SynFn, RaFn, [W|WT], R) ->
     NewW = RaFn(W),
@@ -111,6 +116,19 @@ do_reassign(Common, SynFn, RaFn, [W|WT], R) ->
 do_reassign(_Common, _SynFn, _RaFn, []=_W, R) ->
     lists:reverse(R).
     
+
+%% The parameter is the tail of the string after the sequence.
+%%
+%% Let W be the weight right after the sequence. 
+%% If W < COMMON (or there is no W), replace the sequence by a synthetic 
+%%                low weight equal to (MINTOP + m).
+%% If W > COMMON, replace the sequence by a synthetic high weight equal 
+%%                to (MAXBOTTOM - m).
+syn_weight_type([W|_], Common) when W > Common -> 
+    high;
+syn_weight_type(_Str, _Common) -> 
+    low.
+
 
 %% Count of repeated the common weights (W).
 do_common(W, [WH|WT], Cnt) when WH=:=W ->
@@ -123,12 +141,12 @@ get_common_value(_L = 2, Max) ->
 get_common_value(_L = 3, Max) -> 
     {2, Max};
 get_common_value(_L = 4, Max) -> 
-    {Max + 1, Max + 1}.
+    {Max+1, Max}.
 %get_common_value(_L = 4) -> 16#FFFF.
 
 get_new_max(X) when X<240 -> 16#FF;
 get_new_max(X) when X<65530 -> 16#FFFF;
-get_new_max(X) -> 16#FFFFFF.
+get_new_max(_X) -> 16#FFFFFF.
 
 
 -ifdef(TEST).
@@ -161,6 +179,8 @@ lvl4_test_() ->
     Fn4 = binarize(reassign_fun(4, 0, 65501)),
     [?_assertLower(Fn2([97,124]),   Fn2([124])) % DATA1
     ,?_assertLower(Fn4([4189]),     Fn4([4189, 606]))
+    ,?_assertLower(Fn4([65500,644,65500]),     Fn4([65500,65500]))
+    ,?_assertLower(Fn4([65501,644,65501]),     Fn4([65501,65501]))
     ].
 
 

@@ -251,6 +251,29 @@
 -include("uca/ux_uca.hrl").
 
 
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+    
+check_const_test_() ->
+    Cases = fun(_) ->
+        [?_assertEqual(l1("0"), [?COL_DECIMAL_START])
+        ,?_assertEqual(l1("9"), [?COL_DECIMAL_END])
+        ,?_assertEqual(l1([?HANGUL_LBASE]), [?COL_HANGUL_LBASE])
+        ,?_assertEqual(l1([?HANGUL_VBASE]), [?COL_HANGUL_VBASE])
+        ,?_assertEqual(l1([?HANGUL_TBASE]), [?COL_HANGUL_TBASE])
+        ] 
+        end,
+    {timeout, 60, 
+        {setup, fun() -> l1("0") end, Cases}}.
+
+l1(Str) -> 
+    [L1 || [_, L1|_] <- ux_unidata:ducet(Str)].
+
+-endif.
+
+
+
+
 -spec compare(string(), string()) -> uca_compare_result().
 %% @doc Compare two strings and return: lower, greater or equal.
 %% @end

@@ -4,10 +4,11 @@
 
 
 
+
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -include("ux_tests.hrl").
-    
+
 
 simple_sort_test_() ->
     F = fun ux_uca:sort/1,
@@ -108,12 +109,16 @@ natural_sort_test_() ->
 
     F = fun ux_uca:sort/2,
 
+    io:write(user, C1),
 
     [{"Using official test strings from Dave Koelle", 
         ?_assertEqualTO(F(C1, Unsorted), Sorted)},
 
      {"Case and natural sort hacks together.", 
-        ?_testTO(F(C2, Unsorted))}
+        ?_testTO(F(C2, Unsorted))},
+
+     ?_assertEqual(ok, compare1(C1, "10X", "1000X")),
+     ?_assertEqual(ok, compare2(C1, "10X", "1000X"))
     ].
 
 
@@ -193,43 +198,15 @@ collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) -
 
     case read_line(Fd, StrNum) of
     {FullStr, Val, NewStrNum} = Result when is_list(Val) -> 
-        % 1. check compare/3.
-        Res2 = case ux_uca:compare(Params, Val, OldVal) of % collation compare
-            % error
-            lower -> io:format(user, "Error (compare): ~w ~w ~w ~n", 
-                    [Val, lower, OldVal]),
-                io:format(user,
-                    " Data1: ~ts Data2: ~ts",
-                    [OldFullStr, FullStr]),
-                    error;
-            % OK (equal or upper). 
-            _ -> Res
-            end,
+        Res1 = compare1(Params, OldVal, Val),
+        Res2 = compare2(Params, OldVal, Val),
+        Res3 = merge_error([Res1, Res2]),
+        Res4 = merge_error([Res, Res3]),
 
-        % 2. check sort_key/2.
-        Key1 = ux_uca:sort_key(Params, OldVal),
-        Key2 = ux_uca:sort_key(Params, Val),
-        Res3 = if
-                Key1 > Key2 ->
-                io:format(user, "Error (key): ~w ~w ~w ~n", 
-                    [Val, lower, OldVal]),
-                io:format(user,
-                    " Data1: ~ts Data2: ~ts",
-                    [OldFullStr, FullStr]),
-                io:format(user,
-                    " Key1: ~w ~n Key2: ~w~n",
-                    [Key1, Key2]),
-                
-                Arr1 = ux_uca:sort_array(Params, OldVal),
-                Arr2 = ux_uca:sort_array(Params, Val),
-                io:format(user,
-                    " Arr1: ~w ~n Arr2: ~w~n",
-                    [Arr1, Arr2]),
-                    error;
-                true -> Res2
-            end,
-            
-        collation_test(Fd, Params, Result, NewStrNum, Max - 1, Res3);
+        [io:format(user,
+                " Data1: ~ts Data2: ~ts",
+                [OldFullStr, FullStr]) || Res3 =:= error],
+        collation_test(Fd, Params, Result, NewStrNum, Max - 1, Res4);
     _ -> ok
     end.
 
@@ -253,5 +230,61 @@ nat_prof(Seq) ->
     {Time, SortedLists} = timer:tc(ux_uca, sort, [Params, Lists]),
     io:format(user, "~n Sort Time, ~.3gs ", [Time / 1000000]),
     ?_assertEqual(Lists, SortedLists).
+
+
+
+compare1(Params, Val1, Val2) ->
+    % 1. check compare/3.
+    case ux_uca:compare(Params, Val1, Val2) of % collation compare
+        lower -> ok;
+        equal -> ok;
+        greater -> 
+            io:format(user, "Error (compare): ~w ~w ~w ~n", 
+                [Val1, greater, Val2]),
+                error
+    end.
+
+%% Val1 =< Val2
+compare2(Params, Val1, Val2) ->
+    % 2. check sort_key/2.
+    Key1 = ux_uca:sort_key(Params, Val1),
+    Key2 = ux_uca:sort_key(Params, Val2),
+    if
+        Key1 > Key2 ->
+            io:format(user, "Error (key): ~w ~w ~w ~n", 
+                [Val1, greater, Val2]),
+            io:format(user,
+                " Key1: ~w ~n Key2: ~w~n",
+                [Key1, Key2]),
+            
+            Arr1 = ux_uca:sort_array(Params, Val1),
+            Arr2 = ux_uca:sort_array(Params, Val2),
+            io:format(user,
+                " Arr1: ~w ~n Arr2: ~w~n",
+                [Arr1, Arr2]),
+
+
+            UCParams = ux_uca_options:get_options(Params, 
+                        [{sort_key_format, uncompressed}]),
+            UCKey1 = ux_uca:sort_key(UCParams, Val1),
+            UCKey2 = ux_uca:sort_key(UCParams, Val2),
+            if UCKey1 > UCKey2 -> ok; 
+                true -> io:format(user, "Error in the compression algorithm.") end,
+
+            io:format(user,
+                " Unzip Key1: ~w ~n Unzip Key2: ~w~n",
+                [UCKey1, UCKey2]),
+            error;
+        true -> ok
+    end.
+
+
+merge_error([ok|T]) ->
+    merge_error(T);
+merge_error([error|_]) ->
+    error;
+merge_error([]) ->
+    ok.
+
 
 -endif. % TEST

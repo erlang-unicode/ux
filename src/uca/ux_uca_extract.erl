@@ -33,7 +33,6 @@ extract(C=#uca_options{},D,S) when is_list(S), is_function(D) ->
 -spec do_extract(string(), #uca_options{}, fun()) ->
     result().
 do_extract(#uca_options {
-        hangul_terminator=Term,
         natural_sort=NS,
         case_sensitive=CS,
         case_first=CF
@@ -44,10 +43,12 @@ do_extract(#uca_options {
     {W2,S2} =
       case has_mod(W1, NS) of
       true ->
+         ?DBG("Run post processing.~n", []),
          % Form function for proxy.
          F = do_proxy(C,D,S1),
          mod_weights(F, W1, NS, []);
       false ->
+         ?DBG("Skip post processing.~n", []),
          R1
       end,
 

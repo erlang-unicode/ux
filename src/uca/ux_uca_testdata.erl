@@ -34,6 +34,8 @@ read_line(Fd, StrNum) ->
     case io:get_line(Fd, "") of
     eof -> eof;
     {error,Mess} -> throw({error, "Error while reading file", Mess});
+    "#" ++ _Comment ->
+        read_line(Fd, StrNum + 1);
     Data ->
         try % parse Data
             [Value|_] = ux_string:split(["#", ";", "\n"], Data),

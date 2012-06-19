@@ -177,14 +177,14 @@ shifted_test_() ->
 %% Parse data files from 
 %% http://www.unicode.org/Public/UCA/latest/
 %% README: http://www.unicode.org/Public/UCA/latest/CollationTest.html
-collation_test(_Fd, _F, _OldVal, StrNum, 0 = _Max, Res) ->
+collation_test(_Fd, _F, _OldVal, StrNum, 0 = _Max, EC) ->
     io:format(user, "Only ~w strings were tested. Exit.~n", [StrNum]),
-    Res; % max
+    EC; % max
 % Read first string with data from file.
-collation_test(Fd, P, false, StrNum, Max, Res) ->
+collation_test(Fd, P, false, StrNum, Max, EC) ->
     OldVal = read_line(Fd, StrNum),
-    collation_test(Fd, P, OldVal, StrNum, Max, Res);
-collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) ->
+    collation_test(Fd, P, OldVal, StrNum, Max, EC);
+collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, ErrorCounter) ->
     % Add new string.
     case StrNum of
     100 -> io:format(user, "~n", []);
@@ -200,13 +200,18 @@ collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, Res) -
     {FullStr, Val, NewStrNum} = Result when is_list(Val) -> 
         Res1 = compare1(Params, OldVal, Val),
         Res2 = compare2(Params, OldVal, Val),
-        Res3 = merge_error([Res1, Res2]),
-        Res4 = merge_error([Res, Res3]),
+        Res3 = merge_error(Res1, Res2),
 
         [io:format(user,
-                " Data1: ~ts Data2: ~ts",
+                "sort_key and compare returns different results.~n",
+                []) || Res1 =/= Res2],
+
+        [io:format(user,
+                " Data1: ~ts Data2: ~ts~n",
                 [OldFullStr, FullStr]) || Res3 =:= error],
-        collation_test(Fd, Params, Result, NewStrNum, Max - 1, Res4);
+
+        collation_test(Fd, Params, Result, NewStrNum, Max - 1, 
+                       ErrorCounter + error_code(Res3));
     _ -> ok
     end.
 
@@ -217,9 +222,9 @@ read_line(Fd, StrNum) ->
 
 prof(Fd, Params, Count) ->
 %    io:setopts(Fd,[{encoding,utf8}]),
-    Res = collation_test(Fd, Params, false, 0, Count, ok),
+    ErrorCount = collation_test(Fd, Params, false, 0, Count, 0),
     file:close(Fd),
-    ?assertEqual(Res, ok).
+    ?assertEqual(ErrorCount, 0).
 
 
 nat_prof(Seq) ->
@@ -269,7 +274,7 @@ compare2(Params, Val1, Val2) ->
             UCKey1 = ux_uca:sort_key(UCParams, Val1),
             UCKey2 = ux_uca:sort_key(UCParams, Val2),
             if UCKey1 > UCKey2 -> ok; 
-                true -> io:format(user, "Error in the compression algorithm.") end,
+                true -> io:format(user, "Error in the compression algorithm.~n", []) end,
 
             io:format(user,
                 " Unzip Key1: ~w ~n Unzip Key2: ~w~n",
@@ -279,12 +284,10 @@ compare2(Params, Val1, Val2) ->
     end.
 
 
-merge_error([ok|T]) ->
-    merge_error(T);
-merge_error([error|_]) ->
-    error;
-merge_error([]) ->
-    ok.
+merge_error(ok, Acc) -> Acc;
+merge_error(error, Acc) -> error.
 
+error_code(ok) -> 0;
+error_code(error) -> 1.
 
 -endif. % TEST

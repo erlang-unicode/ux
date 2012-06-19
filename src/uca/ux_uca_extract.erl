@@ -173,7 +173,7 @@ has_mod([], _NS) ->
 % Hack for Hangul.
 -spec mod_weights(fun(), uca_array(), boolean(), uca_array()) -> result().
 % Hack for numbers.
-mod_weights(E, [[Var,L1|LOther]=H|T], NS=true, Acc)
+mod_weights(E, [[Var,L1|LOther]=H|T], _NS=true, Acc)
     when ?IS_L1_OF_DECIMAL(L1) ->
     F = fun(W) -> [Var,W|LOther] end, % define F.
     Num = ?COL_WEIGHT_TO_DECIMAL(L1),

@@ -60,16 +60,14 @@ do_sort_key2(S, B, L, W, D, K) ->
     ReassignW = Fn(LvlW),
     case RemW of
     _ when RemW=:=[]; S=<L -> 
-        RevW = lists:reverse(ReassignW),
-        BinW = Fn({to_binary, RevW}),
+        BinW = Fn({to_binary, ReassignW}),
         <<K/binary, BinW/binary>>;
 
     [_|_] -> 
         % Add a delimeter.
-        NewW = [0|ReassignW],
-        RevW = lists:reverse(NewW),
-        BinW = Fn({to_binary, RevW}),
-        NewK = <<K/binary, BinW/binary>>,
+        BinW  = Fn({to_binary, ReassignW}),
+        Delim = Fn({to_binary, [0]}),
+        NewK  = <<K/binary, BinW/binary, Delim/binary>>,
 
         do_sort_key2(S, B, L+1, RemW, D, NewK)
     end.

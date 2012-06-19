@@ -3,6 +3,7 @@
 -include("ux.hrl").
 
 
+%% Return a function for each level (1 - 4).
 reassign_fun(_Lvl=1, _Min, Max) ->
     Len = get_bits_len(Max),
     fun({to_binary, W}) -> <<<<X:Len>> || X <- W>> end;
@@ -29,11 +30,12 @@ reassign_fun(Lvl, Min, OldMax) ->
         "   BOT_SIZE is ~w. ~n" 
         "   MAX_BOT  is ~w. ~n" 
         "   MIN_TOP  is ~w. ~n" 
+        "   OLD_MAX  is ~w. ~n" 
         , 
         [?MODULE, Lvl,
          Common, Min, Max, Bound, 
          GapSize, TopSize, BottomSize,
-         MaxBottom, MinTop]),
+         MaxBottom, MinTop, OldMax]),
 
 %% If a synthetic high weight would be less than BOUND, use a 
 %% sequence of high weights of the form (BOUND)..(BOUND)(MAXBOTTOM - 
@@ -137,5 +139,84 @@ do_seq_test_() ->
     F = fun do_seq/3,
     [?_assertEqual(F(10, 20, []), {0, [10,10]})
     ].
+
+%% [0,0,0,4189], [0,0,0,4189,606]
+
+cmp(X, Y) when X < Y -> '<';
+cmp(X, X) -> '=';
+cmp(_, _) -> '>'.
+
+-define(_assertLower(X, Y), 
+        {unicode:characters_to_list(io_lib:format("Is ~w < ~w?", [X, Y])), 
+         ?_assertEqual([X, '<', Y], [X, cmp(X, Y), Y])}). 
+
+
+binarize(Fn) ->
+    fun(Val) ->
+        Fn({to_binary, Fn(Val)})
+        end.
+
+lvl4_test_() ->
+    Fn2 = binarize(reassign_fun(2, 0, 221)),
+    Fn4 = binarize(reassign_fun(4, 0, 65501)),
+    [?_assertLower(Fn2([97,124]),   Fn2([124])) % DATA1
+    ,?_assertLower(Fn4([4189]),     Fn4([4189, 606]))
+    ].
+
+
+%% DATA1:
+%% Error (key): [8427,820] greater [820,1425]
+%%  Key1: <<0,0,158,131,0,224>>
+%%  Key2: <<0,0,158,0,225>>   
+%%  Arr1: [[non_variable,0,97,2,8427],[non_variable,0,124,2,820]]
+%%  Arr2: [[non_variable,0,124,2,820],[non_variable,0,0,0,1425]]
+%% Error in the compression algorithm.
+%%  Unzip Key1: [0,97,124,0,2,2]
+%%  Unzip Key2: [0,124,0,2]   
+%% sort_key and compare returns different results.
+%%  Data1: 20EB 0334
+%%  Data2: 0334 0591
+%%
+%%  Result (it is from eunit's output):
+%%  ux_uca_compress:162: lvl4_test_ (Is <<131,158>> < <<158>>?)...[0.001 s] ok
+
+ 
+%% ux_uca_compress:reassign_fun: Level 2.
+%%    COMMON   is 32.
+%%    MIN      is 0.
+%%    MAX      is 221.
+%%    BOUND    is 82.
+%%    GAP_SIZE is 33.
+%%    TOP_SIZE is 189.
+%%    BOT_SIZE is 32.
+%%    MAX_BOT  is 66.
+%%    MIN_TOP  is 33.
+%%    OLD_MAX  is 221.
+%% 
+%% =INFO REPORT==== 19-Jun-2012::13:41:39 ===
+%% ux_uca_compress:reassign_fun: Level 3.
+%%    COMMON   is 2.
+%%    MIN      is 0.
+%%    MAX      is 31.
+%%    BOUND    is 337.
+%%    GAP_SIZE is 223.
+%%    TOP_SIZE is 29.
+%%    BOT_SIZE is 2.
+%%    MAX_BOT  is 226.
+%%    MIN_TOP  is 3.
+%%    OLD_MAX  is 31.
+%% 
+%% =INFO REPORT==== 19-Jun-2012::13:41:39 ===
+%% ux_uca_compress:reassign_fun: Level 4.
+%%    COMMON   is 65502.
+%%    MIN      is 0.
+%%    MAX      is 65502.
+%%    BOUND    is 65551.
+%%    GAP_SIZE is 32.
+%%    TOP_SIZE is 0.
+%%    BOT_SIZE is 65502.
+%%    MAX_BOT  is 65535.
+%%    MIN_TOP  is 65503.
+%%    OLD_MAX  is 65501.
 
 -endif.

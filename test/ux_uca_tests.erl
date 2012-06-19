@@ -9,6 +9,29 @@
 -include_lib("eunit/include/eunit.hrl").
 -include("ux_tests.hrl").
 
+% There is an error in normalization:
+%
+%(ux@omicron)3> ux_string:to_nfd([818,820]).
+%[820,818]
+%(ux@omicron)5> ux_unidata:ducet([818]).
+%[[non_variable,0,33,2,818]]
+%(ux@omicron)9> ux_unidata:ducet([119364]).
+%[[non_variable,0,0,0,65501],[non_variable,0,0,0,53864]]
+%(ux@omicron)10> ux_unidata:ducet([820]).
+%[[non_variable,0,124,2,820]]
+% non_ignorable_test_:
+% Error (compare): [119364,820] greater [818,820]
+% Error (key): [119364,820] greater [818,820]
+%  Key1: <<0,0,158,0,225>>
+%  Key2: <<0,0,67,158,0,224>>
+%  Arr1: [[non_variable,0,0,0,65501],[non_variable,0,0,0,53864],[non_variable,0,124,2,820]]
+%  Arr2: [[non_variable,0,33,2,818],[non_variable,0,124,2,820]]
+%  Unzip Key1: [0,124,0,2]
+%  Unzip Key2: [0,33,124,0,2,2]
+%  Data1: 1D244 0334
+%  Data2: 0332 0334
+
+
 
 simple_sort_test_() ->
     F = fun ux_uca:sort/1,
@@ -132,7 +155,7 @@ non_ignorable_test_() ->
         fun() -> 
             prof(ux_unidata:open_test_file('collation_test_non_ignorable'), 
                 ux_uca_options:get_options(non_ignorable), 
-                10000) 
+                100000) 
         end}.
 
 shifted_test_() ->
@@ -140,7 +163,7 @@ shifted_test_() ->
         fun() -> 
             prof(ux_unidata:open_test_file('collation_test_shifted'), 
                 ux_uca_options:get_options(shifted), 
-                10000) end}.
+                100000) end}.
 
 
 
@@ -158,14 +181,14 @@ shifted_test_() ->
 
 
 
-%natural_sort_long_test_() ->
-%    {timeout, 600,
-%        fun() ->
-%            nat_prof(lists:seq(1, 10000, 1)),
-%            nat_prof(lists:seq(1, 10000000, 1000)),
-%            nat_prof(lists:seq(1, 100000000000000, 9999999999)),
-%            io:format(user, "~n", [])
-%        end}.
+natural_sort_long_test_() ->
+    {timeout, 600,
+        fun() ->
+            nat_prof(lists:seq(1, 10000, 1)),
+            nat_prof(lists:seq(1, 10000000, 1000)),
+            nat_prof(lists:seq(1, 100000000000000, 9999999999)),
+            io:format(user, "~n", [])
+        end}.
 
 -endif.
 
@@ -202,16 +225,23 @@ collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, ErrorC
         Res2 = compare2(Params, OldVal, Val),
         Res3 = merge_error(Res1, Res2),
 
+        Res4 = compare2(Params, ux_string:to_nfd(OldVal), ux_string:to_nfd(Val)),
+        Res5 = merge_error(Res3, Res4),
+
         [io:format(user,
                 "sort_key and compare returns different results.~n",
                 []) || Res1 =/= Res2],
+
+        [io:format(user,
+                "Normalization affects on collation.~n",
+                []) || Res2 =/= Res4],
 
         [io:format(user,
                 " Data1: ~ts Data2: ~ts~n",
                 [OldFullStr, FullStr]) || Res3 =:= error],
 
         collation_test(Fd, Params, Result, NewStrNum, Max - 1, 
-                       ErrorCounter + error_code(Res3));
+                       ErrorCounter + error_code(Res5));
     _ -> ok
     end.
 

@@ -283,8 +283,8 @@ compare(S1, S2) ->
 
 -spec compare(#uca_options{}, string(), string()) -> uca_compare_result().
 compare(C=#uca_options{}, S1, S2) ->
-    G1 = generator(C, S1),
-    G2 = generator(C, S2),
+    G1 = generator(C, preprocess(S1)),
+    G2 = generator(C, preprocess(S2)),
     do_compare(G1, G2).
 
 -spec do_compare(uca_generator(), uca_generator()) -> uca_compare_result().
@@ -318,7 +318,7 @@ sort_array(C, S) ->
     % Return always all 4 levels, because
     % if strength=3, alternate=shifted, array will be incorrect.
     NewC = ux_uca_options:get_options(C, [{'strength', 4}]),
-    do_sort_array(NewC, D, S, W, A).
+    do_sort_array(NewC, D, preprocess(S), W, A).
 
 do_sort_array(_C, _D, []=_S, []=_W, A) ->
     lists:reverse(A);
@@ -339,15 +339,15 @@ sort_key(S) ->
 sort_key(C=#uca_options{
         sort_key_format='binary', 
         case_sensitive=true}, S) ->
-    ux_uca_sort_key_binary_cs:sort_key(C, S);
+    ux_uca_sort_key_binary_cs:sort_key(C, preprocess(S));
 sort_key(C=#uca_options{sort_key_format=F}, S) ->
     case F of
     'binary' ->
-        ux_uca_sort_key_binary:sort_key(C, S);
+        ux_uca_sort_key_binary:sort_key(C, preprocess(S));
     'list' ->
-        ux_uca_sort_key_list:sort_key(C, S);
+        ux_uca_sort_key_list:sort_key(C, preprocess(S));
     'uncompressed' ->
-        ux_uca_sort_key_uncompressed:sort_key(C, S)
+        ux_uca_sort_key_uncompressed:sort_key(C, preprocess(S))
     end.
 
         
@@ -861,7 +861,9 @@ is_ignorable_array(L, A) ->
     lists:all(fun(El) -> El=:=Mask end, A).
 
     
-
+preprocess(S) ->
+    %% TODO: normalization can be delayed.
+    ux_string:to_nfd(S).
     
 
 %%

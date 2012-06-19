@@ -292,8 +292,7 @@ is_nfkd_test_() ->
 
 
 
-% FIXME
--ifdef(FIX_SLOW_TESTS).
+-ifdef(SLOW_TESTS).
 
 nfc_test_() ->
     {timeout, 300, 

@@ -132,8 +132,6 @@ natural_sort_test_() ->
 
     F = fun ux_uca:sort/2,
 
-    io:write(user, C1),
-
     [{"Using official test strings from Dave Koelle", 
         ?_assertEqualTO(F(C1, Unsorted), Sorted)},
 

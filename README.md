@@ -17,7 +17,7 @@ A string is a flatten list of Unicode characters.
 
 All actions with Unicode were described in the [Unicode Standards](http://www.unicode.org/reports/).
 
-[![Build Status](http://travis-ci.org/freeakk/ux.png?branch=master)](http://travis-ci.org/freeakk/ux)
+[![Build Status](https://secure.travis-ci.org/freeakk/ux.png?branch=master)](http://travis-ci.org/freeakk/ux)
 
 
 This library realized only these documents:

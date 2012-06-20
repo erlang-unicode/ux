@@ -99,9 +99,9 @@ get_source_file('norm_props') ->
 get_source_file('unidata') ->
     get_dir('ucd') ++ "/UnicodeData.txt.gz";
 get_source_file('grapheme_break_property') ->
-    get_dir('ucd') ++ "/auxiliary/GraphemeBreakProperty.txt";
+    get_dir('ucd') ++ "/auxiliary/GraphemeBreakProperty.txt.gz";
 get_source_file('word_break_property') ->
-    get_dir('ucd') ++ "/auxiliary/WordBreakProperty.txt".
+    get_dir('ucd') ++ "/auxiliary/WordBreakProperty.txt.gz".
 
 
 
@@ -130,9 +130,9 @@ get_test_file('collation_test_non_ignorable') ->
 
 
 get_test_file('grapheme_break_test') ->
-    get_dir('ucd') ++ "/auxiliary/GraphemeBreakTest.txt";
+    get_dir('ucd') ++ "/auxiliary/GraphemeBreakTest.txt.gz";
 get_test_file('word_break_test') ->
-    get_dir('ucd') ++ "/auxiliary/WordBreakTest.txt".
+    get_dir('ucd') ++ "/auxiliary/WordBreakTest.txt.gz".
 
 
 open_test_file(Id) ->

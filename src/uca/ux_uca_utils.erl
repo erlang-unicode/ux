@@ -9,7 +9,29 @@
     split_levels/3, 
     get_reassign_function/2]).
 
+%% For debugging only
+-export([hangul_type/1,
+         implicit_type/1]).
+
+-include("ux.hrl").
 -include("ux_uca.hrl").
+
+
+hangul_type(X) when ?IS_L1_OF_HANGUL_L(X) -> l;
+hangul_type(X) when ?IS_L1_OF_HANGUL_V(X) -> v;
+hangul_type(X) when ?IS_L1_OF_HANGUL_T(X) -> t;
+hangul_type(_) -> x.
+
+
+implicit_type(X) when ?CHAR_IS_UNIFIED_IDEOGRAPH(X) ->
+    if (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(X)
+        or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(X)) ->
+        base1;
+     true ->
+        base2
+    end;
+implicit_type(_) ->
+    base3.
 
 %%
 %% Helpers

@@ -258,7 +258,8 @@ check_const_test_() ->
         ,?_assertEqual(l1([?HANGUL_LBASE]), [?COL_HANGUL_LBASE])
         ,?_assertEqual(l1([?HANGUL_VBASE]), [?COL_HANGUL_VBASE])
         ,?_assertEqual(l1([?HANGUL_TBASE]), [?COL_HANGUL_TBASE])
-        ] 
+        ,?_assertEqual(l1([?HANGUL_TLAST]), [?COL_HANGUL_TLAST])
+        ]
         end,
     {timeout, 60, 
         {setup, fun() -> l1("0") end, Cases}}.

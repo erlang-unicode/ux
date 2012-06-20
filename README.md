@@ -8,6 +8,7 @@ __License__: [LGPLv3](http://http://www.gnu.org/licenses/lgpl-3.0.html)
 __License__: [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 __Author__: Uvarov Michael ([`freeakk@gmail.com`](mailto:freeakk@gmail.com))
+__Unidata version__: 6.1.0
 
 [Read edoc documentation](https://github.com/freeakk/ux/blob/master/doc/README.md)
 

@@ -419,16 +419,14 @@ do_extract1([]=_S, _MFn, _Key, _OldCCC, Skipped, Res)
 % Range 3: Ideographic AND NOT Unified_Ideograph
 % -----------------------------------------------------------------------------
 do_implicit(H)  
-    when ?CHAR_IS_UNIFIED_IDEOGRAPH(H) 
-     and (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(H) 
-       or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(H)) ->
-    implicit_weight(H, 16#FB40);
-    
-do_implicit(H)  
-    when ?CHAR_IS_UNIFIED_IDEOGRAPH(H) 
-      and (not (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(H) 
-             or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(H))) ->
-    implicit_weight(H, 16#FB80);
+    when ?CHAR_IS_UNIFIED_IDEOGRAPH(H) ->
+    if
+        (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(H) 
+            or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(H)) ->
+        implicit_weight(H, 16#FB40);
+      true ->
+        implicit_weight(H, 16#FB80)
+    end;
 
 do_implicit(H) ->
     implicit_weight(H, 16#FBC0).

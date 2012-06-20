@@ -8,7 +8,6 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -include("ux_tests.hrl").
-
 % There is an error in normalization:
 %
 %(ux@omicron)3> ux_string:to_nfd([818,820]).
@@ -80,8 +79,9 @@
 %[4370,4469,4541]
 %(ux@omicron)10> ux_string:to_nfd([55176]).
 %[4370,4469]
-%(ux@omicron)11> ux_string:to_nfd([55198]).
-%[4370,4469,4541]
+% ux_unidata:ducet([4541]).
+% [[non_variable,12844,32,2,4541]]
+% Is 4541 a hangul T?
 
 %Error (compare): [55176,4469,98] greater [55198,33]
 %Error (key): [55176,4469,98] greater [55198,33]
@@ -142,17 +142,114 @@
 % Data1: 004C 1D165 0387 0061
 % Data2: 004C 0061
 
-hangul_test_() ->
+% non-ignorable:
+%Error (compare): [40908,98] greater [64014,33]
+%Error (key): [40908,98] greater [64014,33]
+%Error (key): [40908,98] greater [64014,33]
+% Key1: <<251,193,159,204,21,234,0,0,35,0,5>>
+% Key2: <<251,65,250,14,2,94,0,0,35,0,5>>
+% Arr1: [[non_variable,64449,32,2,0],[non_variable,40908,0,0,0],[non_variable,5610,32,2,98]]
+% Arr2: [[non_variable,64321,32,2,64014],[non_variable,64014,0,0,64014],[variable,606,32,2,33]]
+% Unzip Key1: [64449,40908,5610,0,32,32,0,2,2]
+% Unzip Key2: [64321,64014,606,0,32,32,0,2,2]
+% Data1: 9FCC 0062
+% Data2: FA0E 0021
+%
+% variable:
+%Error (compare): [40908,98] greater [64014,33]
+%Error (key): [40908,98] greater [64014,33]
+% Key1: <<251,193,159,204,21,234,0,0,35,0,5,0,255,226>>
+% Key2: <<251,65,250,14,0,0,34,0,4,0,255,225,2,95>>
+% Arr1: [[non_variable,64449,32,2,0],[non_variable,40908,0,0,0],[non_variable,5610,32,2,98]]
+% Arr2: [[non_variable,64321,32,2,64014],[non_variable,64014,0,0,64014],[variable,606,32,2,33]]
+% Unzip Key1: [64449,40908,5610,0,32,32,0,2,2,0,65502,65502,65502]
+% Unzip Key2: [64321,64014,0,32,0,2,0,65502,65502,606]
+% Data1: 9FCC 0062
+% Data2: FA0E 0021
+
+% non-ignorable:
+%Error (compare): [19894,98] greater [40909,33]
+%Error (key): [19894,98] greater [40909,33]
+% Key1: <<251,192,205,182,21,234,0,0,35,0,5>>
+% Key2: <<251,65,159,205,2,94,0,0,35,0,5>>
+% Arr1: [[non_variable,64448,32,2,0],[non_variable,52662,0,0,0],[non_variable,5610,32,2,98]]
+% Arr2: [[non_variable,64321,32,2,0],[non_variable,40909,0,0,0],[variable,606,32,2,33]]
+% Unzip Key1: [64448,52662,5610,0,32,32,0,2,2]
+% Unzip Key2: [64321,40909,606,0,32,32,0,2,2]
+% Data1: 4DB6 0062
+% Data2: 9FCD 0021
+%
+% shifted:
+%Error (compare): [19894,98] greater [40909,33]
+%Error (key): [19894,98] greater [40909,33]
+% Key1: <<251,192,205,182,21,234,0,0,35,0,5,0,255,226>>
+% Key2: <<251,65,159,205,0,0,34,0,4,0,255,225,2,95>>
+% Arr1: [[non_variable,64448,32,2,0],[non_variable,52662,0,0,0],[non_variable,5610,32,2,98]]
+% Arr2: [[non_variable,64321,32,2,0],[non_variable,40909,0,0,0],[variable,606,32,2,33]]
+% Unzip Key1: [64448,52662,5610,0,32,32,0,2,2,0,65502,65502,65502]
+% Unzip Key2: [64321,40909,0,32,0,2,0,65502,65502,606]
+% Data1: 4DB6 0062
+% Data2: 9FCD 0021
+
+
+% Error (compare): [64041,98] greater [13312,33] 
+% Error (key): [64041,98] greater [13312,33] 
+%  Key1: <<251,65,250,41,21,234,0,0,35,0,5>> 
+%  Key2: <<251,64,180,0,2,94,0,0,35,0,5>>
+%  Arr1: [[non_variable,64321,32,2,64041],[non_variable,64041,0,0,64041],[non_variable,5610,32,2,98]] 
+%  Arr2: [[non_variable,64320,32,2,0],[non_variable,46080,0,0,0],[variable,606,32,2,33]]
+%  Unzip Key1: [64321,64041,5610,0,32,32,0,2,2] 
+%  Unzip Key2: [64320,46080,606,0,32,32,0,2,2]
+%  Data1: FA29 0062
+%  Data2: 3400 0021
+
+% Error (compare): [888,98] greater [19894,33]
+% Error (key): [888,98] greater [19894,33]
+%  Key1: <<251,192,131,120,21,234,0,0,35,0,5>>
+%  Key2: <<251,64,205,182,2,94,0,0,35,0,5>>
+%  Arr1: [[non_variable,64448,32,2,0],[non_variable,33656,0,0,0],[non_variable,5610,32,2,98]]
+%  Arr2: [[non_variable,64320,32,2,0],[non_variable,52662,0,0,0],[variable,606,32,2,33]]
+%  Unzip Key1: [64448,33656,5610,0,32,32,0,2,2]
+%  Unzip Key2: [64320,52662,606,0,32,32,0,2,2]
+%  Data1: 0378 0062
+%  Data2: 4DB6 0021
+%
+% 2> ux_uca_utils:implicit_type(888).
+% base3
+% (ux@omicron)3> ux_uca_utils:implicit_type(19894).
+% base1
+
+selected_test_() ->
     Params1 = ux_uca_options:get_options(non_ignorable),
     Params2 = ux_uca_options:get_options(shifted),
-    [?_assertEqual(compare2(Params1, [44032,33], [12910,33]), ok)
-    ,?_assertEqual(compare2(Params1, [44032,63], [12910,63]), ok)
-    ,?_assertEqual(compare2(Params1, [55176,4469,98], [55198,33]), ok)
+    [{"Hangul tests",
+        [?_assertEqual(compare2(Params1, [44032,33], [12910,33]), ok)
+        ,?_assertEqual(compare2(Params1, [44032,63], [12910,63]), ok)
+        ,?_assertEqual(compare2(Params1, [55176,4469,98], [55198,33]), ok)]}
 
     ,?_assertEqual(compare2(Params2, [108,119141,903,97], [108,97]), ok)
     ,?_assertEqual(compare2(Params2, [76,119141,903,97], [76,97]), ok)
-    ].
 
+
+    ,{"Implicit weight tests", 
+        [?_assertEqual(compare2(Params1, [40908,98], [64014,33]), ok)
+        ,?_assertEqual(compare2(Params2, [40908,98], [64014,33]), ok)
+
+        ,?_assertEqual(compare2(Params1, [19894,98], [40909,33]), ok)
+        ,?_assertEqual(compare2(Params2, [19894,98], [40909,33]), ok)
+
+        %% 64031 is 16#FA29 (base1). 
+        %% 13312 is 16#3400 (base1), non in ducet.
+        %% ux_unidata:ducet([64041]). 
+        %% [[non_variable,64321,32,2,64041],
+        %%  [non_variable,64041,0,0,64041]]
+        ,?_assertEqual(compare2(Params1, [64041,98], [13312,33]), ok)
+        ,?_assertEqual(compare2(Params2, [64041,98], [13312,33]), ok)
+
+        %% 19894 is 16#4DB6, not in ducet.
+        ,?_assertEqual(compare2(Params1, [888,98], [19894,33]), ok)
+        ,?_assertEqual(compare2(Params2, [888,98], [19894,33]), ok)]}
+    ].
 
 
 simple_sort_test_() ->
@@ -329,15 +426,11 @@ collation_test(Fd, P, false, StrNum, Max, EC) ->
     collation_test(Fd, P, OldVal, StrNum, Max, EC);
 collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, ErrorCounter) ->
     % Add new string.
-    case StrNum of
-    100 -> io:format(user, "~n", []);
-    _   -> boo
-    end,
+    [io:format(user, "~n", []) || StrNum =:= 100],
+
     % Show message
-    case StrNum rem 10000 of
-    0 -> io:format(user, "~w strings were tested. ~n", [StrNum]);
-    _ -> boo
-    end,
+    [io:format(user, "~w strings were tested. ~n", [StrNum]) 
+        || StrNum rem 10000 =:= 0],
 
     case read_line(Fd, StrNum) of
     {FullStr, Val, NewStrNum} = Result when is_list(Val) -> 
@@ -345,7 +438,14 @@ collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, ErrorC
         Res2 = compare2(Params, OldVal, Val),
         Res3 = merge_error(Res1, Res2),
 
-        Res4 = compare2(Params, ux_string:to_nfd(OldVal), ux_string:to_nfd(Val)),
+        Res4 = 
+        case {ux_string:to_nfd(OldVal), ux_string:to_nfd(Val)} of
+            {OldVal, Val} -> 
+                Res3;
+            {Nfd1, Nfd2} ->
+                compare2(Params, Nfd1, Nfd2)
+        end,
+
         Res5 = merge_error(Res3, Res4),
 
         [io:format(user,
@@ -362,7 +462,7 @@ collation_test(Fd, Params, {OldFullStr, OldVal, StrNum}, _OldStrNum, Max, ErrorC
 
         collation_test(Fd, Params, Result, NewStrNum, Max - 1, 
                        ErrorCounter + error_code(Res5));
-    _ -> ok
+    _ -> ErrorCounter
     end.
 
 

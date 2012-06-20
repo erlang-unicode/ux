@@ -52,10 +52,10 @@
 -define(HANGUL_NCOUNT, 588).
 -define(HANGUL_SCOUNT, 11172).
 
--define(HANGUL_SLAST,  ?HANGUL_SBASE + ?HANGUL_SCOUNT).
--define(HANGUL_LLAST,  ?HANGUL_LBASE + ?HANGUL_LCOUNT).
--define(HANGUL_VLAST,  ?HANGUL_VBASE + ?HANGUL_VCOUNT).
--define(HANGUL_TLAST,  ?HANGUL_TBASE + ?HANGUL_TCOUNT).
+-define(HANGUL_SLAST,  (?HANGUL_SBASE + ?HANGUL_SCOUNT)).
+-define(HANGUL_LLAST,  (?HANGUL_LBASE + ?HANGUL_LCOUNT)).
+-define(HANGUL_VLAST,  (?HANGUL_VBASE + ?HANGUL_VCOUNT)).
+-define(HANGUL_TLAST,  (?HANGUL_TBASE + ?HANGUL_TCOUNT)).
 
 -define(CHAR_IS_HANGUL_L(Ch), (
  (Ch>=?HANGUL_LBASE) and (Ch=<?HANGUL_LLAST)
@@ -73,53 +73,63 @@
 
 
 
-
+-define(CHECK_RANGE(X, A, B), (((X) >= (A)) and ((X) =< (B)))).
+-define(CHECK_VALUE(X, A),    (((X) =:= (A)))).
 
 % CJK_Unified_Ideograph and CJK_Compatibility_Ideographs from 
 % http://www.unicode.org/Public/UNIDATA/Blocks.txt
+%
+% grep "CJK Unified Ideograph" priv/UNIDATA/Blocks.txt 
+% 3400..4DBF; CJK Unified Ideographs Extension A
+% 4E00..9FFF; CJK Unified Ideographs
+% 20000..2A6DF; CJK Unified Ideographs Extension B
+% 2A700..2B73F; CJK Unified Ideographs Extension C
+% 2B740..2B81F; CJK Unified Ideographs Extension D
 -define(CHAR_IS_CJK_UNIFIED_IDEOGRAPH(Ch), (
-    (Ch >= 16#4E00) and (Ch =< 16#9FFF) % CJK Unified Ideographs
+       ?CHECK_RANGE(Ch, 16#4E00,  16#9FFF) 
+%   or ?CHECK_RANGE(Ch, 16#3400,  16#4DBF) 
+%   or ?CHECK_RANGE(Ch, 16#20000, 16#2A6DF) 
+%   or ?CHECK_RANGE(Ch, 16#2A700, 16#2B73F) 
+%   or ?CHECK_RANGE(Ch, 16#2B740, 16#2B81F) 
 )).
+
+% grep "CJK Compatibility Ideograph" priv/UNIDATA/Blocks.txt
+% F900..FAFF; CJK Compatibility Ideographs
+% 2F800..2FA1F; CJK Compatibility Ideographs Supplement
 -define(CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(Ch), (
-    (Ch >= 16#F900) and (Ch =< 16#FAFF) % CJK Compatibility Ideographs
+       ?CHECK_RANGE(Ch, 16#F900,  16#FAFF)
+%   or ?CHECK_RANGE(Ch, 16#2F800, 16#2FA1F)
 )).
 
 % Unified_Ideograph from http://unicode.org/Public/UNIDATA/PropList.txt
+% grep Unified PropList.txt 
+% 3400..4DB5    ; Unified_Ideograph # Lo [6582] CJK UNIFIED IDEOGRAPH-3400..CJK UNIFIED IDEOGRAPH-4DB5
+% 4E00..9FCC    ; Unified_Ideograph # Lo [20941] CJK UNIFIED IDEOGRAPH-4E00..CJK UNIFIED IDEOGRAPH-9FCC
+% FA0E..FA0F    ; Unified_Ideograph # Lo   [2] CJK COMPATIBILITY IDEOGRAPH-FA0E..CJK COMPATIBILITY IDEOGRAPH-FA0F
+% FA11          ; Unified_Ideograph # Lo       CJK COMPATIBILITY IDEOGRAPH-FA11
+% FA13..FA14    ; Unified_Ideograph # Lo   [2] CJK COMPATIBILITY IDEOGRAPH-FA13..CJK COMPATIBILITY IDEOGRAPH-FA14
+% FA1F          ; Unified_Ideograph # Lo       CJK COMPATIBILITY IDEOGRAPH-FA1F
+% FA21          ; Unified_Ideograph # Lo       CJK COMPATIBILITY IDEOGRAPH-FA21
+% FA23..FA24    ; Unified_Ideograph # Lo   [2] CJK COMPATIBILITY IDEOGRAPH-FA23..CJK COMPATIBILITY IDEOGRAPH-FA24
+% FA27..FA29    ; Unified_Ideograph # Lo   [3] CJK COMPATIBILITY IDEOGRAPH-FA27..CJK COMPATIBILITY IDEOGRAPH-FA29
+% 20000..2A6D6  ; Unified_Ideograph # Lo [42711] CJK UNIFIED IDEOGRAPH-20000..CJK UNIFIED IDEOGRAPH-2A6D6
+% 2A700..2B734  ; Unified_Ideograph # Lo [4149] CJK UNIFIED IDEOGRAPH-2A700..CJK UNIFIED IDEOGRAPH-2B734
+% 2B740..2B81D  ; Unified_Ideograph # Lo [222] CJK UNIFIED IDEOGRAPH-2B740..CJK UNIFIED IDEOGRAPH-2B81D
 -define(CHAR_IS_UNIFIED_IDEOGRAPH(Ch), (
-% [6582] CJK UNIFIED IDEOGRAPH-3400..4DB5
-    ((Ch >= 16#3400)  and (Ch =< 16#4DB5))
-
-% [20940] CJK UNIFIED IDEOGRAPH-4E00..9FCB
-or ((Ch >= 16#4E00)  and (Ch =< 16#9FCB))
-% FIXED: Error: [55296,33] lower [40908,98]
-% CJK Unified Ideographs
-%or ((Ch >= 16#4E00)  and (Ch =< 16#9FFF)) 
-
-% [2] CJK COMPATIBILITY IDEOGRAPH-FA0E..FA0F
- or ((Ch >= 16#FA0E)  and (Ch =< 16#FA0F))
-
- or ((Ch == 16#FA11)                     ) % CJK COMPATIBILITY IDEOGRAPH-FA11
-
-% [2] CJK COMPATIBILITY IDEOGRAPH-FA13..FA14
- or ((Ch >= 16#FA13)  and (Ch =< 16#FA14))
-
- or ((Ch == 16#FA1F)                     ) % CJK COMPATIBILITY IDEOGRAPH-FA1F
- or ((Ch == 16#FA21)                     ) % CJK COMPATIBILITY IDEOGRAPH-FA21
-
-% [2] CJK COMPATIBILITY IDEOGRAPH-FA23..FA24
- or ((Ch >= 16#FA23)  and (Ch =< 16#FA24))
-
-% [3] CJK COMPATIBILITY IDEOGRAPH-FA27..FA29 
- or ((Ch >= 16#FA27)  and (Ch =< 16#FA29))
-
-% [42711] CJK UNIFIED IDEOGRAPH-20000..2A6D6
- or ((Ch >= 16#20000) and (Ch =< 16#2A6D6))
-
-% [4149] CJK UNIFIED IDEOGRAPH-2A700..2B734
- or ((Ch >= 16#2A700) and (Ch =< 16#2B734))
-
-% [222] CJK UNIFIED IDEOGRAPH-2B740..2B81D 
- or ((Ch >= 16#2B740) and (Ch =< 16#2B81D))
+       ?CHECK_RANGE(Ch, 16#3400, 16#4DB5) 
+    or ?CHECK_RANGE(Ch, 16#4E00, 16#9FCC) 
+    or ?CHECK_RANGE(Ch, 16#FA0E, 16#FA0F)
+    or ?CHECK_VALUE(Ch, 16#FA11)
+    or ?CHECK_VALUE(Ch, 16#FA13)
+    or ?CHECK_VALUE(Ch, 16#FA14)
+    or ?CHECK_VALUE(Ch, 16#FA1F)
+    or ?CHECK_VALUE(Ch, 16#FA21)
+    or ?CHECK_VALUE(Ch, 16#FA23)
+    or ?CHECK_VALUE(Ch, 16#FA24)
+    or ?CHECK_RANGE(Ch, 16#FA27, 16#FA29)
+    or ?CHECK_RANGE(Ch, 16#20000, 16#2A6D6)
+    or ?CHECK_RANGE(Ch, 16#2A700, 16#2B734)
+    or ?CHECK_RANGE(Ch, 16#2B740, 16#2B81D)
 )).
 
 

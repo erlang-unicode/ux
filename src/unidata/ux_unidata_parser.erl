@@ -50,7 +50,12 @@ check({FileType, DataTypes, FileName}) ->
 
 check_filename(FileName) ->
     % File exists?
-    {ok, _Info} = file:read_file_info(FileName),
+    case file:read_file_info(FileName) of
+        {ok, _Info} -> ok;
+        Error -> 
+            error_logger:error_msg(?MODULE_STRING ++ ": File ~s not found.", [FileName]), 
+            erlang:error(Error)
+    end,
     ok.
 
 file_format(Mod) ->

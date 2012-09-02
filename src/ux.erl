@@ -1,11 +1,11 @@
-%% @author Mochi Media <dev@mochimedia.com>
-%% @copyright 2010 Mochi Media <dev@mochimedia.com>
+%% @author Uvarov Michael <freeakk@gmail.com>
+%% @copyright 2010 ux Uvarov Michael <freeakk@gmail.com>
 
 %% @doc ux.
 %% @private
 
 -module(ux).
--author("Mochi Media <dev@mochimedia.com>").
+-author("Uvarov Michael <freeakk@gmail.com>").
 -export([start/0, stop/0]).
 
 %% @spec start() -> ok

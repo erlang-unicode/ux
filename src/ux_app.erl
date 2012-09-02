@@ -1,6 +1,6 @@
 % vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
-%% @author Mochi Media <dev@mochimedia.com>
-%% @copyright ux Mochi Media <dev@mochimedia.com>
+%% @author Uvarov Michael <freeakk@gmail.com>
+%% @copyright 2010 ux Uvarov Michael <freeakk@gmail.com>
 
 %% @doc Callbacks for the web_col application.
 %% @private

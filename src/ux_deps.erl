@@ -1,6 +1,6 @@
-%% @author Mochi Media <dev@mochimedia.com>
-%% @copyright 2010 Mochi Media <dev@mochimedia.com>
-
+%% @author Uvarov Michael <freeakk@gmail.com>
+%% @copyright 2010 ux Uvarov Michael <freeakk@gmail.com>
+%%
 %% @doc Ensure that the relatively-installed dependencies are on the code
 %%      loading path, and locate resources relative
 %%      to this application's path.
@@ -8,7 +8,7 @@
 %% @private
 
 -module(ux_deps).
--author("Mochi Media <dev@mochimedia.com>").
+-author("Uvarov Michael <freeakk@gmail.com>").
 
 -export([ensure/0, ensure/1]).
 -export([get_base_dir/0, get_base_dir/1]).

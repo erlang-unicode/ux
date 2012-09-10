@@ -10,7 +10,7 @@ Unicode eXtension
 **Alternative license**:
 `LGPLv3 <http://http://www.gnu.org/licenses/lgpl-3.0.html>`_
 
-**Author**: Uvarov Michael (freeakk@gmail.com) 
+**Author**: Uvarov Michael (arcusfelis@gmail.com) 
 
 **Unidata version**: 6.1.0
 

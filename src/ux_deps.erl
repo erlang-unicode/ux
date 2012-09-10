@@ -1,5 +1,5 @@
-%% @author Uvarov Michael <freeakk@gmail.com>
-%% @copyright 2010 ux Uvarov Michael <freeakk@gmail.com>
+%% @author Uvarov Michael <arcusfelis@gmail.com>
+%% @copyright 2010 ux Uvarov Michael <arcusfelis@gmail.com>
 %%
 %% @doc Ensure that the relatively-installed dependencies are on the code
 %%      loading path, and locate resources relative
@@ -8,7 +8,7 @@
 %% @private
 
 -module(ux_deps).
--author("Uvarov Michael <freeakk@gmail.com>").
+-author("Uvarov Michael <arcusfelis@gmail.com>").
 
 -export([ensure/0, ensure/1]).
 -export([get_base_dir/0, get_base_dir/1]).

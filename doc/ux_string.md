@@ -13,7 +13,7 @@ String functions.
 
 Copyright (c) 2010-2011 Michael Uvarov
 
-__Authors:__ Michael Uvarov ([`freeakk@gmail.com`](mailto:freeakk@gmail.com)).
+__Authors:__ Michael Uvarov ([`arcusfelis@gmail.com`](mailto:arcusfelis@gmail.com)).
 <a name="types"></a>
 
 ##Data Types##

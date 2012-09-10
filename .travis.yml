@@ -3,7 +3,7 @@ branches:
   only:
     - master
 notifications:
-  email: freeakk@gmail.com
+  email: arcusfelis@gmail.com
   irc: 
 env:
   - R15B01

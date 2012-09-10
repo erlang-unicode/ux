@@ -18,7 +18,7 @@
 %%% $Id$
 %%%
 %%% @copyright 2010-2011 Michael Uvarov
-%%% @author Michael Uvarov <freeakk@gmail.com>
+%%% @author Michael Uvarov <arcusfelis@gmail.com>
 %%% =====================================================================
 
 %%% @doc Functions for extraction UNIDATA.
@@ -45,7 +45,7 @@
 
 
 -module(ux_unidata).
--author('Uvarov Michael <freeakk@gmail.com>').
+-author('Uvarov Michael <arcusfelis@gmail.com>').
 -export([get_source_file/1, get_test_file/1, open_test_file/1]).
 -export([char_to_upper/1, char_to_lower/1, is_upper/1, is_lower/1,
         char_comment/1, char_type/1, ccc/1, 

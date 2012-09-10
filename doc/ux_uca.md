@@ -14,7 +14,7 @@ see Unicode Technical Standard #10.
 
 Copyright (c) 2010-2011 Michael Uvarov
 
-__Authors:__ Michael Uvarov ([`freeakk@gmail.com`](mailto:freeakk@gmail.com)).<a name="description"></a>
+__Authors:__ Michael Uvarov ([`arcusfelis@gmail.com`](mailto:arcusfelis@gmail.com)).<a name="description"></a>
 
 ##Description##
 

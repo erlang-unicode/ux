@@ -18,7 +18,7 @@
 %%% $Id$
 %%%
 %%% @copyright 2010-2011 Michael Uvarov
-%%% @author Michael Uvarov <freeakk@gmail.com>
+%%% @author Michael Uvarov <arcusfelis@gmail.com>
 %%% =====================================================================
 
 %%% =====================================================================
@@ -160,7 +160,7 @@
 
 
 -module(ux_uca).
--author('Uvarov Michael <freeakk@gmail.com>').
+-author('Uvarov Michael <arcusfelis@gmail.com>').
 
 -export([
         compare/2,      % Str1, Str2

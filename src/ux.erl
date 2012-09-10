@@ -1,11 +1,11 @@
-%% @author Uvarov Michael <freeakk@gmail.com>
-%% @copyright 2010 ux Uvarov Michael <freeakk@gmail.com>
+%% @author Uvarov Michael <arcusfelis@gmail.com>
+%% @copyright 2010 ux Uvarov Michael <arcusfelis@gmail.com>
 
 %% @doc ux.
 %% @private
 
 -module(ux).
--author("Uvarov Michael <freeakk@gmail.com>").
+-author("Uvarov Michael <arcusfelis@gmail.com>").
 -export([start/0, stop/0]).
 
 %% @spec start() -> ok

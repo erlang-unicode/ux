@@ -12,7 +12,7 @@
 ##Function Index##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#do_alt-2">do_alt/2</a></td><td></td></tr><tr><td valign="top"><a href="#do_alt-3">do_alt/3</a></td><td></td></tr><tr><td valign="top"><a href="#do_extract-3">do_extract/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_ducet-0">get_ducet/0</a></td><td></td></tr><tr><td valign="top"><a href="#get_options-0">get_options/0</a></td><td></td></tr><tr><td valign="top"><a href="#get_reassign_function-2">get_reassign_function/2</a></td><td></td></tr><tr><td valign="top"><a href="#split_levels-3">split_levels/3</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#do_alt-2">do_alt/2</a></td><td></td></tr><tr><td valign="top"><a href="#do_alt-3">do_alt/3</a></td><td></td></tr><tr><td valign="top"><a href="#do_extract-3">do_extract/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_ducet-0">get_ducet/0</a></td><td></td></tr><tr><td valign="top"><a href="#get_options-0">get_options/0</a></td><td></td></tr><tr><td valign="top"><a href="#get_reassign_function-2">get_reassign_function/2</a></td><td></td></tr><tr><td valign="top"><a href="#hangul_type-1">hangul_type/1</a></td><td></td></tr><tr><td valign="top"><a href="#implicit_type-1">implicit_type/1</a></td><td></td></tr><tr><td valign="top"><a href="#split_levels-3">split_levels/3</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -80,6 +80,24 @@
 
 
 `get_reassign_function(D, L) -> any()`
+
+<a name="hangul_type-1"></a>
+
+###hangul_type/1##
+
+
+
+
+`hangul_type(X) -> any()`
+
+<a name="implicit_type-1"></a>
+
+###implicit_type/1##
+
+
+
+
+`implicit_type(X) -> any()`
 
 <a name="split_levels-3"></a>
 

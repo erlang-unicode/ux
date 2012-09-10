@@ -1,7 +1,7 @@
 % vim: set filetype=erlang shiftwidth=4 tabstop=4 expandtab tw=80:
 %%%
 %%% @copyright 2010-2011 Michael Uvarov
-%%% @author Michael Uvarov <freeakk@gmail.com>
+%%% @author Michael Uvarov <arcusfelis@gmail.com>
 %%%
 %%% =====================================================================
 %%% This library is free software; you can redistribute it and/or modify
@@ -45,7 +45,7 @@
 
 
 -module(ux_char).
--author('Uvarov Michael <freeakk@gmail.com>').
+-author('Uvarov Michael <arcusfelis@gmail.com>').
 
 -export([comment/1, type/1, block/1, script/1,
         to_lower/1, to_upper/1, to_ncr/1,

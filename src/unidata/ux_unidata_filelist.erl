@@ -17,6 +17,9 @@
 
 -behavior(gen_server).
 
+-record(state, {
+        key2server :: dict()
+}).
 
 
 %% Exported Client Functions
@@ -28,8 +31,10 @@ start_link() ->
 
 init([]) ->
     Dict = dict:new(),
-    LoopData = {Dict},
-    {ok, LoopData}.
+    State = #state{
+            key2server = Dict
+            },
+    {ok, State}.
 
 terminate(_Reason, _LoopData) ->
     ok.
@@ -37,38 +42,47 @@ terminate(_Reason, _LoopData) ->
 
 % Save pid of ux_unidata_store server in a dict.
 % Key is a combination of filename and fileoptions.
-handle_call({reg_pid, Key, StorePid}, _From, {Dict} = _LoopData) ->
+handle_call({reg_pid, Key, StorePid}, _From, State = #state{key2server = K2S}) ->
     erlang:monitor(process, StorePid),
     ?DBG("~w: Registrate a new process ~w with the key ~w. ~n", 
         [?MODULE, StorePid, Key]),
     
-    {Reply, NewDict} = case dict:is_key(Key, Dict) of
+    {Reply, K2S_2} = case dict:is_key(Key, K2S) of
         false -> 
-            {ok, dict:store(Key, StorePid, Dict)};
+            {ok, dict:store(Key, StorePid, K2S)};
         true  -> 
             error_logger:error_msg("~w: The key ~w is already registred. ~w",
                 [?MODULE, Key]),
-            {{error, key_already_registred}, Dict}
+            {{error, key_already_registred}, K2S}
     end,
-    {reply, Reply, {NewDict}};
-handle_call({get_pid, Key}, _From, {Dict} = _LoopData) ->
-    
-    Reply = dict:find(Key, Dict), % {ok, Value} or error
-    {reply, Reply, {Dict}}.
+    State_2 = State#state{key2server = K2S_2},
+    {reply, Reply, State_2};
 
-% Delete pid from dict. FromPid is a pid of ux_unidata_store server.
-handle_info({'DOWN', _Ref, process, FromPid, _Reason}, {Dict} = _LoopData) ->
+handle_call({get_pid, Key}, _From, State = #state{key2server = K2S}) ->
+    Reply = dict:find(Key, K2S), % {ok, Value} or error
+    {reply, Reply, State}.
+
+
+
+% Server is dead, unregister it.
+% Delete pid from the dict. FromPid is a pid of ux_unidata_store server.
+handle_info({'DOWN', _Ref, process, ServerPid, _Reason},
+            State = #state{key2server = K2S}) ->
     ?DBG("~w: Delete Pid = ~w from the dictionary. ~n", 
-        [?MODULE, FromPid]),
-    NewDict = dict:filter(fun(_K, V) -> V =/= FromPid end, Dict),
-    {noreply, {NewDict}}.
+         [?MODULE, FromPid]),
+    K2S_2   = dict:filter(fun(_K, V) -> V =/= ServerPid end, K2S),
+    State_2 = State#state{key2server = K2S_2},
+    {noreply, State_2}.
+
 
 %%
 %% API
 %%
 -spec set_source(Level::atom(), Parser::atom(), Types::[atom()] | all,
-    FileName::string()) -> ok.
+                 FileName::string()) -> ok.
 
+%% @doc Set a data source (data file) with UNIDATA.
+%%
 %% 1. Runs server which parses file and returns a list of funs.
 %% 2. Registers returned funs on the process, application or node level.
 %%
@@ -78,6 +92,8 @@ handle_info({'DOWN', _Ref, process, FromPid, _Reason}, {Dict} = _LoopData) ->
 %% F=ux_unidata_filelist:get_source(blocks, blocks).
 %% {ok,S}=ux_unidata_filelist:file_owner(code:priv_dir(ux) ++ "/UNIDATA/Blocks.txt").
 %% ux_unidata_store:remove_type(S, blocks).
+%%
+%% Returns nothing.
 
 set_source('node', Parser, Types, FileName) ->
     Key = {Parser, Types, FileName},
@@ -95,16 +111,17 @@ set_source(Level, Parser, Types, FileName) ->
     end,
     Key = {Parser, Types, FileName},
     Funs = lists:map(fun({Type, Ets, Fun}) ->
-        % Set upgrade trigger.
-        {{Parser, Type}, 
-            fun
+        %% This function allows to extract data from different data sources:
+        %% * ETS tables;
+        %% * dinamicly compilled modules.
+        DataSourceFun = fun
             %% Run check only once.
             %% For fast realizations of filters.
             ('skip_check') ->
 
                 case ets:info(Ets, 'owner') of
                 undefined -> 
-                    set_source(process, Parser, [Type], FileName),
+                   set_source(process, Parser, [Type], FileName),
                    NewFun = get_source(Parser, Type);
                 _ -> Fun
                 end;
@@ -150,8 +167,10 @@ set_source(Level, Parser, Types, FileName) ->
                         NewFun(Val) 
                     end
                 end 
-            end
-        }
+            end, %% of DataSourceFun
+
+        % Set an upgrade trigger.
+        {{Parser, Type}, DataSourceFun}
         
         end, get_funs(Key, ClientPid)),
 
@@ -165,22 +184,25 @@ set_source(Level, Parser, Types, FileName) ->
     'application' ->
         {ok, AppName2} = application:get_application(), 
         set_app_env(AppName2, Funs)
-    end.
+    end,
+    ok.
+
 
 %% This is a short form of function.
 set_source(Level, {Parser, Types, Filename} = _Key) -> 
     set_source(Level, Parser, Types, Filename).
 
-%% Return registred fun.
+%% @doc Return registred fun.
 %% Check: the dict of client process, then application enviroment, 
 %% then try get the default value from the server.
 get_source(Parser, Type) ->
     Value = {Parser, Type},
     get_source(Value).
 
+
 -spec get_source({Parser::atom(), Type::atom()}) -> fun() | undefined.
 
-%% Try retrieve the information about the data source:
+%% @doc Try retrieve the information about the data source:
 %% Step 1: Check process dictionary.
 %% Step 2: Check application enviroment.
 %% Step 3: Use defaults.

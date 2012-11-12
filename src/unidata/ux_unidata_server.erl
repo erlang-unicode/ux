@@ -19,9 +19,6 @@
     handle_call/3, handle_info/2, handle_cast/2]).
 -export([set_default/1, get_default/1]).
 
-% spawn export.
--export([spawn_waiter/2]).
-
 -behavior(gen_server).
 
 %% Exported Client Functions
@@ -39,19 +36,25 @@ init([]) ->
 terminate(_Reason, _LoopData) ->
     ok.
 
+
+
+
 %% Spawns process which waits result from ux_unidata_store.
 spawn_waiter(LoaderFn, Key) ->
-    ok = LoaderFn(),
-    Reply = ux_unidata_filelist:get_source_from(process, Key),
-    % Reply to ux_unidata_server.
-    gen_server:cast(?MODULE, {waiter_reply, Key}),
-    % Reply to clients.
-    spawn_waiter_reply(Reply).
+    spawn_monitor(fun() ->
+        %% Run Long operation.
+        ok = LoaderFn(),
+        Reply = ux_unidata_filelist:get_source_from(process, Key),
+        % Reply to ux_unidata_server.
+        gen_server:cast(?MODULE, {waiter_reply, Key}),
+        % Reply to clients.
+        spawn_waiter_reply(Reply)
+        end).
 
 spawn_waiter_reply(ReplyVal) ->
     receive
     {reply_to, Pid} ->
-        Pid ! {reply, ReplyVal},
+        Pid ! {reply_result, ReplyVal},
         spawn_waiter_reply(ReplyVal)
     after 5000 ->
         ok
@@ -62,7 +65,7 @@ wait_respond(WaiterPid) ->
     WaiterPid ! {reply_to, self()},
     {ok, Result} = 
         receive
-        {reply, Val} -> {ok, Val}
+        {reply_result, Val} -> {ok, Val}
         after 20000 -> 
             {error, timeout}
         end,
@@ -81,6 +84,9 @@ check_key(Key) ->
     Fun when is_function(Fun) -> ok
     end.
 
+
+
+
 % Ref stores Key.
 % Key stores Pid of a waiter or Fun.
 % Delete pid from dict. FromPid is a pid of ux_unidata_store server.
@@ -98,14 +104,15 @@ handle_cast({waiter_reply, Key}, LoopData) ->
     ok = load_default(Key),
     {noreply, LoopData}.
 
+
+%% I am using PD as a proxy (it is bad).
 handle_call({get_default, Key} = V, From, LoopData) ->
     case ux_unidata_filelist:get_source_from(process, Key) of
     undefined -> 
         LoaderFn = fun() -> 
             load_default(Key) 
             end,
-        {WaiterPid, Ref} = spawn_monitor(?MODULE, 
-                'spawn_waiter', [LoaderFn, Key]),
+        {WaiterPid, Ref} = spawn_waiter(LoaderFn, Key),
         put(Key, WaiterPid),
         put(Ref, Key),
         Reply = WaiterPid,
@@ -115,13 +122,12 @@ handle_call({get_default, Key} = V, From, LoopData) ->
         true ->
             {reply, Reply, LoopData};
 
-        % Restart the "dead" function
+        % Restart the "dead" process, reload the function
         false ->
             LoaderFn = fun() -> 
                 Reply('reload')
                 end,
-            {WaiterPid, Ref} = spawn_monitor(?MODULE, 
-                    'spawn_waiter', [LoaderFn, Key]),
+            {WaiterPid, Ref} = spawn_waiter(LoaderFn, Key),
             put(Key, WaiterPid),
             put(Ref, Key),
             Reply2 = WaiterPid,
@@ -155,6 +161,11 @@ set_default(Key) ->
 %%
 %% Private helpers
 %% 
+
+%% Load all "columns" from the file, because it will be faster 
+%% (minimize file readings).
+%%
+%% This function is LONG.
 load_default({Parser, Type} = _Key) ->
     FileName = ux_unidata:get_source_file(Parser),
 %   Types = [Type],

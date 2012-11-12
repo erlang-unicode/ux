@@ -147,10 +147,10 @@ handle_info({'DOWN', _Ref, process, FromPid, _Reason},
         _ -> ok
     end,
     {noreply, LoopData#state{clients=NewClients}};
-handle_info(delete_timeout, #state{clients=[]}) ->
+handle_info(delete_timeout, State=#state{clients=[]}) ->
     ?DBG("~w~w: Nobody use this server and ETS table. Stop. ~n", 
         [?MODULE, self()]),
-    {stop, no_clients, false};
+    {stop, normal, State};
 % We have new clients.
 handle_info(delete_timeout, LoopData) ->
     ?DBG("~w~w: New users use this server. Cancel stop. ~n", 

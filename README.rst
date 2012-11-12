@@ -404,7 +404,7 @@ For example:
 
 .. code-block:: erlang
 
-    ux_unidata_filelist:set_source(process, blocks, all, code:priv_dir(ux) ++ "/UNIDATA/Blocks.txt"}).
+    ux_unidata_filelist:set_source(process, blocks, all, code:priv_dir(ux) ++ "/UNIDATA/Blocks.txt").
 
 loads data about Unicode blocks from ``priv/UNIDATA/Blocks.txt``.
 

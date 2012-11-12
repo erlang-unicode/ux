@@ -223,7 +223,7 @@ get_elems(Types, Elems) ->
 
 do_get_elems([Type|Tail], Elems, Acc) ->
     El = lists:keyfind(Type, 1, Elems),
-    El =/= false,
+    true = El =/= false,
     do_get_elems(Tail, Elems, [El|Acc]);
 do_get_elems([], _Elems, Acc) -> Acc.
 

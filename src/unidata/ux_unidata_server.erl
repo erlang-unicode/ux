@@ -89,7 +89,7 @@ check_key(Key) ->
 
 % Ref stores Key.
 % Key stores Pid of a waiter or Fun.
-% Delete pid from dict. FromPid is a pid of ux_unidata_store server.
+% FromPid is a pid of a waiter process.
 handle_info({'DOWN', Ref, process, FromPid, _Reason}, LoopData) ->
     ?DBG("~w: Delete Pid = ~w from the process dictionary. ~n", 
         [?MODULE, FromPid]),
@@ -117,22 +117,26 @@ handle_call({get_default, Key} = V, From, LoopData) ->
         put(Ref, Key),
         Reply = WaiterPid,
         {reply, Reply, LoopData};
-    Reply when is_function(Reply) -> 
-        case Reply('test') of
+
+    Fun when is_function(Fun) -> 
+        case Fun('test') of
         true ->
-            {reply, Reply, LoopData};
+            {reply, Fun, LoopData};
 
         % Restart the "dead" process, reload the function
         false ->
             LoaderFn = fun() -> 
-                Reply('reload')
+                Fun('reload')
                 end,
             {WaiterPid, Ref} = spawn_waiter(LoaderFn, Key),
             put(Key, WaiterPid),
             put(Ref, Key),
-            Reply2 = WaiterPid,
-            {reply, Reply2, LoopData}
-        end
+            {reply, WaiterPid, LoopData}
+        end;
+
+    %% We are still waiting.
+    WaiterPid when is_pid(WaiterPid) -> 
+        {reply, WaiterPid, LoopData}
     end;
 
 handle_call({set_default, Key}, _From, LoopData) ->

@@ -11,4 +11,4 @@
   {registered, []},
   {mod, {'ux_app', []}},
   {env, []},
-  {applications, [kernel, stdlib]}]}.
+  {applications, [kernel, stdlib, abnfc, metamodule]}]}.

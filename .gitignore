@@ -4,6 +4,7 @@
 _test
 *.dump
 deps/*
+ebin/
 .eunit
 log
 logs

@@ -148,7 +148,7 @@ create_tables(DataTypes) ->
     do_create_tables(DataTypes, []).
 
 do_create_tables([Name|T], Acc) ->
-    E = ets:new(Name, []),
+    E = ets:new(Name, [{write_concurrency, false}, {read_concurrency, true}]),
     ?DBG(
         "~w:  Create ETS table ~w. ~n",
         [?MODULE, E]),

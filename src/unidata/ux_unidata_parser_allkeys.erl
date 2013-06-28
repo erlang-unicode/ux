@@ -95,10 +95,10 @@ get_val(Table, Val) ->
 do_after([{ducet, Table} | Tail]) ->
     do_after_ranges(Table),
     
-    LTable = ets:new(ducet_lookup, []),
+    LTable = ets:new(ducet_lookup, [{write_concurrency, false}, {read_concurrency, true}]),
     do_after_lookup(Table, LTable),
 
-    MTable = ets:new(ducet_more, []),
+    MTable = ets:new(ducet_more, [{write_concurrency, false}, {read_concurrency, true}]),
     do_after_ducet(Table, MTable),
 
     ets:insert(Table, {'LTable', LTable}),

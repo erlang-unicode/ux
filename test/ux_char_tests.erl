@@ -7,6 +7,7 @@
     
 
 is_letter_test_() ->
+    setup(),
     M = 'ux_char',
     F = 'is_letter',
     [?_assertTO(not M:F($ ))
@@ -18,6 +19,7 @@ is_letter_test_() ->
     ].
 
 is_ascii_test_() ->
+    setup(),
     M = 'ux_char',
     F = 'is_acsii',
     [?_assertTO(M:F($ ))
@@ -29,6 +31,7 @@ is_ascii_test_() ->
     ].
 
 is_lower_test_() ->
+    setup(),
     M = 'ux_char',
     F = 'is_lower',
     [?_assertTO(not M:F($ ))
@@ -41,6 +44,7 @@ is_lower_test_() ->
 
 
 is_upper_test_() ->
+    setup(),
     M = 'ux_char',
     F = 'is_upper',
     [?_assertTO(not M:F($ ))
@@ -52,6 +56,7 @@ is_upper_test_() ->
     ].
 
 is_punctuation_mark_test_() ->
+    setup(),
     M = 'ux_char',
     F = 'is_punctuation_mark',
     [?_assertTO(not M:F($ ))
@@ -63,6 +68,7 @@ is_punctuation_mark_test_() ->
     ].
 
 is_decimal_test_() ->
+    setup(),
     M = 'ux_char',
     F = 'is_decimal',
     [?_assertTO(not M:F($ ))
@@ -74,6 +80,7 @@ is_decimal_test_() ->
     ].
 
 is_number_test_() ->
+    setup(),
     M = 'ux_char',
     F = 'is_number',
     [?_assertTO(not M:F($ ))
@@ -85,6 +92,7 @@ is_number_test_() ->
     ].
 
 is_separator_test_() ->
+    setup(),
     M = 'ux_char',
     F = 'is_separator',
     [?_assertTO(M:F($ ))

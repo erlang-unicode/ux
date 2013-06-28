@@ -220,6 +220,7 @@
 % base1
 
 selected_test_() ->
+    setup(),
     Params1 = ux_uca_options:get_options(non_ignorable),
     Params2 = ux_uca_options:get_options(shifted),
     [{"Hangul tests",
@@ -253,11 +254,13 @@ selected_test_() ->
 
 
 simple_sort_test_() ->
+    setup(),
     F = fun ux_uca:sort/1,
     {"Simple input data.",
         ?_assertEqualTO(F(["A", "C", "B"]), ["A", "B", "C"])}.
 
 natural_sort_test_() ->
+    setup(),
     Unsorted = ["1000X Radonius Maximus",
                 "10X Radonius",
                 "200X Radonius",
@@ -368,6 +371,7 @@ natural_sort_test_() ->
 %---------------------------------------------------------------
 -ifdef(SLOW_TESTS).
 non_ignorable_test_() ->
+    setup(),
     {timeout, 1200, 
         fun() -> 
             prof(ux_unidata:open_test_file('collation_test_non_ignorable'), 
@@ -376,6 +380,7 @@ non_ignorable_test_() ->
         end}.
 
 shifted_test_() ->
+    setup(),
     {timeout, 1200, 
         fun() -> 
             prof(ux_unidata:open_test_file('collation_test_shifted'), 
@@ -399,6 +404,7 @@ shifted_test_() ->
 
 
 natural_sort_long_test_() ->
+    setup(),
     {timeout, 600,
         fun() ->
             nat_prof(lists:seq(1, 10000, 1)),

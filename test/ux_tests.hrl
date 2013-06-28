@@ -7,3 +7,5 @@
     ?TO(?_assert(X))).
 -define(_assertEqualTO(X, Y), 
     ?TO(?_assertEqual(X,Y))).
+
+setup() -> ux:start().

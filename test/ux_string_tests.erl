@@ -11,6 +11,7 @@
 
 
 explode_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'explode',
     [?_assertEqual(M:F(":", "1:2:3"), ["1", "2", "3"])
@@ -83,6 +84,7 @@ explode_test_() ->
 %%
 
 to_lower_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'to_lower',
     [?_assertEqualTO(M:F("small BIG"), "small big")
@@ -108,6 +110,7 @@ to_upper_test_() ->
     ].
 
 delete_types_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'delete_types',
     [?_assertEqualTO(M:F(['Ll', 'Lu'], "Tom Cat!"), " !")
@@ -126,6 +129,7 @@ delete_types_test_() ->
     ].
 
 filter_types_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'filter_types',
     [?_assertEqualTO(M:F(['Ll', 'Lu'], "Tom Cat!"), "TomCat")
@@ -142,6 +146,7 @@ filter_types_test_() ->
     ].
 
 types_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'types',
     [?_assertEqualTO(M:F("Tom Cat!"), ['Lu','Ll','Ll','Zs','Lu','Ll','Ll','Po'])
@@ -150,6 +155,7 @@ types_test_() ->
     ].
 
 last_types_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'last_types',
     [?_assertEqualTO(M:F(['Ll'], "AavbfFDsdfffd9s9999", -5), "99999")
@@ -160,6 +166,7 @@ last_types_test_() ->
     ].
 
 first_types_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'first_types',
     [?_assertEqualTO(M:F(['Ll'], "AavbfFDsdfffds", 4), "avbf")
@@ -171,6 +178,7 @@ first_types_test_() ->
 
 
 to_graphemes_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'to_graphemes',
     [{"Simple example", 
@@ -181,6 +189,7 @@ to_graphemes_test_() ->
     ].
 
 first_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'first',
     [?_assertEqualTO(M:F("Octocat!", 4), "Octo")
@@ -189,6 +198,7 @@ first_test_() ->
     ].
 
 last_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'last',
     [?_assertEqualTO(M:F("Octocat!", 4), "cat!")
@@ -197,6 +207,7 @@ last_test_() ->
     ].
 
 length_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'length',
     [?_assertEqualTO(M:F("Octo"), 4)
@@ -205,6 +216,7 @@ length_test_() ->
 
 
 script_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'script',
     [?_assertEqualTO(M:F("Octocat!"), 'Latin')
@@ -215,6 +227,7 @@ script_test_() ->
 
 
 scripts_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'scripts',
     S = fun lists:sort/1,
@@ -226,24 +239,28 @@ scripts_test_() ->
 
 
 to_nfc_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'to_nfc',
     [?_assertEqualTO(M:F(""), "")
     ].
 
 to_nfd_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'to_nfd',
     [?_assertEqualTO(M:F(""), "")
     ].
 
 to_nfkc_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'to_nfkc',
     [?_assertEqualTO(M:F(""), "")
     ].
 
 to_nfkd_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'to_nfkd',
     [?_assertEqualTO(M:F(""), "")
@@ -254,18 +271,21 @@ to_nfkd_test_() ->
 
 
 is_nfc_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'is_nfc',
     [?_assertEqualTO(M:F(""), 'yes')
     ].
 
 is_nfd_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'is_nfd',
     [?_assertEqualTO(M:F(""), 'yes')
     ].
 
 is_nfkc_test_() ->
+    setup(),
     M = 'ux_string',
     F = 'is_nfkc',
     [?_assertEqualTO(M:F(""), 'yes')
@@ -295,6 +315,7 @@ is_nfkd_test_() ->
 -ifdef(SLOW_TESTS).
 
 nfc_test_() ->
+    setup(),
     {timeout, 300, 
         {"Normalization Conformance Test", 
             fun() -> 

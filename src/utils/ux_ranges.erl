@@ -16,28 +16,26 @@
 -module(ux_ranges).
 -export([in_list/2,search/2]).
 
--spec in_list([{integer(), integer()} | integer()], integer()) -> 
+-spec in_list([{integer(), integer()} | integer()], integer()) ->
     boolean().
-in_list([H|T], H) 
+in_list([H|_T], H)
     when is_integer(H) ->
     true;
-in_list([{From, To}|T], V) 
+in_list([{From, To}|_T], V)
     when V >= From, V =< To ->
     true;
-in_list([H|T], V) ->
+in_list([_H|T], V) ->
     in_list(T, V);
 in_list([], _V) -> false.
 
--spec search([{{integer(), integer()} | integer(), term()}], integer()) -> 
+-spec search([{{integer(), integer()} | integer(), term()}], integer()) ->
     boolean().
-search([{H,P}|T], H) 
+search([{H,P}|_T], H)
     when is_integer(H) ->
     P;
-search([{{From, To},P}|T], V) 
+search([{{From, To},P}|_T], V)
     when V >= From, V =< To ->
     P;
 search([_H|T], V) ->
     search(T, V);
 search([], _V) -> false.
-
-

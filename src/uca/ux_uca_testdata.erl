@@ -11,11 +11,11 @@ read_shifted() ->
 
 read_shifted_(Fd, Num, Acc) ->
     case read_line(Fd, Num) of
-        {RawString, [], NewNum} ->
+        {_RawString, [], NewNum} ->
             read_shifted_(Fd, NewNum, Acc);
-        {RawString, Points, NewNum} ->
+        {_RawString, Points, NewNum} ->
             read_shifted_(Fd, NewNum, [Points|Acc]);
-        eof -> lists:reverse(Acc) 
+        eof -> lists:reverse(Acc)
     end.
 
 
@@ -47,9 +47,8 @@ read_line(Fd, StrNum) ->
 
             {Data, Res, StrNum + 1} % {FullStr, Codepaints}
         catch
-        error:Reason ->
-%           io:format(user, "~w: Data=~w ~n", [Reason, Data]),
-            read_line(Fd, StrNum + 1)
+	    error:_Reason ->
+		%% io:format(user, "~w: Data=~w ~n", [Reason, Data]),
+		read_line(Fd, StrNum + 1)
         end
     end.
-

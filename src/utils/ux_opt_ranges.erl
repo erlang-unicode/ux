@@ -17,20 +17,20 @@
 -export([in_list/1, search/2]).
 
 
-in_list([H|_]=V) ->
-    SortedV = in_list_sort(V),
+in_list([_H|_]=V) ->
+    %% SortedV = in_list_sort(V),
 
     R = erlang:list_to_tuple(
-        lists:map(fun(X) -> [] end, 
+        lists:map(fun(_X) -> [] end,
             lists:seq(1,651))),
 
     do_in_list(V, R).
 
 search(Def, V) ->
-    SortedV = search_sort(V),
+    %% SortedV = search_sort(V),
 
     R = erlang:list_to_tuple(
-        lists:map(fun(X) -> [] end, 
+        lists:map(fun(_X) -> [] end,
             lists:seq(1,651))),
 
     do_search(Def, V, R).
@@ -56,8 +56,8 @@ do_in_list([], R) ->
         MiniList = erlang:element(I, MR),
         ux_ranges:in_list(MiniList, X)
         end.
-    
-    
+
+
 
 % skip
 do_search(Def, [{_,Def}|T], R) ->
@@ -88,18 +88,18 @@ do_search(Def, [], R) ->
         end
     end.
 
-    
-    
 
 
-set_elem(H, V, R) 
+
+
+set_elem(H, V, R)
     when is_tuple(R) ->
     I = index(H),
     E = erlang:element(I, R),
     erlang:setelement(I, R, [V|E]).
 
-    
-set_elem_i(I, V, R) 
+
+set_elem_i(I, V, R)
     when is_tuple(R) ->
     E = erlang:element(I, R),
     erlang:setelement(I, R, [V|E]).
@@ -113,46 +113,37 @@ fill_elem(I1, I2, V, R) when I1<I2 ->
     fill_elem(NewI1, I2, V, NewR).
 
 
-index(N) when N > 65000 -> 
+index(N) when N > 65000 ->
     651;
-index(N) -> 
+index(N) ->
     (N div 100) + 1.
 
 
-in_list_sort(V) ->
-    MF = fun({From,To} = Key) -> 
-                {From, Key};
-            (From) ->
-                {From, From}
-        end,
+%% in_list_sort(V) ->
+%%     MF = fun({From,_To} = Key) ->
+%%                 {From, Key};
+%%             (From) ->
+%%                 {From, From}
+%%         end,
+%%
+%%     MF2 = fun({_,Key}) -> Key end,
+%%
+%%     V1 = lists:map(MF, V),
+%%     V2 = lists:sort(V1),
+%%     lists:map(MF2, V2).
 
-    MF2 = fun({_,Key}) -> Key end,
-
-    V1 = lists:map(MF, V),
-    V2 = lists:sort(V1),
-    lists:map(MF2, V2).
-    
-
-
-search_sort(V) ->
-     MF = fun(Key) ->
-            case erlang:element(1, Key) of
-            ({From,To}) -> 
-                {From, Key};
-            (From) ->
-                {From, From}
-            end
-        end,
-
-    MF2 = fun({_,Key}) -> Key end,
-
-    V1 = lists:map(MF, V),
-    V2 = lists:sort(V1),
-    lists:map(MF2, V2).
-
-
-
-
-
-
-
+%% search_sort(V) ->
+%%      MF = fun(Key) ->
+%%             case erlang:element(1, Key) of
+%%             ({From,_To}) ->
+%%                 {From, Key};
+%%             (From) ->
+%%                 {From, From}
+%%             end
+%%         end,
+%%
+%%     MF2 = fun({_,Key}) -> Key end,
+%%
+%%     V1 = lists:map(MF, V),
+%%     V2 = lists:sort(V1),
+%%     lists:map(MF2, V2).

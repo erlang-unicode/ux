@@ -1,21 +1,20 @@
-%%% @doc Key-value store for the list of the servers which 
+%%% @doc Key-value store for the list of the servers which
 %%%      serve the unidata files.
 %%% @private
 -module(ux_unidata_filelist).
 -include("ux.hrl").
 
-% OTP 
+% OTP
 -export([start_link/0]).
--export([init/1, terminate/2, handle_call/3, handle_info/2]).
+-behavior(gen_server).
+-export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2, code_change/3]).
 
 % Inter-module exports
 -export([reg_pid/2, file_owner/1]).
 
 % Unidata API
--export([set_source/4, set_source/2, 
+-export([set_source/4, set_source/2,
     get_source/2, get_source/1, get_source_from/2]).
-
--behavior(gen_server).
 
 -record(state, {
         key2server :: dict()
@@ -44,13 +43,13 @@ terminate(_Reason, _LoopData) ->
 % Key is a combination of filename and fileoptions.
 handle_call({reg_pid, Key, StorePid}, _From, State = #state{key2server = K2S}) ->
     erlang:monitor(process, StorePid),
-    ?DBG("~w: Registrate a new process ~w with the key ~w. ~n", 
+    ?DBG("~w: Registrate a new process ~w with the key ~w. ~n",
         [?MODULE, StorePid, Key]),
-    
+
     {Reply, K2S_2} = case dict:is_key(Key, K2S) of
-        false -> 
+        false ->
             {ok, dict:store(Key, StorePid, K2S)};
-        true  -> 
+        true  ->
             error_logger:error_msg("~w: The key ~w is already registred. ~w",
                 [?MODULE, Key]),
             {{error, key_already_registred}, K2S}
@@ -62,17 +61,23 @@ handle_call({get_pid, Key}, _From, State = #state{key2server = K2S}) ->
     Reply = dict:find(Key, K2S), % {ok, Value} or error
     {reply, Reply, State}.
 
+handle_cast(_Msg, State) ->
+    {noreply, State}.
+
 
 
 % Server is dead, unregister it.
 % Delete pid from the dict. FromPid is a pid of ux_unidata_store server.
 handle_info({'DOWN', _Ref, process, ServerPid, _Reason},
             State = #state{key2server = K2S}) ->
-    ?DBG("~w: Delete Pid = ~w from the dictionary. ~n", 
+    ?DBG("~w: Delete Pid = ~w from the dictionary. ~n",
          [?MODULE, FromPid]),
     K2S_2   = dict:filter(fun(_K, V) -> V =/= ServerPid end, K2S),
     State_2 = State#state{key2server = K2S_2},
     {noreply, State_2}.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
 
 
 %%
@@ -98,11 +103,11 @@ handle_info({'DOWN', _Ref, process, ServerPid, _Reason},
 set_source('node', Parser, Types, FileName) ->
     Key = {Parser, Types, FileName},
     ux_unidata_server:set_default(Key);
-    
+
 set_source(Level, Parser, Types, FileName) ->
     Key = {Parser, Types, FileName},
     ClientPid = case Level of
-        'process' -> 
+        'process' ->
             self();
         'application' ->
             % We unload data, when the application die.
@@ -120,16 +125,16 @@ set_source(Level, Parser, Types, FileName) ->
             ('skip_check') ->
 
                 case ets:info(Ets, 'owner') of
-                undefined -> 
+                undefined ->
                    set_source(process, Parser, [Type], FileName),
-                   NewFun = get_source(Parser, Type);
+                   _NewFun = get_source(Parser, Type);
                 _ -> Fun
                 end;
 
             %% For ux_unidata_server. Check ETS before return value.
             ('test') ->
                 case ets:info(Ets, 'owner') of
-                'undefined' -> 
+                'undefined' ->
                     false;
                 _ -> true
                 end;
@@ -137,19 +142,19 @@ set_source(Level, Parser, Types, FileName) ->
             %% Get an ETS table (need for CLDR).
             ('get_table') ->
                 case ets:info(Ets, 'owner') of
-                'undefined' -> 
+                'undefined' ->
                     set_source('node', Parser, [Type], FileName),
                     NewFun = get_source(Parser, Type),
                     NewFun('get_table');
-                _ -> 
+                _ ->
                     Ets
                 end;
 
             ('reload') ->
                 case ets:info(Ets, 'owner') of
-                'undefined' -> 
+                'undefined' ->
                     set_source('node', Parser, [Type], FileName),
-                    NewFun = get_source(Parser, Type),
+                    _NewFun = get_source(Parser, Type),
                     ok;
                 _ -> ok
                 end;
@@ -159,41 +164,41 @@ set_source(Level, Parser, Types, FileName) ->
                 try
                     Fun(Val)
                 catch
-                error:badarg -> 
+                error:badarg ->
                     case ets:info(Ets) of
-                    'undefined' -> 
+                    'undefined' ->
                         set_source(Level, Parser, [Type], FileName),
                         NewFun = get_source(Parser, Type),
-                        NewFun(Val) 
+                        NewFun(Val)
                     end
-                end 
+                end
             end, %% of DataSourceFun
 
         % Set an upgrade trigger.
         {{Parser, Type}, DataSourceFun}
-        
+
         end, get_funs(Key, ClientPid)),
 
-    ?DBG("~w: Loaded funs: ~w. ~n", 
+    ?DBG("~w: Loaded funs: ~w. ~n",
         [?MODULE, Funs]),
 
     case Level of
-    'process' -> 
+    'process' ->
         % Put to the process dictionary.
         set_proc_dict(Funs);
     'application' ->
-        {ok, AppName2} = application:get_application(), 
+        {ok, AppName2} = application:get_application(),
         set_app_env(AppName2, Funs)
     end,
     ok.
 
 
 %% This is a short form of function.
-set_source(Level, {Parser, Types, Filename} = _Key) -> 
+set_source(Level, {Parser, Types, Filename} = _Key) ->
     set_source(Level, Parser, Types, Filename).
 
 %% @doc Return registred fun.
-%% Check: the dict of client process, then application enviroment, 
+%% Check: the dict of client process, then application enviroment,
 %% then try get the default value from the server.
 get_source(Parser, Type) ->
     Value = {Parser, Type},
@@ -208,7 +213,7 @@ get_source(Parser, Type) ->
 %% Step 3: Use defaults.
 get_source(Value) ->
     case get_source_from(process, Value) of            % step 1
-    'undefined' -> 
+    'undefined' ->
         case get_source_from(application, Value) of    % step 2
         'undefined' -> get_source_from('node', Value); % step 3
         Fun -> Fun
@@ -230,12 +235,12 @@ get_source_from('node', Value) ->
     undefined ->
         ux:start(),
         ux_unidata_server:get_default(Value);
-    _ -> 
-        ux_unidata_server:get_default(Value) 
+    _ ->
+        ux_unidata_server:get_default(Value)
     end.
-    
-    
-    
+
+
+
 %% Return the list of functions from the server.
 -spec get_funs(Key::{Parser::atom(), Types::[atom()], FileName::string()},
     pid()) -> [{Type::atom(), Ets::integer(), fun()}].
@@ -244,15 +249,15 @@ get_funs({_,Types,_} = Key, ClientPid) ->
     ux_unidata_store:get_funs(ServerPid, Types).
 
 set_app_env(Name, [{Key, Val}|Tail]) ->
-    ?DBG("~w: Set a application enviroment variable ~w::~w to ~w. ~n", 
+    ?DBG("~w: Set a application enviroment variable ~w::~w to ~w. ~n",
         [?MODULE, Name, Key, Val]),
     application:set_env(Name, Key, Val),
     set_app_env(Name, Tail);
 set_app_env(_Name, []) -> ok.
-    
-    
+
+
 set_proc_dict([{Key, Val}|Tail]) ->
-    ?DBG("~w: Put the value to the process dictionary: ~w::~w to ~w. ~n", 
+    ?DBG("~w: Put the value to the process dictionary: ~w::~w to ~w. ~n",
         [?MODULE, self(), Key, Val]),
     erlang:put(Key, Val),
     set_proc_dict(Tail);
@@ -263,21 +268,21 @@ set_proc_dict([]) -> ok.
 get_application_pid(Name) ->
     AInfo = application:info(),
     {'running', R} = lists:keyfind('running', 1, AInfo),
-    {Name, Pid} = lists:keyfind(Name, 1, R).
+    {Name, _Pid} = lists:keyfind(Name, 1, R).
 
 
-%% Try to get a pid of the owner of an ETS table with the UNIDATA 
+%% Try to get a pid of the owner of an ETS table with the UNIDATA
 %% from the Key-file.
 %% Also, try to monitor ClientPid on the server.
 get_pid(Key, ClientPid) when is_pid(ClientPid) ->
     case file_owner(key_to_id(Key)) of
-        error -> 
+        error ->
             {ok, StoreServerPid} = ux_unidata_store_sup:read_file(Key, ClientPid),
             StoreServerPid;
-            
+
         % Server is already running.
-        {ok, StoreServerPid} when is_pid(StoreServerPid) -> 
-            ux_unidata_store:monitor_client_process(StoreServerPid, ClientPid), 
+        {ok, StoreServerPid} when is_pid(StoreServerPid) ->
+            ux_unidata_store:monitor_client_process(StoreServerPid, ClientPid),
             ux_unidata_store:check_types(StoreServerPid, key_to_types(Key)),
             StoreServerPid
     end.
@@ -288,9 +293,9 @@ get_pid(Key, ClientPid) when is_pid(ClientPid) ->
 file_owner(FileName) ->
     gen_server:call(?MODULE, {get_pid, FileName}).
 
-%% Used only by ux_unidata_store:init/1. 
+%% Used only by ux_unidata_store:init/1.
 %% Don't use this function from user code.
-%% Throws {badmatch,{error,key_already_registred}} if self() is already 
+%% Throws {badmatch,{error,key_already_registred}} if self() is already
 %% registred.
 reg_pid(Key, StoreServerPid) when is_pid(StoreServerPid) ->
     ok = gen_server:call(?MODULE, {reg_pid, key_to_id(Key), StoreServerPid}).

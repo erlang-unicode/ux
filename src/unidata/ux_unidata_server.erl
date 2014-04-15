@@ -1,12 +1,12 @@
 %%% @doc This module provides the access to the store of default files.
 %%%      When client runs a function from the ux_unidata module:
-%%%      1. Code from ux_unidata_filelist module check the process dict 
+%%%      1. Code from ux_unidata_filelist module check the process dict
 %%%         and the application enviroments. If they are unefined, then
 %%%         it call this server.
 %%%      2. If this server already loaded this data, it returns it, and
 %%%         the client code put it to the process dictionary.
 %%%      3. If requested data is not loaded, then this server runs
-%%%         an other server (ux_unidata_store), which parsed a default 
+%%%         an other server (ux_unidata_store), which parsed a default
 %%%         UNIDATA file.
 %%% @end
 %%%
@@ -15,11 +15,9 @@
 -include("ux.hrl").
 
 -export([start_link/0]).
--export([init/1, terminate/2, 
-    handle_call/3, handle_info/2, handle_cast/2]).
--export([set_default/1, get_default/1]).
-
 -behavior(gen_server).
+-export([init/1, terminate/2, handle_call/3, handle_info/2, handle_cast/2, code_change/3]).
+-export([set_default/1, get_default/1]).
 
 %% Exported Client Functions
 %% Operation & Maintenance API
@@ -63,14 +61,14 @@ spawn_waiter_reply(ReplyVal) ->
 %% Runs from a client process.
 wait_respond(WaiterPid) ->
     WaiterPid ! {reply_to, self()},
-    {ok, Result} = 
+    {ok, Result} =
         receive
         {reply_result, Val} -> {ok, Val}
-        after 20000 -> 
+        after 20000 ->
             {error, timeout}
         end,
     Result.
-    
+
 check_key(Key) ->
     case erlang:get(Key) of
     Pid when is_pid(Pid) ->
@@ -90,8 +88,8 @@ check_key(Key) ->
 % Ref stores Key.
 % Key stores Pid of a waiter or Fun.
 % FromPid is a pid of a waiter process.
-handle_info({'DOWN', Ref, process, FromPid, _Reason}, LoopData) ->
-    ?DBG("~w: Delete Pid = ~w from the process dictionary. ~n", 
+handle_info({'DOWN', Ref, process, _FromPid, _Reason}, LoopData) ->
+    ?DBG("~w: Delete Pid = ~w from the process dictionary. ~n",
         [?MODULE, FromPid]),
 
     case erlang:get(Ref) of
@@ -106,11 +104,11 @@ handle_cast({waiter_reply, Key}, LoopData) ->
 
 
 %% I am using PD as a proxy (it is bad).
-handle_call({get_default, Key} = V, From, LoopData) ->
+handle_call({get_default, Key}, _From, LoopData) ->
     case ux_unidata_filelist:get_source_from(process, Key) of
-    undefined -> 
-        LoaderFn = fun() -> 
-            load_default(Key) 
+    undefined ->
+        LoaderFn = fun() ->
+            load_default(Key)
             end,
         {WaiterPid, Ref} = spawn_waiter(LoaderFn, Key),
         put(Key, WaiterPid),
@@ -118,14 +116,14 @@ handle_call({get_default, Key} = V, From, LoopData) ->
         Reply = WaiterPid,
         {reply, Reply, LoopData};
 
-    Fun when is_function(Fun) -> 
+    Fun when is_function(Fun) ->
         case Fun('test') of
         true ->
             {reply, Fun, LoopData};
 
         % Restart the "dead" process, reload the function
         false ->
-            LoaderFn = fun() -> 
+            LoaderFn = fun() ->
                 Fun('reload')
                 end,
             {WaiterPid, Ref} = spawn_waiter(LoaderFn, Key),
@@ -135,13 +133,16 @@ handle_call({get_default, Key} = V, From, LoopData) ->
         end;
 
     %% We are still waiting.
-    WaiterPid when is_pid(WaiterPid) -> 
+    WaiterPid when is_pid(WaiterPid) ->
         {reply, WaiterPid, LoopData}
     end;
 
 handle_call({set_default, Key}, _From, LoopData) ->
     Reply = ux_unidata_filelist:set_source(process, Key),
     {reply, Reply, LoopData}.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
 
 %%
 %% API
@@ -151,7 +152,7 @@ handle_call({set_default, Key}, _From, LoopData) ->
 get_default(Key) ->
     Reply = gen_server:call(?MODULE, {get_default, Key}, 60000),
     case Reply of
-    Fun when is_function(Fun) -> 
+    Fun when is_function(Fun) ->
         put(Key, Fun), % Registrate in the dict of the local process.
         Fun;
     WaiterPid when is_pid(WaiterPid) ->
@@ -164,15 +165,14 @@ set_default(Key) ->
 
 %%
 %% Private helpers
-%% 
+%%
 
-%% Load all "columns" from the file, because it will be faster 
+%% Load all "columns" from the file, because it will be faster
 %% (minimize file readings).
 %%
 %% This function is LONG.
-load_default({Parser, Type} = _Key) ->
+load_default({Parser, _Type} = _Key) ->
     FileName = ux_unidata:get_source_file(Parser),
 %   Types = [Type],
     Types = all,
     ux_unidata_filelist:set_source(process, Parser, Types, FileName).
-

@@ -23,7 +23,7 @@
 %%% =====================================================================
 
 %%% =====================================================================
-%%%   Copyright 2011 Uvarov Michael 
+%%%   Copyright 2011 Uvarov Michael
 %%%
 %%%   Licensed under the Apache License, Version 2.0 (the "License");
 %%%   you may not use this file except in compliance with the License.
@@ -53,20 +53,20 @@
         split/2, split/3,
 
         to_lower/1, to_upper/1, to_string/1,
-        delete_types/2, delete_types/3, 
-        filter_types/2, filter_types/3, 
+        delete_types/2, delete_types/3,
+        filter_types/2, filter_types/3,
         explode_types/2, split_types/2,
         first_types/3, last_types/3,
 
         script/1, scripts/1,
 
-        freq/1, 
+        freq/1,
         is_nfc/1, is_nfd/1, is_nfkc/1, is_nfkd/1,
         to_nfc/1, to_nfd/1, to_nfkc/1, to_nfkd/1,
         to_ncr/1,
 
         to_graphemes/1, reverse/1,
-        length/1, 
+        length/1,
         first/2, last/2,
 
         extract_words/1,
@@ -79,13 +79,13 @@
 
 
 
--define(ASSERT(TEST,TRUE,FALSE), case TEST of 
-        true  -> TRUE; 
+-define(ASSERT(TEST,TRUE,FALSE), case TEST of
+        true  -> TRUE;
         false -> FALSE
 end).
 
--define(ASSERT_IN_ARRAY_LAMBDA(TEST), case TEST of 
-        true  -> fun lists:member/2; 
+-define(ASSERT_IN_ARRAY_LAMBDA(TEST), case TEST of
+        true  -> fun lists:member/2;
         false -> fun not_in_array/2
 end).
 
@@ -99,7 +99,7 @@ nfd_qc(V) -> ?UNIDATA:nfd_qc(V).
 nfkc_qc(V) -> ?UNIDATA:nfkc_qc(V).
 nfkd_qc(V) -> ?UNIDATA:nfkd_qc(V).
 is_compat(V) -> ?UNIDATA:is_compat(V).
-comp(V1, V2) -> ?UNIDATA:comp(V1, V2).
+%% comp(V1, V2) -> ?UNIDATA:comp(V1, V2).
 comp('skip_check') -> ?UNIDATA:comp('skip_check').
 decomp(V) -> ?UNIDATA:decomp(V).
 
@@ -154,27 +154,27 @@ not_in_array(X,Y) -> not lists:member(X,Y).
 %% ==String functions based on the UNIDATA==
 %%
 
-%% @doc Returns various "character types" which can be used 
+%% @doc Returns various "character types" which can be used
 %%      as a default categorization in implementations.
 %%      Types:
 %%      http://www.ksu.ru/eng/departments/ktk/test/perl/lib/unicode/UCDFF301.html#General%20Category
 %% @end
 %% ux_char:type(_) -> false.
-types(Str) -> 
+types(Str) ->
     Fun = ux_char:type(skip_check),
     lists:map(Fun, Str).
 
 
 
-%% @doc Returns a new string which is made from the chars of Str 
+%% @doc Returns a new string which is made from the chars of Str
 %%      which are not a type from Types list.
 %% @end
 -spec delete_types([char_type()], string()) -> string() | none().
 
-delete_types(Types, Str) -> 
+delete_types(Types, Str) ->
     Fun = ux_char:type(skip_check),
-    lists:filter(fun(El) -> 
-            not lists:member(Fun(El), Types) 
+    lists:filter(fun(El) ->
+            not lists:member(Fun(El), Types)
         end, Str).
 
 %% @doc Stops delete_type/2 after Limit deleted chars. If Limit &lt; 0, then
@@ -183,21 +183,21 @@ delete_types(Types, Str) ->
 -spec delete_types([char_type()], string(), integer()) -> string() | none().
 
 delete_types(Types, Str, Limit) when Limit > 0 ->
-    lists:reverse(get_types(Types, Str, Limit, [], true, 
+    lists:reverse(get_types(Types, Str, Limit, [], true,
         fun not_in_array/2, 0, -1));
 delete_types(Types, Str, Limit) when Limit < 0 ->
-    lists:reverse(get_types(Types, Str, Limit, [], true, 
+    lists:reverse(get_types(Types, Str, Limit, [], true,
         fun not_in_array/2, 1,  0)).
 
-%% @doc Returns a new string which is made from the chars of Str 
+%% @doc Returns a new string which is made from the chars of Str
 %%      which are a type from Types list.
 % @end
 -spec filter_types([char_type()], string()) -> string() | none().
 
-filter_types(Types, Str) -> 
+filter_types(Types, Str) ->
     Fun = ux_char:type(skip_check),
-    lists:filter(fun(El) -> 
-            lists:member(Fun(El), Types) 
+    lists:filter(fun(El) ->
+            lists:member(Fun(El), Types)
         end, Str).
 
 %% @doc Stops after -Limit skipped chars.
@@ -206,32 +206,32 @@ filter_types(Types, Str) ->
 
 filter_types(Types, Str, Limit) when Limit > 0 ->
     lists:reverse(
-        get_types(Types, Str, Limit, [], true, 
+        get_types(Types, Str, Limit, [], true,
             fun lists:member/2, -1, 0));
 filter_types(Types, Str, Limit) when Limit < 0 ->
     lists:reverse(
-        get_types(Types, Str, Limit, [], true, 
+        get_types(Types, Str, Limit, [], true,
             fun lists:member/2,  0, 1)).
 
 %% @doc If Len&lt;0, then gets first Len chars of type, which is in Types
 %%      If Len&gt;0, then gets first -Len chars of type, which is NOT in Types
 %% @end
 -spec first_types([char_type()], string(), integer()) -> string() | none().
-first_types(Types, Str, Len) -> 
+first_types(Types, Str, Len) ->
     lists:reverse(
-        get_types(Types, Str, Len, [], false, 
-            ?ASSERT_IN_ARRAY_LAMBDA(Len>0), 
+        get_types(Types, Str, Len, [], false,
+            ?ASSERT_IN_ARRAY_LAMBDA(Len>0),
             ?ASSERT(Len>0, -1, 1), 0)).
 
 %% @doc If Len&lt;0, then gets last Len chars of type, which is in Types
 %%      If Len&gt;0, then gets last -Len chars of type, which is NOT in Types
 %% @end
 -spec last_types([char_type()], string(), integer()) -> string() | none().
-last_types(Types, Str, Len) -> 
-    get_types(Types, lists:reverse(Str), Len, [], false, 
-        ?ASSERT_IN_ARRAY_LAMBDA(Len>0), 
+last_types(Types, Str, Len) ->
+    get_types(Types, lists:reverse(Str), Len, [], false,
+        ?ASSERT_IN_ARRAY_LAMBDA(Len>0),
         ?ASSERT(Len>0, -1, 1), 0).
-        
+
 %% @private
 %% @doc Return list of chars, for which Fun(CharType) return true.
 %%      If Len = 0, then return a part of modified string concatinated with
@@ -242,43 +242,43 @@ last_types(Types, Str, Len) ->
 %% @end
 get_types(_Types, [] = _Str, _ = _Len, Result, _, _, _, _) -> Result;
 get_types(_,  _, 0, Result, false, _, _, _) -> Result;
-get_types(_,  Tail, 0, Result, true, _, _, _) -> 
+get_types(_,  Tail, 0, Result, true, _, _, _) ->
     lists:reverse(Tail)++Result;
-get_types(Types, [Char|Tail], 
+get_types(Types, [Char|Tail],
     Len, % Stop after Len chars
     Result, % Result array
     RetTail, % Concat tail with Result or not
     Fun, % Check function
     TrueStep, % Len+TrueStep, if Fun return true
-    FalseStep) -> 
+    FalseStep) ->
     case Fun(ux_char:type(Char), Types) of
-    true  -> get_types(Types, Tail, Len+TrueStep, [Char|Result], 
+    true  -> get_types(Types, Tail, Len+TrueStep, [Char|Result],
                 RetTail, Fun, TrueStep, FalseStep);
-    false -> get_types(Types, Tail, Len+FalseStep, Result, 
+    false -> get_types(Types, Tail, Len+FalseStep, Result,
                 RetTail, Fun, TrueStep, FalseStep)
     end.
 
-%% @doc Returns a new list of strings which are parts of Str splited 
+%% @doc Returns a new list of strings which are parts of Str splited
 %%      by separator chars of a type from Types list.
 %% @end
 -spec explode_types([char_type()], string()) -> string().
 
-explode_types(Types, Str) -> 
+explode_types(Types, Str) ->
     explode_reverse(explode_types_cycle(Types, Str, [], [])).
 
 %% @private
 explode_types_cycle(_Types, [], [], Res) -> Res;
 explode_types_cycle(_Types, [], [_|_] = Buf, Res) -> [Buf|Res];
-explode_types_cycle(Types, [Char|Str], Buf, Res) -> 
+explode_types_cycle(Types, [Char|Str], Buf, Res) ->
     case lists:member(ux_char:type(Char), Types) of
     true  -> explode_types_cycle(Types, Str, [], [Buf|Res]);
     false -> explode_types_cycle(Types, Str, [Char|Buf], Res)
     end.
 
-%% @doc Returns a new list of strings which are parts of Str splited 
+%% @doc Returns a new list of strings which are parts of Str splited
 %%      by separator chars of a type from Types list. Parts can not be
 %%      empty.
-%% @end 
+%% @end
 -spec split_types([char_type()], string()) -> string().
 
 split_types(Types, Str) -> delete_empty(explode_types(Types, Str)).
@@ -311,7 +311,7 @@ split(P1, P2, P3) -> delete_empty(explode(P1, P2, P3)).
 %% [{70,3},{68,1}]'''
 %%
 %% @end
--spec freq(string()) -> dict(). 
+-spec freq(string()) -> dict().
 
 freq(Str) -> do_freq(Str, dict:new()).
 
@@ -358,17 +358,17 @@ do_freq([], Dict)         -> Dict.
         (char(), string()) -> [string()];
         (nonempty_string(), string()) -> [string()].
 
-explode([Delimeter], [_|_] = Str) when is_integer(Delimeter) -> 
+explode([Delimeter], [_|_] = Str) when is_integer(Delimeter) ->
     explode_simple(Delimeter, lists:reverse(Str), [], []);
-explode(Delimeter, [_|_] =  Str) when is_integer(Delimeter) -> 
+explode(Delimeter, [_|_] =  Str) when is_integer(Delimeter) ->
     explode_simple(Delimeter, lists:reverse(Str), [], []);
-explode([_|_] = Delimeter, [_|_] = Str) -> 
+explode([_|_] = Delimeter, [_|_] = Str) ->
     case explode_cycle(Delimeter, Str, [], []) of
     false -> [Str];
     Res -> explode_reverse(Res)
     end;
 explode([_|_], []) -> [];
-explode(Char, []) 
+explode(Char, [])
     when is_integer(Char) -> [].
 
 
@@ -378,17 +378,17 @@ explode(Char, [])
         (nonempty_string(), string(), integer()) -> [string()].
 
 explode(Delimeter, [_|_] = Str, Limit) when is_integer(Delimeter) ->
-    explode([Delimeter], [_|_] = Str, Limit); 
-explode([_|_] = Delimeter, [_|_] = Str, Limit) when Limit > 0 -> 
+    explode([Delimeter], [_|_] = Str, Limit);
+explode([_|_] = Delimeter, [_|_] = Str, Limit) when Limit > 0 ->
     explode_reverse(explode_cycle_pos(Delimeter, Str, [], [], Limit));
-explode([_|_] = Delimeter, [_|_] = Str, Limit) when Limit < 0 -> 
+explode([_|_] = Delimeter, [_|_] = Str, Limit) when Limit < 0 ->
     case explode_cycle(Delimeter, Str, [], []) of
     false -> [];
     Res -> explode_reverse(lists:nthtail(-Limit, Res))
     end;
 explode([_|_] = Delimeter, [_|_] = Str, 0) -> explode(Delimeter, Str);
 explode([_|_], [], _) -> [];
-explode(Char, [], _) 
+explode(Char, [], _)
     when is_integer(Char) -> [].
 
 
@@ -396,7 +396,7 @@ explode(Char, [], _)
 
 
 %% @private
-explode_reverse(Res) -> lists:map(fun lists:reverse/1, lists:reverse(Res)). 
+explode_reverse(Res) -> lists:map(fun lists:reverse/1, lists:reverse(Res)).
 
 %% @doc Simple and fast realization.
 %%      Delimeter is one char.
@@ -410,7 +410,7 @@ explode_simple(Delimeter, [H|T], Buf,     Res) ->
 explode_simple(_        , [   ], [     ], Res) -> Res;
 explode_simple(_        , [   ], Buf,     Res) -> [Buf | Res].
 
-%% @doc This function puts a part of the string before the delimeter in Buf, 
+%% @doc This function puts a part of the string before the delimeter in Buf,
 %%      if the delimeter is a substring of Str, then return Buf.
 %%      Buf is a reversed list of reversed parts of the string.
 %%      Return false, if Delimeter is not a part of Str.
@@ -420,7 +420,7 @@ explode_cycle(_, [], _,   [])     -> false;
 explode_cycle(_, [], Buf, Result) -> [Buf | Result];
 explode_cycle(Delimeter, Str, Buf, Result) ->
     case explode_check(Delimeter, Str) of
-    false -> [C|Tail] = Str, 
+    false -> [C|Tail] = Str,
         explode_cycle(Delimeter, Tail, [C|Buf], Result);
     Tail -> explode_cycle(Delimeter, Tail, [], [Buf | Result])
     end.
@@ -430,10 +430,10 @@ explode_cycle_pos(_, [], Buf, Result, _) -> [Buf|Result];
 explode_cycle_pos(_, [_|_] = Str, _, Result, 1) -> [lists:reverse(Str)|Result];
 explode_cycle_pos(Delimeter, [_|_] = Str, Buf, Result, Limit) ->
     case explode_check(Delimeter, Str) of
-    false -> [C|Tail] = Str, 
-        explode_cycle_pos(Delimeter, Tail, [C|Buf], Result, 
+    false -> [C|Tail] = Str,
+        explode_cycle_pos(Delimeter, Tail, [C|Buf], Result,
             Limit);
-    Tail  -> explode_cycle_pos(Delimeter, Tail, [], [Buf|Result], 
+    Tail  -> explode_cycle_pos(Delimeter, Tail, [], [Buf|Result],
             Limit-1)
     end.
 
@@ -445,22 +445,22 @@ explode_check([[_|_]|_]=Delimeters, Str) ->
     explode_check1(Delimeters, Str);
 explode_check([_|_]=Delimeter, Str) ->
     explode_check2(Delimeter, Str).
-    
+
 %% Delimeter is a list of a string().
 explode_check1([[_|_]=Delimeter|T], [_|_]=Str) ->
     case explode_check2(Delimeter, Str) of
     false  -> explode_check1(T, Str);
-    Result -> Result 
+    Result -> Result
     end;
 explode_check1([], [_|_]) ->
     false.
 
 
--spec explode_check2(string(), string()) -> 
+-spec explode_check2(string(), string()) ->
         false | string().
 
 %% Delimeter is a string().
-explode_check2([Head|DelTail], [Head|Tail]) 
+explode_check2([Head|DelTail], [Head|Tail])
     when is_integer(Head) ->
     explode_check2(DelTail, Tail);
 % Full match.
@@ -577,10 +577,10 @@ to_upper(Str) ->
 %%
 
 -spec is_nf(fun(), list(), integer(), atom(), fun()) -> yes | no | maybe.
-is_nf(CCC, [Head|Tail], LastCC, Result, CheckFun) -> 
+is_nf(CCC, [Head|Tail], LastCC, Result, CheckFun) ->
     case CCC(Head) of
     CC when (LastCC > CC) and (CC =/= 0) -> no;
-    CC -> 
+    CC ->
         case CheckFun(Head) of
         n -> no;
         m -> is_nf(CCC, Tail, CC, maybe,  CheckFun);
@@ -595,7 +595,7 @@ is_nf(_CCC, [], _, Result, _) -> Result.
 %% http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
 -spec is_nfc(list()) -> yes | no | maybe.
 
-is_nfc(Str) when is_list(Str) -> 
+is_nfc(Str) when is_list(Str) ->
     CCC = ccc('skip_check'),
     QC = nfc_qc('skip_check'),
     is_nf(CCC, Str, 0, yes, QC).
@@ -603,7 +603,7 @@ is_nfc(Str) when is_list(Str) ->
 
 -spec is_nfd(list()) -> yes | no | maybe.
 
-is_nfd(Str) when is_list(Str) -> 
+is_nfd(Str) when is_list(Str) ->
     CCC = ccc('skip_check'),
     QC = nfd_qc('skip_check'),
     is_nf(CCC, Str, 0, yes, QC).
@@ -631,7 +631,7 @@ is_nfkd(Str) when is_list(Str) ->
 -spec to_nfc(list()) -> list().
 
 to_nfc([])   -> [];
-to_nfc(Str)  -> 
+to_nfc(Str)  ->
     case is_nfc(Str) of
     yes -> Str;
     _   -> get_composition(to_nfd(Str))
@@ -648,38 +648,38 @@ to_nfkc([_|_] = Str) -> get_composition(
 -spec to_nfd(list()) -> list().
 
 to_nfd([])   -> [];
-to_nfd([_|_] = Str) -> 
+to_nfd([_|_] = Str) ->
     normalize(get_recursive_decomposition(true,  Str)).
 
 
 -spec to_nfkd(list()) -> list().
 
 to_nfkd([])  -> [];
-to_nfkd([_|_] = Str) -> 
+to_nfkd([_|_] = Str) ->
     normalize(get_recursive_decomposition(false, Str)).
 
 
 
 
 %% @doc internal_decompose(Str)
-%% Canonical  If true bit is on in this byte, then selects the recursive 
+%% Canonical  If true bit is on in this byte, then selects the recursive
 %%            canonical decomposition, otherwise selects
 %%            the recursive compatibility and canonical decomposition.
 %% @end
 %% @private
 -spec get_recursive_decomposition(atom() | function(), list()) -> list().
-get_recursive_decomposition(true, Str) -> 
+get_recursive_decomposition(true, Str) ->
     Canonical = is_compat(skip_check),
     Decomp = decomp(skip_check),
     get_recursive_decomposition(Decomp, Canonical, Str, []);
 
-get_recursive_decomposition(false, Str) -> 
+get_recursive_decomposition(false, Str) ->
     Canonical = fun(_X) -> false end, % always false
     Decomp = decomp(skip_check),
     get_recursive_decomposition(Decomp, Canonical, Str, []);
 
-get_recursive_decomposition(Canonical, Str) 
-    when is_function(Canonical) -> 
+get_recursive_decomposition(Canonical, Str)
+    when is_function(Canonical) ->
     Decomp = decomp(skip_check),
     get_recursive_decomposition(Decomp, Canonical, Str, []).
 
@@ -689,8 +689,8 @@ get_recursive_decomposition(Canonical, Str)
 % Skip ASCII
 %% @private
 -spec get_recursive_decomposition(fun(), fun(), list(), list()) -> list().
-get_recursive_decomposition(Decomp, Canonical, [Char|Tail], Result) 
-    when Char < 128 -> % Cannot be decomposed 
+get_recursive_decomposition(Decomp, Canonical, [Char|Tail], Result)
+    when Char < 128 -> % Cannot be decomposed
     get_recursive_decomposition(Decomp, Canonical, Tail,
     [Char|Result]);
 
@@ -711,13 +711,13 @@ get_recursive_decomposition(Decomp, Canonical, [Char|Tail], Result) ->
     case Decomp(Char) of
     []  -> get_recursive_decomposition(Decomp, Canonical, Tail,
             [Char|Result]);
-    Dec -> 
+    Dec ->
         case Canonical(Char) of % not is_compat = singleton
-        true  -> 
-            get_recursive_decomposition(Decomp, Canonical, Tail, 
+        true  ->
+            get_recursive_decomposition(Decomp, Canonical, Tail,
                 [Char|Result]);
-        false -> 
-            get_recursive_decomposition(Decomp, Canonical, Tail, 
+        false ->
+            get_recursive_decomposition(Decomp, Canonical, Tail,
                 get_recursive_decomposition(Decomp, Canonical,
                     Dec, Result))
         end
@@ -732,25 +732,25 @@ get_recursive_decomposition(_, _, [], Result) -> Result.
 
 
 %% @doc Normalize NFD or NFKD.
-normalize(Str) -> 
+normalize(Str) ->
     CCC = ccc('skip_check'),
     normalize1(CCC, Str, [], []).
 
 
 %% @private
-normalize1(_CCC, [], [ ], Result) -> 
+normalize1(_CCC, [], [ ], Result) ->
     Result;
 
-normalize1(CCC, [], [_|_]=Buf, Result) -> 
+normalize1(_CCC, [], [_|_]=Buf, Result) ->
     normalize2(lists:reverse(Buf), Result);
 
 normalize1(CCC, [Char|Tail], Buf, Result) ->
     Class = CCC(Char),
     if
-        (Class == 0) and (Buf == []) -> 
+        (Class == 0) and (Buf == []) ->
             normalize1(CCC, Tail, [], [Char | Result]);
-        (Class == 0) -> 
-            normalize1(CCC, Tail, [], 
+        (Class == 0) ->
+            normalize1(CCC, Tail, [],
                 [Char | normalize2(lists:reverse(Buf), Result)]);
         true -> normalize1(CCC, Tail, [{Class, Char} | Buf], Result)
     end.
@@ -768,10 +768,10 @@ normalize2(Buf, Result) ->
 
 %% @doc Return char from Buf with max ccc.
 %% @private
-normalize3([{CharClass, _} = Value | Tail], _, MaxClass) 
-    when CharClass > MaxClass -> 
+normalize3([{CharClass, _} = Value | Tail], _, MaxClass)
+    when CharClass > MaxClass ->
     normalize3(Tail, Value, CharClass);
-normalize3([_|Tail], Value, MaxClass) -> 
+normalize3([_|Tail], Value, MaxClass) ->
     normalize3(Tail, Value, MaxClass);
 normalize3([], Value, _) -> Value.
 
@@ -786,12 +786,12 @@ normalize3([], Value, _) -> Value.
 
 %% @doc Internal Composition Function.
 %% @private
-get_composition([Char|Tail]) -> 
+get_composition([Char|Tail]) ->
     CCC = ccc('skip_check'),
     COMP = comp('skip_check'),
 
     lists:reverse(
-        get_composition(CCC, COMP, Tail, Char, 
+        get_composition(CCC, COMP, Tail, Char,
             ?COMP_CHAR_CLASS(Char), [], [])
     ).
 
@@ -801,13 +801,13 @@ get_composition([Char|Tail]) ->
 %% 2. check to see if two current characters are LV and T
 %% @end
 %% @private
-get_composition(CCC, COMP, [VChar |Tail], LChar, 0, [], Result) 
+get_composition(CCC, COMP, [VChar |Tail], LChar, 0, [], Result)
     when ?CHAR_IS_HANGUL_L(LChar)
      and ?CHAR_IS_HANGUL_V(VChar)
     ->
     LIndex = LChar - ?HANGUL_LBASE,
     VIndex = VChar - ?HANGUL_VBASE,
-    LVChar = ?HANGUL_SBASE + ?HANGUL_TCOUNT  
+    LVChar = ?HANGUL_SBASE + ?HANGUL_TCOUNT
            * (LIndex * ?HANGUL_VCOUNT + VIndex),
 
     case Tail of
@@ -817,22 +817,22 @@ get_composition(CCC, COMP, [VChar |Tail], LChar, 0, [], Result)
         Result3 = [LVTChar|Result],
         case Tail2 of
         [Char|Tail3] ->
-            get_composition(CCC, COMP, Tail3, Char, 
+            get_composition(CCC, COMP, Tail3, Char,
                 ?COMP_CHAR_CLASS(Char), [], Result3);
         [] -> Result3
         end;
     [Char|Tail2] ->
-        get_composition(CCC, COMP, Tail2, Char, 
+        get_composition(CCC, COMP, Tail2, Char,
             ?COMP_CHAR_CLASS(Char), [], [LVChar|Result]);
     [] -> [LVChar|Result]
     end;
 
-get_composition(CCC, COMP, [Char | Tail], LChar, 0, [], Result) 
+get_composition(CCC, COMP, [Char | Tail], LChar, 0, [], Result)
     when ?CHAR_IS_HANGUL_L(LChar) ->
-    get_composition(CCC, COMP, Tail, Char, 
+    get_composition(CCC, COMP, Tail, Char,
         ?COMP_CHAR_CLASS(Char), [], [LChar|Result]);
-                    
-get_composition(CCC, COMP, [Char|Tail], LastChar, _, Mods, Result) 
+
+get_composition(CCC, COMP, [Char|Tail], LastChar, _, Mods, Result)
     when Char < 128 ->
     NewResult = comp_append([LastChar|Result], Mods),
     get_composition(CCC, COMP, Tail, Char, 0, [], NewResult);
@@ -841,19 +841,19 @@ get_composition(CCC, COMP, [Char|Tail], LastChar, LastClass, Mods, Result) ->
     CharClass = ccc(Char),
     Comp = COMP(LastChar, Char),
     if
-        (Comp =/= false) 
+        (Comp =/= false)
         and ((LastClass < CharClass) or (LastClass == 0)) ->
-            get_composition(CCC, COMP, 
+            get_composition(CCC, COMP,
                 Tail, Comp, LastClass, Mods, Result);
 
-        (CharClass == 0) -> 
+        (CharClass == 0) ->
             NewResult = comp_append([LastChar|Result], Mods),
-            get_composition(CCC, COMP, 
+            get_composition(CCC, COMP,
                 Tail, Char, CharClass, [], NewResult);
 
-        true -> 
+        true ->
             NewMods = [Char|Mods],
-            get_composition(CCC, COMP, 
+            get_composition(CCC, COMP,
                 Tail, LastChar, CharClass, NewMods, Result)
     end;
 
@@ -890,15 +890,15 @@ to_ncr([         ], Res) -> Res.
 %% [UAX29: UNICODE TEXT SEGMENTATION]
 %% (http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries).
 %%
-%% It is important to recognize that what the user thinks of as 
-%% a "character"—a basic unit of a writing system for a language—may 
-%% not be just a single Unicode code point. Instead, that basic unit 
-%% may be made up of multiple Unicode code points. 
-%% To avoid ambiguity  with the computer use of the term character, 
-%% this is called a user-perceived character. 
-%% For example, “G” + acute-accent is a user-perceived character: 
-%% users think of it as a single character, yet is actually represented 
-%% by two Unicode code points. These user-perceived characters are 
+%% It is important to recognize that what the user thinks of as
+%% a "character"—a basic unit of a writing system for a language—may
+%% not be just a single Unicode code point. Instead, that basic unit
+%% may be made up of multiple Unicode code points.
+%% To avoid ambiguity  with the computer use of the term character,
+%% this is called a user-perceived character.
+%% For example, “G” + acute-accent is a user-perceived character:
+%% users think of it as a single character, yet is actually represented
+%% by two Unicode code points. These user-perceived characters are
 %% approximated by what is called a grapheme cluster, which can be
 %% determined programmatically.
 %% @end
@@ -909,12 +909,12 @@ to_graphemes_raw([_|_]=S) ->
     [H|T] = ux_gb:split('extended', S),
     Buf = [H],
     Res = [],
-    
+
     to_graphemes_raw(T, Buf, Res);
 
 to_graphemes_raw([]) ->
     [].
-    
+
 %% @doc Returns not reversed result.
 %% @private
 -spec to_graphemes_raw(list(), string(), [string()]) ->
@@ -930,18 +930,18 @@ to_graphemes_raw([], [_|_]=Buf, Res) ->
     [Buf|Res];
 to_graphemes_raw([], []=_Buf, Res) ->
     Res.
-    
-    
-    
+
+
+
 
 %% @doc Compute count of graphemes in the string.
-length(S) -> 
+length(S) ->
     BS = ux_gb:split('extended', S),
     do_length(BS, 0).
 
-do_length(['x',H|T], Len) ->
+do_length(['x',_H|T], Len) ->
     do_length(T, Len);
-do_length([H|T], Len) ->
+do_length([_H|T], Len) ->
     do_length(T, Len + 1);
 do_length([], Len) ->
     Len.
@@ -961,7 +961,7 @@ last(Str, Len) ->
 %% @doc Reverses the string graphemes.
 reverse(Str) ->
     reverse_flatten(
-        lists:reverse(to_graphemes_raw(Str)), 
+        lists:reverse(to_graphemes_raw(Str)),
         [], []).
 
 %% [[1,2,3],[4,5,6]] => [6,5,4,3,2,1].
@@ -1023,13 +1023,13 @@ extract_words(S) ->
 script(S) ->
     F = ux_char:script('skip_check'),
     do_script(F, S, dict:new()).
-    
+
 %% @private
-do_script(F, [Char|Str], Dict) -> 
+do_script(F, [Char|Str], Dict) ->
     Script  = F(Char),
     NewDict = dict:update_counter(Script, 1, Dict),
     do_script(F, Str, NewDict);
-do_script(_F, [], Dict) -> 
+do_script(_F, [], Dict) ->
     L = dict:to_list(Dict),
     max(L).
 
@@ -1043,7 +1043,7 @@ do_max([_|T], Max, S) ->
     do_max(T, Max, S);
 do_max([], _Max, S) ->
     S.
-    
+
 
 
 
@@ -1052,11 +1052,11 @@ do_max([], _Max, S) ->
 scripts(S) ->
     F = ux_char:script('skip_check'),
     do_scripts(F, S, sets:new()).
-    
+
 %% @private
-do_scripts(F, [H|T], Acc) -> 
+do_scripts(F, [H|T], Acc) ->
     Script  = F(H),
     NewAcc = sets:add_element(Script, Acc),
     do_scripts(F, T, NewAcc);
-do_scripts(_F, [], Dict) -> 
+do_scripts(_F, [], Dict) ->
     sets:to_list(Dict).

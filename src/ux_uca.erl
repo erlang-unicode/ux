@@ -22,7 +22,7 @@
 %%% =====================================================================
 
 %%% =====================================================================
-%%%   Copyright 2011 Uvarov Michael 
+%%%   Copyright 2011 Uvarov Michael
 %%%
 %%%   Licensed under the Apache License, Version 2.0 (the "License");
 %%%   you may not use this file except in compliance with the License.
@@ -48,10 +48,10 @@
 %%%     Hangul Collation Requirements]
 %%% PS: There is the main source of information.
 %%%
-%%% 2. [http://code.activestate.com/lists/perl-unicode/2163/ 
+%%% 2. [http://code.activestate.com/lists/perl-unicode/2163/
 %%%     Terminator weight for Hangul]
 %%%
-%%% 3. [http://blogs.msdn.com/b/michkap/archive/2005/02/25/380266.aspx 
+%%% 3. [http://blogs.msdn.com/b/michkap/archive/2005/02/25/380266.aspx
 %%%     Theory vs. practice for Korean text collation]
 %%% PS: there is no any practice. They do not the UCA :/
 %%%
@@ -72,7 +72,7 @@
 %%% 10. [http://trapexit.org/String_Sorting_%28Natural%29
 %%%      String Sorting (Natural) in Erlang Cookbook]
 %%%
-%%%   
+%%%
 %%% For hangul collation:
 %%% 11. [http://www.open-std.org/Jtc1/sc22/wg20/docs/n1037-Hangul%20Collation%20Requirements.htm
 %%%  Hangul Collation Requirements]
@@ -81,7 +81,7 @@
 %%% 13. [http://en.wikipedia.org/wiki/KSX1001 KSX1001 on Wiki]
 %%%
 %%%
-%%% == Levels == 
+%%% == Levels ==
 %%% http://unicode.org/reports/tr10/#Multi_Level_Comparison
 %%%
 %%% * L1 Base characters
@@ -96,7 +96,7 @@
 %%%
 %%%
 %%% == Common configurations ==
-%%% 
+%%%
 %%% === Non-ignorable ===
 %%% Variable collation elements are not reset to be ignorable, but
 %%% get the weights explicitly mentioned in the file.
@@ -104,16 +104,16 @@
 %%% * SPACE would have the value [.0209.0020.0002]
 %%% * Capital A would be unchanged, with the value [.06D9.0020.0008]
 %%% * Ignorables are unchanged.
-%%% 
+%%%
 %%% Example:
 %%% ```
 %%% C = ux_uca_options:get_options(non_ignorable).
 %%% ux_uca:sort_key(C, "Non-ignorable collation sort key"). '''
-%%% 
+%%%
 %%%
 %%% === Blanked ===
-%%% Variable collation elements and any subsequent ignorables 
-%%% are reset so that their weights at levels one through three are zero. 
+%%% Variable collation elements and any subsequent ignorables
+%%% are reset so that their weights at levels one through three are zero.
 %%% For example,
 %%%
 %%% * SPACE would have the value [.0000.0000.0000]
@@ -128,33 +128,33 @@
 %%% ux_uca:sort_key(C, "Blanked collation sort key"). '''
 %%%
 %%%
-%%% === Shifted === 
+%%% === Shifted ===
 %%% Variable collation elements are reset to zero at levels one through
-%%% three. In addition, a new fourth-level weight is appended, whose value 
+%%% three. In addition, a new fourth-level weight is appended, whose value
 %%% depends on the type, as shown in Table 12.
 %%% Any subsequent primary or secondary ignorables following a variable are reset
 %%% so that their weights at levels one through four are zero.
-%%% 
-%%% * A combining grave accent after a space would have the value 
+%%%
+%%% * A combining grave accent after a space would have the value
 %%%   [.0000.0000.0000.0000].
 %%% * A combining grave accent after a Capital A would be unchanged.
-%%% 
+%%%
 %%% Example:
 %%% ```
 %%% C = ux_uca_options:get_options(shifted).
 %%% ux_uca:sort_key(C, "Shifted collation sort key"). '''
 %%%
 %%%
-%%% === Shift-trimmed === 
-%%% This option is the same as Shifted, except that all trailing 
-%%% FFFFs are trimmed from the sort key. 
+%%% === Shift-trimmed ===
+%%% This option is the same as Shifted, except that all trailing
+%%% FFFFs are trimmed from the sort key.
 %%% This could be used to emulate POSIX behavior.
 %%%
 %%% Example:
 %%% ```
 %%% C = ux_uca_options:get_options(shift_trimmed).
 %%% ux_uca:sort_key(C, "Shift-trimmed collation sort key"). '''
-%%% 
+%%%
 %%%
 %%% @end
 
@@ -174,18 +174,18 @@
         search/2,
         search/3,
         search/4
-%       get_options/0, 
-%       get_options/1, 
+%       get_options/0,
+%       get_options/1,
 %       get_options/2
         ]).
 
 -import(ux_uca_utils, [
-    do_alt/2, 
-    do_alt/3, 
-    do_extract/3, 
-    get_ducet/0, 
-    get_options/0, 
-    split_levels/3, 
+    do_alt/2,
+    do_alt/3,
+    do_extract/3,
+    get_ducet/0,
+    get_options/0,
+    split_levels/3,
     get_reassign_function/2]).
 
 
@@ -212,7 +212,7 @@
     | uncompressed % uncompressed list of weights
     .
 
-% For hackers: 
+% For hackers:
 % In tr10 and ICU:
 % a weight is a sort key!
 % uca_weights is Collation Element (CE).
@@ -250,7 +250,7 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
-    
+
 check_const_test_() ->
     Cases = fun(_) ->
         [?_assertEqual(l1("0"), [?COL_DECIMAL_START])
@@ -261,10 +261,10 @@ check_const_test_() ->
         ,?_assertEqual(l1([?HANGUL_TLAST]), [?COL_HANGUL_TLAST])
         ]
         end,
-    {timeout, 60, 
+    {timeout, 60,
         {setup, fun() -> l1("0") end, Cases}}.
 
-l1(Str) -> 
+l1(Str) ->
     [L1 || [_, L1|_] <- ux_unidata:ducet(Str)].
 
 -endif.
@@ -292,16 +292,16 @@ do_compare(G1, G2) ->
     {stop, ____} -> lower;
     {____, stop} -> greater;
 
-    {{W1, NewG1}, {W2, NewG2}} 
+    {{W1, NewG1}, {W2, NewG2}}
         when W1 =:= W2 ->
         do_compare(NewG1, NewG2);
-    {{W1, _NewG1}, {W2, _NewG2}} 
+    {{W1, _NewG1}, {W2, _NewG2}}
         when W1 < W2 -> lower;
-    {{W1, _NewG1}, {W2, _NewG2}} 
+    {{W1, _NewG1}, {W2, _NewG2}}
         when W1 > W2 -> greater
     end.
 
-    
+
 %% @doc Convert the unicode string to the
 %%      [http://unicode.org/reports/tr10/#Step_2 collation element array]
 %% @end
@@ -325,17 +325,17 @@ do_sort_array(C, D, S, []=_W, A) ->
     do_sort_array(C, D, NewS, NewW, A);
 do_sort_array(C, D, S, [WH|WT], A) ->
     do_sort_array(C, D, S, WT, [WH|A]).
-    
+
 %% @doc Convert the unicode string to the sort key.
 sort_key(S) ->
     C = get_options(),
     sort_key(C, S).
 
-    
+
 %% @param C#sort_key_format{}
 %% @param S::string()
 sort_key(C=#uca_options{
-        sort_key_format='binary', 
+        sort_key_format='binary',
         case_sensitive=true}, S) ->
     ux_uca_sort_key_binary_cs:sort_key(C, preprocess(S));
 sort_key(C=#uca_options{sort_key_format=F}, S) ->
@@ -348,7 +348,7 @@ sort_key(C=#uca_options{sort_key_format=F}, S) ->
         ux_uca_sort_key_uncompressed:sort_key(C, preprocess(S))
     end.
 
-        
+
 -spec sort([string()]) -> [string()].
 %% @doc Sort a list of strings.
 sort(Strings) ->
@@ -359,11 +359,11 @@ sort(Strings) ->
 -spec sort(#uca_options{}, [string()]) -> [string()].
 %% @doc Sort a list of strings.
 sort(C=#uca_options{}, Strings) ->
-    
+
     % Step 1: produce array of sort keys
-    F = fun(S) -> 
+    F = fun(S) ->
             Key = sort_key(C, S),
-            {Key, S} 
+            {Key, S}
         end,
     Keys = lists:map(F, Strings),
 
@@ -374,11 +374,9 @@ sort(C=#uca_options{}, Strings) ->
     RetFn = fun({_Key, S}) -> S end,
     lists:map(RetFn, SortedKeys).
 
-
-
-weights(S) ->
-    C = get_options(),
-    weights(C, S).
+%% weights(S) ->
+%%     C = get_options(),
+%%     weights(C, S).
 
 weights(C=#uca_options{strength=S}, Str) ->
     List = sort_array(C, Str),
@@ -386,7 +384,6 @@ weights(C=#uca_options{strength=S}, Str) ->
     D = get_ducet(),
     A = ux_uca_alt:get_alternate_function(C, D),
     do_weights(A, S, List, []).
-
 
 %% Apply the alternate function for the list of weights.
 do_weights(A, S, [H|T], Acc) ->
@@ -396,13 +393,13 @@ do_weights(A, S, [H|T], Acc) ->
         []    -> Acc
         end,
     do_weights(NewA, S, T, NewAcc);
-do_weights(A, S, [], Acc) ->
+do_weights(A, _S, [], Acc) ->
     NewAcc = lists:reverse(Acc),
     {A, NewAcc}.
 
 %%
 %% Generator
-%% 
+%%
 
 -spec generator(#uca_options{}, string()) -> uca_generator().
 %generator(#uca_options{}, []) -> stop;
@@ -417,8 +414,8 @@ generator(C=#uca_options{}, S) ->
 %% @param C::uca_options{} Configuration
 %% @param S::string()   String
 %% @param D::fun()      Ducet_reversed function
-%% @param A::fun()      Alternate function 
-%% @param W::[int()]    ListOfWeights 
+%% @param A::fun()      Alternate function
+%% @param W::[int()]    ListOfWeights
 %% @param R::[[int()]]  Remain weights
 
 
@@ -449,15 +446,15 @@ generator(C=#uca_options{}, S) ->
 do_generator(#uca_options{}=C, S, D, A, [WH|WT], R) ->
     {NewA, Ints} = do_alt(A, WH),
     case Ints of
-    [L1] when is_integer(L1) -> 
-        F = fun() -> 
+    [L1] when is_integer(L1) ->
+        F = fun() ->
                 do_generator(C, S, D, NewA, WT, R)
             end,
         {L1, F};
     [0|IT] -> % try extract next
         do_generator(C, S, D, NewA, WT, [IT|R]);
-    [L1|IT] when is_integer(L1) -> 
-        F = fun() -> 
+    [L1|IT] when is_integer(L1) ->
+        F = fun() ->
                 do_generator(C, S, D, NewA, WT, [IT|R])
             end,
         {L1, F};
@@ -486,8 +483,8 @@ do_generator2(1, []=_W, _R) ->
 do_generator2(_S, []=_W, []=_R) ->
     stop;
 do_generator2(S, []=_W, R) ->
-    F = fun() -> 
-            do_generator2(S-1, lists:reverse(R), []) 
+    F = fun() ->
+            do_generator2(S-1, lists:reverse(R), [])
         end,
     {0, F};
 do_generator2(S, [[0=_WH]|WT], R) ->
@@ -511,7 +508,7 @@ do_generator3(_S, []=_W, []=_R) ->
     stop;
 do_generator3(S, []=_W, R) ->
     F = fun() -> % not reverse
-            do_generator2(S-1, R, []) 
+            do_generator2(S-1, R, [])
         end,
     {0, F};
 do_generator3(S, [[0=_WH]|WT], R) ->
@@ -525,7 +522,7 @@ do_generator3(S, [[WH|WR]|WT], R) ->
     F = fun() -> do_generator3(S, WT, [WR|R]) end,
     {WH, F}.
 
-    
+
 %% 1|x|x  => 1|x|x
 %% 1|1|x  => 1|x|x
 %% 1|0|1  => 1|x|x
@@ -535,26 +532,26 @@ prefix_weight([N,0|T]) ->
     NewN = N + 1,
     NewEl = [NewN|T],
     prefix_weight(NewEl);
-prefix_weight([N]) ->
+prefix_weight([_N]) ->
     false;
-prefix_weight(El) -> 
+prefix_weight(El) ->
     El.
 
 prefix_weights([H|T], Acc) ->
     case prefix_weight([1|H]) of
-    false -> 
+    false ->
         %skip:
         prefix_weights(T, Acc);
 
-    NewH -> 
+    NewH ->
         NewAcc = [NewH|Acc],
         prefix_weights(T, NewAcc)
     end;
 prefix_weights([], Acc) ->
     lists:reverse(Acc).
-    
+
 %% http://unicode.org/reports/tr10/#Searching
--spec search(Target::string(), Pattern::string()) -> 
+-spec search(Target::string(), Pattern::string()) ->
                 search_result().
 
 search(T, P) ->
@@ -564,9 +561,9 @@ search(T, P) ->
 
 -type search_result()::{string(),string(),string()}.
 
--spec search(Target::string(), Pattern::string(), MatchStyle::atom()) -> 
+-spec search(Target::string(), Pattern::string(), MatchStyle::atom()) ->
                 search_result();
-            (#uca_options{}, Target::string(), Pattern::string()) -> 
+            (#uca_options{}, Target::string(), Pattern::string()) ->
                 search_result().
 
 %% M is match-style:
@@ -579,8 +576,8 @@ search(C=#uca_options{}, T, P) ->
     search(C, T, P, M).
 
 
--spec search(#uca_options{}, Target::string(), Pattern::string(), 
-        MatchStyle::atom()) -> 
+-spec search(#uca_options{}, Target::string(), Pattern::string(),
+        MatchStyle::atom()) ->
             search_result().
 
 search(C=#uca_options{}, T, P, 'medium') ->
@@ -590,23 +587,23 @@ search(C=#uca_options{}, T, P, 'medium') ->
     % Retrieve the sort key of the substring;
     {_NewAlt, AltW} = weights(NewC, P),
     % Convert to weights with prefix:
-    PW = prefix_weights(AltW, []), 
-    
+    PW = prefix_weights(AltW, []),
+
     D = get_ducet(),
     A = ux_uca_alt:get_alternate_function(C, D),
     Skipped = [],
 
-    
+
 
     case do_search('first_minimal', C, P, D, A, PW, Skipped) of
     {[], _, []} ->
         % is equal
         do_search('first_minimal', C, T, D, A, PW, Skipped);
-    
-    {SubBefore, SubMatch, SubAfter} = SubV ->
+
+    {SubBefore, _SubMatch, SubAfter} ->
         case do_search('maximal', C, T, D, A, PW, Skipped) of
         false -> false;
-        {MaxBefore, MaxMatch, MaxAfter} = MaxV ->
+        {MaxBefore, MaxMatch, MaxAfter} ->
             MinV =
                 do_search('first_minimal', C, MaxMatch, D, A, PW, Skipped),
             {MinBefore, MinMatch, MinAfter} = MinV,
@@ -616,25 +613,25 @@ search(C=#uca_options{}, T, P, 'medium') ->
 %       "~w: "
 %           "Max ~w. ~n"
 %           "Min ~w. ~n"
-%           "Sub ~w. ~n", 
+%           "Sub ~w. ~n",
 %       [?MODULE, MaxV, MinV, SubV]),
-        
-        % concat the left part        
-        {MedBeforeTail, MedMatch1} = 
+
+        % concat the left part
+        {MedBeforeTail, MedMatch1} =
             do_split(lists:reverse(MinBefore), lists:reverse(SubBefore), MinMatch),
 
         MedBefore = MaxBefore++lists:reverse(MedBeforeTail),
-        
-        % concat the right part        
-        {MedAfterTail, MedMatch2} = 
+
+        % concat the right part
+        {MedAfterTail, MedMatch2} =
             do_split(MinAfter, SubAfter, lists:reverse(MedMatch1)),
-        
+
         MedAfter = MedAfterTail++MaxAfter,
-                
+
         MedMatch = lists:reverse(MedMatch2),
 
         {MedBefore, MedMatch, MedAfter}
-        end        
+        end
     end;
 
 search(C, S, P, M) ->
@@ -644,8 +641,8 @@ search(C, S, P, M) ->
     % Retrieve the sort key of the substring;
     {_NewAlt, AltW} = weights(NewC, P),
     % Convert to weights with prefix:
-    PW = prefix_weights(AltW, []), 
-    
+    PW = prefix_weights(AltW, []),
+
     D = get_ducet(),
     A = ux_uca_alt:get_alternate_function(C, D),
     Skipped = [],
@@ -667,7 +664,7 @@ do_split(T1, _T2, Acc) ->
 do_search(M, C, [H|T]=S, D, A, PW, Skipped) ->
     case do_search_extract(M, C, S, D, A, PW) of
     'stop' -> false;
-    false -> 
+    false ->
         NewSkipped = [H|Skipped],
         do_search(M, C, T, D, A, PW, NewSkipped);
     {true,  NewT} ->
@@ -675,7 +672,7 @@ do_search(M, C, [H|T]=S, D, A, PW, Skipped) ->
         Matched = delete_tail(S, NewT),
         {NewSkipped, Matched, NewT}
     end;
-do_search(M, _C, []=_S, _D, _A, _K, _Skipped) ->
+do_search(_M, _C, []=_S, _D, _A, _K, _Skipped) ->
     false.
 
 %% Delete `length(Tail)' charactes from `From'.
@@ -690,71 +687,67 @@ do_delete_tail(Rev, []) ->
     lists:reverse(Rev).
 
 
--spec do_search_extract(M::atom(), #uca_options{}, S::string(), 
+-spec do_search_extract(M::atom(), #uca_options{}, S::string(),
         D::fun(), A::fun(),
         PW::uca_weights()) -> term().
 
-do_search_extract('first_minimal'=_M, 
+do_search_extract('first_minimal'=_M,
     C=#uca_options{strength=L}, S, D, A, PW) ->
     case do_extract(C, S, D) of
-    {[], _} -> 
+    {[], _} ->
         'stop';
-    {[_|_]=NewW, NewS} -> 
+    {[_|_]=NewW, NewS} ->
         {NewA, AltW} = do_weights(A, L, NewW, []),
         case is_ignorable_array(L, AltW) of
         true -> false; % reject ignorables
-        false -> 
-    
+        false ->
+
             case search_match(C, PW, AltW) of
             false -> false;
             true  -> {true, NewS};
             {'more', NewPW} ->
                 NewM = 'minimal',
-                do_search_extract(NewM, 
-                    C, NewS, D, NewA, NewPW) 
+                do_search_extract(NewM,
+                    C, NewS, D, NewA, NewPW)
             end
 
         end
     end;
 
-do_search_extract(M, 
+do_search_extract(M,
     C=#uca_options{strength=L}, S, D, A, PW) ->
 
     case do_extract(C, S, D) of
-    {[], _} -> 
+    {[], _} ->
         'stop';
 
-    {[_|_]=NewW, NewS} -> 
+    {[_|_]=NewW, NewS} ->
         {NewA, AltW} = do_weights(A, L, NewW, []),
-    
+
         case search_match(C, PW, AltW) of
-        false -> 
+        false ->
             false;
 
-        true when M=:='maximal' -> 
+        true when M=:='maximal' ->
             NewNewS = delete_ignorables(C, NewS, D, A),
             {true, NewNewS};
 
-        true -> 
+        true ->
             {true, NewS};
 
         {'more', NewPW} ->
-            do_search_extract(M, 
-                C, NewS, D, NewA, NewPW) 
+            do_search_extract(M,
+                C, NewS, D, NewA, NewPW)
         end
 
     end.
 
 
-search_match(C=#uca_options{strength=MaxL}, PW, W) ->
+search_match(#uca_options{strength=MaxL}, PW, W) ->
     L = 1,
     SkippedPW = [], % skipped weights from PW.
     SkippedW = [], % skipped weights from W.
     do_search_match(MaxL, L, PW, SkippedPW, W, SkippedW).
-
-
-
-
 
 %% @param MaxL strength
 %% @param L Level:    1->2...->MaxL
@@ -766,17 +759,17 @@ search_match(C=#uca_options{strength=MaxL}, PW, W) ->
 % skip ignorable
 do_search_match(MaxL, L, PW, SkippedPW, [[0]=_HW|TW], SkippedW) ->
     do_search_match(MaxL, L, PW, SkippedPW, TW, SkippedW);
-    
+
 % skip and save the tail
 do_search_match(MaxL, L, PW, SkippedPW, [[0|THW]=_HW|TW], SkippedW) ->
     NewSkippedW = [THW|SkippedW],
     do_search_match(MaxL, L, PW, SkippedPW, TW, NewSkippedW);
 
 % matched H
-do_search_match(MaxL, L, [[L,H|THS]=_HS|TS], SkippedPW, 
+do_search_match(MaxL, L, [[L,H|THS]=_HS|TS], SkippedPW,
     [[H|HHW]=_HW|TW], SkippedW) ->
     NewHS = prefix_weight([L+1|THS]),
-    NewSkippedPW = 
+    NewSkippedPW =
         case NewHS of
         false ->
             %skip:
@@ -785,21 +778,21 @@ do_search_match(MaxL, L, [[L,H|THS]=_HS|TS], SkippedPW,
             [NewHS|SkippedPW]
         end,
 
-    NewSkippedW = 
+    NewSkippedW =
         case HHW of
         [] -> SkippedW;
         _ -> [HHW|SkippedW]
         end,
 
-    do_search_match(MaxL, L, TS, NewSkippedPW, 
+    do_search_match(MaxL, L, TS, NewSkippedPW,
         TW, NewSkippedW);
-    
+
 % skip WTF
 do_search_match(MaxL, L, PW, SkippedPW, [[]=_HW|TW], SkippedW) ->
     do_search_match(MaxL, L, PW, SkippedPW, TW, SkippedW);
-    
+
 % All levels was matched
-do_search_match(MaxL, L, PW, SkippedPW, []=_W, []=_SkippedW) ->
+do_search_match(_MaxL, _L, PW, SkippedPW, []=_W, []=_SkippedW) ->
     NewPW = append_skipped(PW, SkippedPW),
     case NewPW of
     [] -> true;
@@ -818,8 +811,8 @@ do_search_match(MaxL, L, PW, SkippedPW, []=_W, SkippedW) ->
 do_search_match(_MaxL, _L, _PW, _SkippedPW, _W, _SkippedW) ->
     false.
 
-    
-    
+
+
 
 
 
@@ -831,7 +824,7 @@ append_skipped(W, [H|T]) ->
 append_skipped(W, []) ->
     W.
 
-    
+
 
 
 
@@ -839,14 +832,14 @@ append_skipped(W, []) ->
 %% @private
 delete_ignorables(C=#uca_options{strength=L},[_|_]=S,D,A) ->
     {NewW,NewS} = do_extract(C, S, D),
-    {AltA, AltW} = do_weights(A, L, NewW, []),
+    {_AltA, AltW} = do_weights(A, L, NewW, []),
     case is_ignorable_array(L, AltW) of
-    true -> 
+    true ->
         delete_ignorables(C,NewS,D,A);
     false ->
         S
     end;
-delete_ignorables(_C,[]=_S,D,A) ->
+delete_ignorables(_C,[]=_S,_D,_A) ->
     [].
 
 %% Warning: length(El) =< L
@@ -858,11 +851,11 @@ is_ignorable_array(L, A) ->
     Mask = lists:duplicate(L, 0),
     lists:all(fun(El) -> El=:=Mask end, A).
 
-    
+
 preprocess(S) ->
     %% TODO: normalization can be delayed.
     ux_string:to_nfd(S).
-    
+
 
 %%
 %% Tests
@@ -881,7 +874,7 @@ delete_tail_test_() ->
 split_levels_test_() ->
     F = fun(W) -> split_levels(1, false, W) end,
     F2 = fun(W) -> split_levels(2, true, W) end,
-    [{"Test common behavior.", 
+    [{"Test common behavior.",
         [?_assertEqual(F([[1,2,3],[4,5,6],[7,8,9]]), {[1,4,7], [[2,3],[5,6],[8,9]]})
         ,?_assertEqual(F([[1,2,3],[4],[7,8]]), {[1,4,7], [[2,3],[8]]})
         ]}
@@ -917,14 +910,14 @@ search_test_() ->
    ,{"http://unicode.org/reports/tr10/#Matches_Table",
     [{"The minimal match is the tightest one, because $! and %$ are "
             "ignored in the target.",
-        
+
          [?TO(?_assertEqual(FF('minimal'), {"def$!","Abc","%$ghi"}))
          ,?TO(?_assertEqual(FF2('minimal'), {"def@!","Abc","%@ghi"}))
          ]
      }
 
     ,{"The medial one includes those characters that are binary equal.",
-        
+
          [?TO(?_assertEqual(FF('medium'),  {"def$","!Abc","%$ghi"}))
          ,?TO(?_assertEqual(FF2('medium'),  {"def@","!Abc","%@ghi"}))
          ]
@@ -933,7 +926,7 @@ search_test_() ->
     % TODO: Is this error in UCA?
     % ux_unidata:ducet("$").
     % [[non_variable,5492,32,2,36]]
-    % 
+    %
     % $ is not ignorable, but in example it is.
 
     ,{"The maximal match is the loosest one, including the surrounding"
@@ -941,13 +934,13 @@ search_test_() ->
 
     % From example:
 %     ?_assertEqual(FF('maximal'), {"def","$!Abc%$","ghi"})
-    
+
     % For real data:
          [?TO(?_assertEqual(FF('maximal'), {"def$","!Abc%","$ghi"}))
          ,?TO(?_assertEqual(FF2('maximal'), {"def","@!Abc%@","ghi"}))
          ]
     }
     ]}].
-    
+
 
 -endif.

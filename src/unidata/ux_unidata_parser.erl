@@ -9,7 +9,7 @@
 -export([check_types/2]).
 
 %% Helpers
--export([split/2, hex_to_int/1, from_hex/1, 
+-export([split/2, hex_to_int/1, from_hex/1,
         delete_spaces/1, delete_spaces/2, delete_comments/1]).
 %% For ux_unidata
 -export([open_file/1]).
@@ -20,7 +20,7 @@
 
 
 
-get_env({ParserType, Types, FileName} = File) ->
+get_env({ParserType, _Types, _FileName} = File) ->
     Mod = filetype_to_module(ParserType),
     try
         Mod:bootstrap(File)
@@ -30,7 +30,7 @@ get_env({ParserType, Types, FileName} = File) ->
 
 set_env(_File, 'undefined'=_Env) ->
     ok;
-set_env({ParserType, Types, FileName} = File, Env) ->
+set_env({ParserType, _Types, _FileName} = File, Env) ->
     Mod = filetype_to_module(ParserType),
     Mod:init(File, Env).
 
@@ -52,8 +52,8 @@ check_filename(FileName) ->
     % File exists?
     case file:read_file_info(FileName) of
         {ok, _Info} -> ok;
-        Error -> 
-            error_logger:error_msg(?MODULE_STRING ++ ": File ~s not found.", [FileName]), 
+        Error ->
+            error_logger:error_msg(?MODULE_STRING ++ ": File ~s not found.", [FileName]),
             erlang:error(Error)
     end,
     ok.
@@ -105,7 +105,7 @@ open_file(FileName) ->
             "zg." ++ _List -> % is .gz?
                 file:open(FileName, [read, compressed]);
             _ ->
-                file:open(FileName, [read]) 
+                file:open(FileName, [read])
             end,
         Fd
     catch
@@ -142,7 +142,7 @@ do_check_types([], _) ->
     true;
 do_check_types([_|_], _) ->
     false.
-    
+
 -spec create_tables([atom()]) -> [{atom(), integer()}].
 create_tables(DataTypes) ->
     do_create_tables(DataTypes, []).
@@ -161,11 +161,11 @@ filetype_to_module(Type) -> list_to_atom("ux_unidata_parser_"
 
 read_file({Fd, Ets, Mod} = State) ->
     case file:read_line(Fd) of
-    {ok, []} -> 
+    {ok, []} ->
         read_file(State);
     {ok, Line} ->
         case Mod:parse(delete_nr(delete_comments(Line))) of
-        skip -> 
+        skip ->
             read_file(State);
         {ok, Val} ->
             ok = write_to_ets(Ets, lists:sort(Val)),
@@ -173,14 +173,14 @@ read_file({Fd, Ets, Mod} = State) ->
         end;
     eof -> ok
     end.
-        
+
 -spec delete_comments(string()) -> string().
 delete_comments(Line) ->
     lists:reverse(do_delete_comments(Line, [])).
 
 do_delete_comments([], Acc) -> Acc;
 do_delete_comments([$# | _], Acc) -> Acc;
-do_delete_comments([H|T], Acc) -> 
+do_delete_comments([H|T], Acc) ->
     do_delete_comments(T, [H|Acc]).
 
 -spec write_to_ets([{atom(), integer()}], [{atom(), tuple()}]) -> ok.
@@ -209,15 +209,15 @@ do_split(Char, [Head|Tail], Acc1, Acc2) ->
     do_split(Char, Tail, [Head|Acc1], Acc2).
 
 hex_to_int(Code) ->
-    case io_lib:fread("~16u", Code) of 
+    case io_lib:fread("~16u", Code) of
     {ok, [Int], []} -> Int;
     _ -> false
     end.
 
-from_hex([$<|Str]) -> 
+from_hex([$<|Str]) ->
     SubStr = string:sub_string(Str, string:chr(Str, $>)+1),
     from_hex(SubStr);
-from_hex(Str) -> 
+from_hex(Str) ->
     lists:map(fun hex_to_int/1, string:tokens(Str, " ")).
 
 delete_spaces(Str) -> delete_spaces(Str, $ ).
@@ -236,11 +236,11 @@ expand_table(Table) ->
     {From, To} = Key ->
         [El] = ets:lookup(Table, Key),
         ets:delete(Table, Key),
-        
+
         do_expand(Table, El, From, To),
         expand_table_next(Table, Key);
     Key ->
-        expand_table_next(Table, Key) 
+        expand_table_next(Table, Key)
     end,
     ets:safe_fixtable(Table, false),
     ok.
@@ -252,11 +252,11 @@ expand_table_next(Table, Prev) ->
     {From, To} = Key ->
         [El] = ets:lookup(Table, Key),
         ets:delete(Table, Key),
-        
+
         do_expand(Table, El, From, To),
         expand_table_next(Table, Key);
     Key ->
-        expand_table_next(Table, Key) 
+        expand_table_next(Table, Key)
     end.
 
 do_expand(Table, El, From, To) when From =< To ->
@@ -272,7 +272,7 @@ do_expand(_, _, _, _) -> ok.
 %% Expand table with two colums: [{Key, Value} or {{From, To}, Value}].
 expand_fun(Table, DefaultValue) ->
     List = ets:tab2list(Table),
-    fun(V) -> 
+    fun(V) ->
        case ux_ranges:search(List, V) of
        false -> DefaultValue;
        Result -> Result
@@ -349,13 +349,13 @@ expand_meta_fun(Table, DefaultValue) ->
     Body = do_fun_def(Name, DefaultValue),
     NewBody = do_expand_fun(Table, Name, Body, DefaultValue),
 
-    
+
     {ok, Value} = Handler(NewBody),
     Value.
 
 
 
--spec do_expand_fun(Table::integer(), Name::atom(), Body::string(), DefaultValue::term()) 
+-spec do_expand_fun(Table::integer(), Name::atom(), Body::string(), DefaultValue::term())
     -> string().
 do_expand_fun(Table, Name, Body, DefaultValue) ->
     case ets:first(Table) of
@@ -368,7 +368,7 @@ do_expand_fun(Table, Name, Body, DefaultValue) ->
         do_expand_fun_next(Table, Name, NewBody, DefaultValue, Key)
     end.
 
--spec do_expand_fun_next(Table::integer(), Name::atom(), Body::string(), 
+-spec do_expand_fun_next(Table::integer(), Name::atom(), Body::string(),
     DefaultValue::term(), Prev::term()) -> string().
 do_expand_fun_next(Table, Name, Body, DefaultValue, Prev)  ->
     case ets:next(Table, Prev) of
@@ -486,7 +486,7 @@ expand_fun_test_() ->
         ets:insert(T, {{4,10}, interval}),
 
         {T, expand_fun(T, default)}
-        
+
         end,
      fun ({T, _F}) -> ets:delete(T) end,
      fun ({_T, F}) ->

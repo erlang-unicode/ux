@@ -10,7 +10,7 @@
     , after_parse/1 % comment to disable post processing
     ]).
 
-%% For ux_uca_decomp 
+%% For ux_uca_decomp
 -export([el_to_bin/1]).
 
 
@@ -24,9 +24,9 @@ parse(In) ->
         OutEl = parse_el(ux_unidata_parser:delete_spaces(Element)),
         %io:format("String: ~ts, From reversed: ~w, To: ~w~n", [In, InEl, OutEl]),
 
-        Res = case InEl of 
-            [] -> skip; 
-            _ -> {InEl, OutEl} 
+        Res = case InEl of
+            [] -> skip;
+            _ -> {InEl, OutEl}
         end,
         {ok,
             [{ducet,   Res}
@@ -39,7 +39,7 @@ after_parse(Ets) ->
     do_after(Ets),
     ok.
 
-get_function(ducet, Table) -> 
+get_function(ducet, Table) ->
     % R1 is only for encoding to binary, not reassign.
     R1 = get_reassign_function(Table, 1),
 
@@ -52,26 +52,26 @@ get_function(ducet, Table) ->
     MF = fun(Value) ->
             case ets:member(LTable, Value) of
             true -> true;
-            false -> 
+            false ->
                 case ets:member(MTable, Value) of
                 true -> maybe;
                 false -> false
                 end
             end
         end,
-    
+
     fun(member_function) -> MF;
        ({reassign_function, 1}) -> R1; % Return fun.
        ({reassign_function, 2}) -> R2; % Return fun.
        ({reassign_function, 3}) -> R3;
        ({reassign_function, 4}) -> R4;
-       ([_|_]=Value) -> 
+       ([_|_]=Value) ->
         case F(Value) of
-        W when is_binary(W) -> 
+        W when is_binary(W) ->
             bin_to_list2(W);
-        Other -> 
+        Other ->
             Other
-        end 
+        end
       end.
 
 get_reassign_function(Table, Lvl) ->
@@ -94,7 +94,7 @@ get_val(Table, Val) ->
 
 do_after([{ducet, Table} | Tail]) ->
     do_after_ranges(Table),
-    
+
     LTable = ets:new(ducet_lookup, [{write_concurrency, false}, {read_concurrency, true}]),
     do_after_lookup(Table, LTable),
 
@@ -123,7 +123,7 @@ do_after_lookup(Table, LTable) ->
         do_after_lookup_next(Table, LTable, Index)
     end.
 %   ets:safe_fixtable(Table, false),
-    
+
 do_after_lookup_next(Table, LTable, PrevIndex) ->
     case ets:next(Table, PrevIndex) of
     '$end_of_table' ->
@@ -154,7 +154,7 @@ do_after_ducet(Table, MTable) ->
         do_after_ducet_next(Table, MTable, Index)
     end.
 %   ets:safe_fixtable(Table, false),
-    
+
 do_after_ducet_next(Table, MTable, PrevIndex) ->
     case ets:next(Table, PrevIndex) of
     '$end_of_table' ->
@@ -165,25 +165,25 @@ do_after_ducet_next(Table, MTable, PrevIndex) ->
     Index ->
         do_after_ducet_next(Table, MTable, Index)
     end.
-        
+
 ducet_more(Table, MTable, In) ->
-    IF = fun(Val) -> 
+    IF = fun(Val) ->
         % Insert new value
         ets:insert(Table, {Val, more}),
         Reversed = lists:reverse(Val),
         ets:insert(MTable, {Reversed})
         end,
-    
-    LF = fun(Val) -> 
+
+    LF = fun(Val) ->
         % Lookup
         ets:member(Table, Val)
         end,
-        
+
     do_ducet_more(LF, IF, lists:reverse(In)).
 
-do_ducet_more(LF, IF, []) ->
+do_ducet_more(_LF, _IF, []) ->
     ok;
-do_ducet_more(LF, IF, [El]) ->
+do_ducet_more(_LF, _IF, [_El]) ->
     ok;
 do_ducet_more(LF, IF, [_Last|ReversedBody] = _Codes) ->
     Body = lists:reverse(ReversedBody),
@@ -192,7 +192,7 @@ do_ducet_more(LF, IF, [_Last|ReversedBody] = _Codes) ->
     false -> IF(Body)
     end,
     do_ducet_more(LF, IF, ReversedBody).
-        
+
 
 
 
@@ -206,14 +206,14 @@ do_after_ranges(Table) ->
         [{_, Val}] = ets:lookup(Table, Index),
         [Init|ValList] = bin_to_list(Val),
         ?DBG(
-            "~w:do_after_ranges: Init values: ~w. ~n", 
+            "~w:do_after_ranges: Init values: ~w. ~n",
             [?MODULE, Init]),
         NewMax = lists:foldl(zip2fun(fun max/2), Init, ValList),
         NewMin = lists:foldl(zip2fun(fun min/2), Init, ValList),
         do_after_ranges_next(Table, Index, NewMax, NewMin)
     end.
 %   ets:safe_fixtable(Table, false),
-    
+
 do_after_ranges_next(Table, PrevIndex, Min, Max) ->
     case ets:next(Table, PrevIndex) of
     '$end_of_table' ->
@@ -225,7 +225,7 @@ do_after_ranges_next(Table, PrevIndex, Min, Max) ->
             end,
         lists:foldl(InsFn(min), 1, Min),
         lists:foldl(InsFn(max), 1, Max),
-        
+
         ok;
     Index ->
         [{_, Val}] = ets:lookup(Table, Index),
@@ -234,7 +234,7 @@ do_after_ranges_next(Table, PrevIndex, Min, Max) ->
         NewMin = lists:foldl(zip2fun(fun min/2), Min, ValList),
         do_after_ranges_next(Table, Index, NewMin, NewMax)
     end.
-        
+
 
 
 
@@ -248,9 +248,9 @@ zip2fun(F) ->
     fun(L1, L2) -> lists:zipwith(F, L1, L2) end.
 
 max(V1, V2) when V1 > V2 -> V1;
-max(V1, V2) -> V2.
+max(_V1, V2) -> V2.
 min(V1, V2) when V1 < V2 -> V1;
-min(V1, V2) -> V2.
+min(_V1, V2) -> V2.
 
 %% bin_to_list(Bin) -> lists:map(fun([H|T]) -> T end, bin_to_list2(Bin)).
 bin_to_list(Bin) ->
@@ -278,7 +278,7 @@ do_bin_to_list2(<<>>, Res) ->
 %%
 
 %% Parses "[.0000.0000.0000.0000]" to [<<0:8,0:16,0:16,0:16,0:16>>]
-parse_el(El) -> 
+parse_el(El) ->
     ListOfInts = lists:reverse(parse_el(El, [], false, [])),
     el_to_bin(ListOfInts).
 
@@ -304,27 +304,27 @@ el_res(Acc, Buf) when is_list(Acc), is_list(Buf) ->
     Hex = ux_unidata_parser:hex_to_int(lists:reverse(Acc)),
     [Hex|Buf].
 
-split_large_weights([Type, 0, 0, 0, 0], Res) -> Res;
+split_large_weights([_Type, 0, 0, 0, 0], Res) -> Res;
 split_large_weights([Type, L1, L2, L3, L4], Res) ->
     L1Max = 16#FFDD,
     L2Max = 16#DD,
     L3Max = 16#DD, % 1F?
     L4Max = 16#FFDD,
     split_large_weights(
-        [Type, 
+        [Type,
         if L1<L1Max -> 0; true -> L1 - L1Max + 1 end,
         if L2<L2Max -> 0; true -> L2 - L2Max + 1 end,
         if L3<L3Max -> 0; true -> L3 - L3Max + 1 end,
         if L4<L4Max -> 0; true -> L4 - L4Max + 1 end],
 
-        [[Type, 
+        [[Type,
         if L1<L1Max -> L1; true -> L1Max end,
         if L2<L2Max -> L2; true -> L2Max end,
         if L3<L3Max -> L3; true -> L3Max end,
         if L4<L4Max -> L4; true -> L4Max end]|Res]
     ).
 
-    
+
 el_to_bin(List) -> do_el_to_bin(List, <<>>).
 do_el_to_bin([[Type,L1,L2,L3,L4]|List], Bin) ->
     T = type_int(Type),
@@ -350,7 +350,7 @@ parse_el_test_() ->
     F = fun parse_el/1,
     [?_assertEqual(F("[.0000.0000.0000.0000]"), <<>>)
     ,?_assertEqual(F("[.0001.0002.0003.0004]"), <<0:8, 1:16, 2:8, 3:8, 4:16>>)
-    ,?_assertEqual(F("[.0001.0002.0003.0004][*0005.0006.0007.0008]"), 
+    ,?_assertEqual(F("[.0001.0002.0003.0004][*0005.0006.0007.0008]"),
         <<0:8, 1:16, 2:8, 3:8, 4:16,   1:8, 5:16, 6:8, 7:8, 8:16>>)
     ].
 

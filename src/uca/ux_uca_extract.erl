@@ -50,7 +50,7 @@ do_extract(#uca_options {
         false -> W3;
         true -> lists:map(fun case_sensitive_hack/1, W3)
         end,
-    
+
 % ok = check_weights(W4),
 
     {W4, S2}.
@@ -69,12 +69,12 @@ check_mod(#uca_options{natural_sort=NS} = C, W1, D, S1) ->
     end.
 
 
-check_weights(W) -> do_check_weights(W).
-do_check_weights([[variable,_,_,_,_]|T]) ->
-    do_check_weights(T);
-do_check_weights([[non_variable,_,_,_,_]|T]) ->
-    do_check_weights(T);
-do_check_weights([]) -> ok.
+%% check_weights(W) -> do_check_weights(W).
+%% do_check_weights([[variable,_,_,_,_]|T]) ->
+%%     do_check_weights(T);
+%% do_check_weights([[non_variable,_,_,_,_]|T]) ->
+%%     do_check_weights(T);
+%% do_check_weights([]) -> ok.
 
 %% This function hides C,D,S from client.
 -spec do_proxy(#uca_options{}, fun(), string()) -> fun().
@@ -95,10 +95,10 @@ do_proxy(C,D,S) ->
             end;
        %% One hangul sequance was found, restart check_mod
        (mod_continue) ->
-            fun(W, Acc) -> 
+            fun(W, Acc) ->
                 {W1, S1} = check_mod(C, W, D, S),
                 %% lists:reverse(Acc) ++ W1
-                {lists:reverse(Acc, W1), S1} 
+                {lists:reverse(Acc, W1), S1}
                 end;
        (Result) -> {lists:reverse(Result),S}
         end.
@@ -137,10 +137,10 @@ case_invert(L3) ->
 -spec case_sensitive_hack(uca_elem()) -> uca_elem().
 case_sensitive_hack([Var,L1,L2,L3,L4]) ->
     [Var,L3,L2,L1,L4].
-        
+
 
 % Hack for numbers.
-has_mod([[_Var,L1|_]|T], _NS=true)
+has_mod([[_Var,L1|_]|_T], _NS=true)
     when ?IS_L1_OF_DECIMAL(L1) ->
     true;
 has_mod([[_Var,L1|_]|_], _NS)
@@ -181,12 +181,12 @@ has_mod([], _NS) ->
 % Hack for Hangul.
 -spec mod_weights(fun(), uca_array(), boolean(), uca_array()) -> result().
 % Hack for numbers.
-mod_weights(E, [[Var,L1|LOther]=H|T], _NS=true, Acc)
+mod_weights(E, [[Var,L1|LOther]=_H|T], _NS=true, Acc)
     when ?IS_L1_OF_DECIMAL(L1) ->
     F = fun(W) -> [Var,W|LOther] end, % define F.
     Num = ?COL_WEIGHT_TO_DECIMAL(L1),
     do_decimal(E, F, Num, T, Acc);
-mod_weights(E, [[Var,L1|_]=H|T], _NS, Acc)
+mod_weights(E, [[_Var,L1|_]=H|T], _NS, Acc)
     when ?IS_L1_OF_HANGUL_L(L1) ->
     do_hangul(E, l, T, [H|Acc]);
 mod_weights(E, [H|T], NS, Acc) ->
@@ -208,7 +208,7 @@ mod_weights(E, [], _NS, Acc) ->
 -spec do_decimal(fun(), fun(), boolean(), uca_array(), uca_array()) -> result().
 do_decimal(E, F, N, [[_,0|_]=H|T]=_W, Acc) ->
     do_decimal(E, F, N, T, [H|Acc]); % skip an ignorable element.
-do_decimal(E, F, N, [[_,L1|_]=H|T]=_W, Acc)
+do_decimal(E, F, N, [[_,L1|_]=_H|T]=_W, Acc)
     when ?IS_L1_OF_DECIMAL(L1) ->
     NewN = (N * 10) + ?COL_WEIGHT_TO_DECIMAL(L1),
     ?DBG("old ~w; new ~w~n", [N, NewN]),
@@ -241,6 +241,7 @@ do_decimal(E, F, N, W, Acc) ->
 %% @end
 decimal_result(F, N, Acc) ->
     NewAcc = [F(16#FFFE), F(1)|Acc],
+    %% @TODO: Should the next line be: do_decimal_result(F, N, NewAcc).
     do_decimal_result(F, N, Acc).
 
 -spec do_decimal_result(fun(), integer(), uca_array()) -> uca_array().
@@ -295,7 +296,7 @@ do_hangul(E, _Mod, W, Acc) -> % L
 
 %% @private
 -spec hangul_result(fun(), uca_array(), uca_array()) -> result().
-hangul_result(E, T, Acc) ->
+hangul_result(E, _T, Acc) ->
     TermWeight = E(term),
     E([TermWeight | Acc]).
 
@@ -308,7 +309,7 @@ hangul_result_and_continue(E, W, Acc) ->
 
 %% Step 0: try extract derived weights.
 %% @private
-%% @param Str:string() String 
+%% @param Str:string() String
 %% @param D::fun() Ducet Function
 
 -spec do_extract0(string(), fun()) -> result().
@@ -325,21 +326,21 @@ do_extract0([H], D) -> % Last Char
         {W, []};
     _ ->
         {[], []}
-    end;    
+    end;
 
 do_extract0([H|T]=S, DFn) ->
-    % Max ccc among ccces of skipped chars beetween the starter char 
-    % and the processed char. If there are no skipped chars, then 
+    % Max ccc among ccces of skipped chars beetween the starter char
+    % and the processed char. If there are no skipped chars, then
     % Ccc1=false.
-    OldCCC = false, 
-    Key = [], 
+    OldCCC = false,
+    Key = [],
     Skipped = [],
 
     LFn = ducet_lookup(DFn),
     CFn = ux_unidata:ccc(skip_check),
     MFn = get_more(LFn, CFn),
     Res = false,
-    
+
     case do_extract1(S, MFn, Key, OldCCC, Skipped, Res) of
     {result, Key2, T2} ->
         W = DFn(Key2),
@@ -353,20 +354,20 @@ do_extract0([H|T]=S, DFn) ->
 
 %% @param S:string() String
 %% Res is a last good Key.
--spec do_extract1(string(), fun(), string(), ux_ccc()|false, 
-    string(), uca_array()) -> 
+-spec do_extract1(string(), fun(), string(), ux_ccc()|false,
+    string(), uca_array()) ->
     {result,string(),string()}|not_found.
-do_extract1([H|T]=S, MFn, Key, OldCCC, Skipped, Res) 
+do_extract1([H|T]=S, MFn, Key, OldCCC, Skipped, Res)
     when is_list(Skipped) ->
     NewKey = [H|Key],
     case MFn(NewKey, OldCCC) of
-    {false, _NewCCC} when Res =:= more -> 
+    {false, _NewCCC} when Res =:= more ->
         more_error;
-    {false, NewCCC} -> 
+    {false, NewCCC} ->
         NewSkipped = [H|Skipped],
         do_extract1(T, MFn, Key, NewCCC, NewSkipped, Res);
 
-    {true, NewCCC} -> 
+    {true, NewCCC} ->
         CCC = select_ccc(OldCCC, NewCCC),
     ?DBG("selected ccc is ~w.~n", [CCC]),
         do_extract1(T, MFn, NewKey, CCC, Skipped, NewKey);
@@ -377,7 +378,7 @@ do_extract1([H|T]=S, MFn, Key, OldCCC, Skipped, Res)
     {maybe, NewCCC} ->
         CCC = select_ccc(OldCCC, NewCCC),
         case do_extract1(T, MFn, NewKey, CCC, Skipped, more) of
-        more_error -> 
+        more_error ->
             NewSkipped = [H|Skipped],
             do_extract1(T, MFn, Key, NewCCC, NewSkipped, Res);
         Return -> Return
@@ -391,15 +392,15 @@ do_extract1([H|T]=S, MFn, Key, OldCCC, Skipped, Res)
     bad_ccc ->
         {result, do_extract1_return(Res), lists:reverse(Skipped, S)}
     end;
-        
-    
+
+
 do_extract1([]=_S, _MFn, _Key, _OldCCC, Skipped, _Res=more)
     when is_list(Skipped) ->
     more_error;
 do_extract1([]=_S, _MFn, _Key, _OldCCC, Skipped, _Res=false)
     when is_list(Skipped) ->
     not_found;
-do_extract1([]=_S, _MFn, _Key, _OldCCC, Skipped, Res) 
+do_extract1([]=_S, _MFn, _Key, _OldCCC, Skipped, Res)
     when is_list(Skipped) ->
     {result, do_extract1_return(Res), lists:reverse(Skipped)}.
 
@@ -418,10 +419,10 @@ do_extract1([]=_S, _MFn, _Key, _OldCCC, Skipped, Res)
 % Base  3: FBC0 Any other code point
 % Range 3: Ideographic AND NOT Unified_Ideograph
 % -----------------------------------------------------------------------------
-do_implicit(H)  
+do_implicit(H)
     when ?CHAR_IS_UNIFIED_IDEOGRAPH(H) ->
     if
-        (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(H) 
+        (?CHAR_IS_CJK_COMPATIBILITY_IDEOGRAPH(H)
             or ?CHAR_IS_CJK_UNIFIED_IDEOGRAPH(H)) ->
         implicit_weight(H, 16#FB40);
       true ->
@@ -431,7 +432,7 @@ do_implicit(H)
 do_implicit(H) ->
     implicit_weight(H, 16#FBC0).
 
-        
+
 
 
 %% After skiping a character, we set OldCCC = NewCCC.
@@ -440,7 +441,7 @@ select_ccc(_OldCCC=false, _NewCCC) ->
     false;
 select_ccc(_OldCCC, NewCCC) ->
     NewCCC.
-        
+
 -spec do_extract1_return(string()) -> string().
 do_extract1_return(Res) -> lists:reverse(Res).
 
@@ -458,7 +459,7 @@ ducet_lookup(D) ->
 
 
 
-    
+
 
 -spec get_more(fun(), fun()) -> term().
 get_more(LFn, CFn) ->
@@ -466,7 +467,7 @@ get_more(LFn, CFn) ->
         case CFn(H) of
         NewCCC when OldCCC =:= false;
                     OldCCC=/=0, OldCCC<NewCCC ->
-            ?DBG("ccc is ok. OldCCC is ~w. NewCCC is ~w. ~n", 
+            ?DBG("ccc is ok. OldCCC is ~w. NewCCC is ~w. ~n",
                 [OldCCC, NewCCC]),
             Status = LFn(K),
             ?DBG("Status is ~w. ~n", [Status]),
@@ -475,24 +476,24 @@ get_more(LFn, CFn) ->
         NewCCC when OldCCC =:= NewCCC, OldCCC =/= 0 ->
             ?DBG("Char is blocked. CCC is ~w. ~n", [OldCCC]),
             {false, NewCCC}; % blocked
-        NewCCC ->
-            ?DBG("Bad CCC. OldCCC is ~w. NewCCC is ~w ~n", 
-                [OldCCC, NewCCC]),
+        _NewCCC ->
+            ?DBG("Bad CCC. OldCCC is ~w. NewCCC is ~w ~n",
+                [OldCCC, _NewCCC]),
             bad_ccc
         end
     end.
-            
 
-% Note: A non-starter in a string is called blocked if there is another 
-%       non-starter of the same canonical combining class or zero between 
+
+% Note: A non-starter in a string is called blocked if there is another
+%       non-starter of the same canonical combining class or zero between
 %       it and the last character of canonical combining class 0.
 
 
 
-%% @doc 7.1.3 Implicit Weights 
+%% @doc 7.1.3 Implicit Weights
 %% The result of this process consists of collation elements that are sorted in
 %% code point order, that do not collide with any explicit values in the table,
-%% and that can be placed anywhere (for example, at BASE) with respect to the 
+%% and that can be placed anywhere (for example, at BASE) with respect to the
 %% explicit collation element mappings. By default, implicit mappings are given
 %% higher weights than all explicit collation elements.
 %% @end
@@ -500,7 +501,5 @@ get_more(LFn, CFn) ->
 implicit_weight(CP, BASE) when is_integer(CP) and is_integer(BASE) ->
     AAAA = BASE + (CP bsr 15),
     BBBB = (CP band 16#7FFF) bor 16#8000,
-    [[non_variable, AAAA, 32, 2, 0], 
+    [[non_variable, AAAA, 32, 2, 0],
      [non_variable, BBBB, 0, 0, 0]]. % reversed
-
-

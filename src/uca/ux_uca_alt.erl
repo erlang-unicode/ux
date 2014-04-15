@@ -7,13 +7,13 @@
 -spec get_alternate_function(#uca_options{}, fun()) -> fun().
 get_alternate_function(#uca_options{alternate='shifted', strength=4}, D) ->
     R = D({reassign_function, 4}),
-    Common = R(get_common_value), 
+    Common = R(get_common_value),
     shifted_weight(Common);
 
-get_alternate_function(C=#uca_options{alternate=Alt}, _D) ->
+get_alternate_function(#uca_options{alternate=Alt}, _D) ->
     get_function(Alt).
 
-    
+
 -spec get_function(Alt :: ux_uca:uca_alternate()) -> fun().
 get_function(non_ignorable) ->
     fun non_ignorable_weight/1;
@@ -141,5 +141,5 @@ shift_trimmed_weight2([_|_] = Value) ->
 
 %% @private
 %% Return: [_, _, _, _]
-set_l4_to_value([Var, L1, L2, L3, _L4], NewL4) ->
+set_l4_to_value([_Var, L1, L2, L3, _L4], NewL4) ->
     [L1, L2, L3, NewL4].

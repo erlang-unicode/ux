@@ -3,10 +3,10 @@
 -import(ux_uca, [sort_array/2]).
 
 -import(ux_uca_utils, [
-    do_alt/2, 
-    get_ducet/0, 
-    get_options/0, 
-    split_levels/3, 
+    do_alt/2,
+    get_ducet/0,
+    get_options/0,
+    split_levels/3,
     get_reassign_function/2]).
 
 -include("ux.hrl").
@@ -36,13 +36,13 @@ do_sort_key1(S, B, [WH|WT], D, A, R, K) ->
     _ ->
         do_sort_key1(S, B, WT, D, NewA, R, K)
     end;
-do_sort_key1(S, B, [], D, A, R, K) 
+do_sort_key1(S, B, [], D, _A, R, K)
     when (S > 1) ->
     W = lists:reverse(R),
     L = 2, % Level
-    WL = [],
+    %% WL = [],
     do_sort_key2(S, B, L, W, D, [0|K]);
-do_sort_key1(S, B, [], D, A, R, K) ->
+do_sort_key1(_S, _B, [], _D, _A, _R, K) ->
     K. % Return result
 
 %% L::int() Level
@@ -54,8 +54,7 @@ do_sort_key2(S, B, L, W, D, K) ->
     NewK = lists:reverse(ReassignW, K),
     case NewW of
     []    -> NewK;
-    _ when S=<L 
+    _ when S=<L
           -> NewK;
     [_|_] -> do_sort_key2(S, B, L+1, NewW, D, [0|NewK])
     end.
-

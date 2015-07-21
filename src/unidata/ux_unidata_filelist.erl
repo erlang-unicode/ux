@@ -18,7 +18,7 @@
 -behavior(gen_server).
 
 -record(state, {
-        key2server :: dict()
+        key2server :: dict:dict()
 }).
 
 

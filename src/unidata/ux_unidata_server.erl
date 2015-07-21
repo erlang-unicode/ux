@@ -16,7 +16,7 @@
 
 -export([start_link/0]).
 -export([init/1, terminate/2, 
-    handle_call/3, handle_info/2, handle_cast/2]).
+    handle_call/3, handle_info/2, handle_cast/2, code_change/3]).
 -export([set_default/1, get_default/1]).
 
 -behavior(gen_server).
@@ -35,7 +35,7 @@ init([]) ->
 
 terminate(_Reason, _LoopData) ->
     ok.
-
+code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
 

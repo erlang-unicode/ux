@@ -7,6 +7,6 @@
 -type compat_queue() :: queue:queue().
 -type compat_dict()  :: dict:dict().
 -else.
--type compat_queue() :: erlang:queue().
--type compat_dict()  :: erlang:dict().
+-type compat_queue() :: queue().
+-type compat_dict()  :: dict().
 -endif.

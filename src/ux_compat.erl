@@ -1,12 +1,12 @@
 -module(ux_compat).
 
--export_type([queue/0, dict/0]).
+-export_type([compat_queue/0, compat_dict/0]).
 
 
 -ifdef(otp_18).
--type queue() :: queue:queue().
--type dict()  :: dict:dict().
+-type compat_queue() :: queue:queue().
+-type compat_dict()  :: dict:dict().
 -else.
--type queue() :: erlang:queue().
--type dict()  :: erlang:dict().
+-type compat_queue() :: erlang:queue().
+-type compat_dict()  :: erlang:dict().
 -endif.

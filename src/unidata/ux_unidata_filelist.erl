@@ -18,7 +18,7 @@
 -behavior(gen_server).
 
 -record(state, {
-        key2server :: ux_compat:dict()
+        key2server :: ux_compat:compat_dict()
 }).
 
 

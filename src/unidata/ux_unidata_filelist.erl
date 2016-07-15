@@ -6,7 +6,7 @@
 
 % OTP 
 -export([start_link/0]).
--export([init/1, terminate/2, handle_call/3, handle_info/2]).
+-export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2, code_change/3]).
 
 % Inter-module exports
 -export([reg_pid/2, file_owner/1]).
@@ -18,7 +18,7 @@
 -behavior(gen_server).
 
 -record(state, {
-        key2server :: dict()
+        key2server :: ux_compat:compat_dict()
 }).
 
 
@@ -38,6 +38,7 @@ init([]) ->
 
 terminate(_Reason, _LoopData) ->
     ok.
+code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
 % Save pid of ux_unidata_store server in a dict.
@@ -62,6 +63,9 @@ handle_call({get_pid, Key}, _From, State = #state{key2server = K2S}) ->
     Reply = dict:find(Key, K2S), % {ok, Value} or error
     {reply, Reply, State}.
 
+
+handle_cast(_, State) ->
+    {noreply, State}.
 
 
 % Server is dead, unregister it.

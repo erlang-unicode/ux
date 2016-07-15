@@ -3,7 +3,7 @@
 -include("ux.hrl").
 
 -export([start_link/2]).
--export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2]).
+-export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2, code_change/3]).
 -export([monitor_client_process/2, get_funs/2]).
 
 % First argument is a server pid.
@@ -59,6 +59,7 @@ init([{ParserType, Types, FileName} = File, ClientPid, ClientEnv]) ->
 
 terminate(_Reason, _LoopData) ->
     ok.
+code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
 handle_call({check_types, _Types}, _From, 

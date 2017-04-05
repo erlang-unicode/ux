@@ -311,7 +311,7 @@ split(P1, P2, P3) -> delete_empty(explode(P1, P2, P3)).
 %% [{70,3},{68,1}]'''
 %%
 %% @end
--spec freq(string()) -> dict(). 
+-spec freq(string()) -> dict:dict(). 
 
 freq(Str) -> do_freq(Str, dict:new()).
 

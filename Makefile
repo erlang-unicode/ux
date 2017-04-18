@@ -1,6 +1,9 @@
 
 PREFIX:=../
 DEST:=$(PREFIX)$(PROJECT)
+LIBDIR:="lib/erlang/lib"
+PKGNAME:="ux"
+VERSION:="3.4.1"
 
 REBAR=./rebar
 
@@ -27,4 +30,9 @@ dialyzer:
 
 app:
 	@$(REBAR) create template=mochiwebapp dest=$(DEST) appid=$(PROJECT)
+
+install:
+        @for i in ebin/*.beam ebin/*.app; do install -m 644 -D $$i $(PREFIX)/$(LIBDIR)/$(PKGNAME)-$(VERSION)/$$i ; done
+        cp -rf deps $(PREFIX)/$(LIBDIR)/$(PKGNAME)-$(VERSION)/
+        cp -rf priv $(PREFIX)/$(LIBDIR)/$(PKGNAME)-$(VERSION)/
 
